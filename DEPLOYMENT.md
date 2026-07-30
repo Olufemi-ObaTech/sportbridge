@@ -69,13 +69,14 @@ git push -u origin main
    php artisan key:generate --show
    ```
 
-5. **Deploy.** Railway builds the `Dockerfile`, and `docker/entrypoint.sh` runs `php artisan migrate --force` against *both* databases automatically on every deploy before the server starts (safe to re-run — it only applies new migrations).
-6. **Seed once, manually**, after the first successful deploy (Railway → service → the `⋮` menu → **Run Command**, or `railway run` from the CLI):
+5. **Generate a public domain before your first deploy, or right after.** Railway → your service → Settings → Networking → Public Networking → **Generate Domain**, port **80**. Without this the service stays in an "Unexposed service" state and every deployment fails its healthcheck no matter how healthy the container actually is — Railway has no route to reach it. (The `sportbridge.railway.internal` address shown by default is private service-to-service networking only; it does not satisfy this.)
+6. **Deploy.** Railway builds the `Dockerfile`, and `docker/entrypoint.sh` runs `php artisan migrate --force` against *both* databases automatically on every deploy before the server starts (safe to re-run — it only applies new migrations; if it fails because `DB_*` isn't configured yet, Apache still starts so the service stays reachable and shows the real error instead of crash-looping).
+7. **Seed once, manually**, after the first successful deploy (Railway → service → the `⋮` menu → **Run Command**, or `railway run` from the CLI):
    ```bash
    php artisan db:seed --force
    ```
    Don't run `db:fresh-all` against production after real users exist — it drops every table. It's a local/staging reset tool only.
-7. **Custom domain** (optional): Railway → Settings → Domains → add your domain, update `APP_URL` to match, and point your DNS CNAME at the address Railway gives you.
+8. **Custom domain** (optional): Railway → Settings → Networking → add your domain, update `APP_URL` to match, and point your DNS CNAME at the address Railway gives you.
 
 ## 3. Connect GitHub for auto-deploy
 
