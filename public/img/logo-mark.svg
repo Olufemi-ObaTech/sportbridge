@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Football-Connect">
+    <defs>
+        <linearGradient id="fcShield" x1="10%" y1="0%" x2="90%" y2="100%">
+            <stop offset="0%" stop-color="#2F7DF0"/>
+            <stop offset="55%" stop-color="#1B54D6"/>
+            <stop offset="100%" stop-color="#071A3D"/>
+        </linearGradient>
+        <linearGradient id="fcGold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FFCC33"/>
+            <stop offset="100%" stop-color="#C98A0A"/>
+        </linearGradient>
+    </defs>
+
+    <path d="M50 3 L91 17 V48 C91 75 74 91 50 98 C26 91 9 75 9 48 V17 Z"
+          fill="url(#fcShield)" stroke="url(#fcGold)" stroke-width="3.5" stroke-linejoin="round"/>
+
+    <circle cx="50" cy="47" r="22" fill="#F7F9FC"/>
+    <g fill="#0B1220">
+        <polygon points="50,33 58.5,39.2 55.3,49.1 44.7,49.1 41.5,39.2"/>
+        <path d="M50 33 L41.5 39.2 M50 33 L58.5 39.2 M44.7 49.1 L38 55 M55.3 49.1 L62 55 M41.5 39.2 L31 41 M58.5 39.2 L69 41"
+              stroke="#0B1220" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    </g>
+
+    <path d="M32 66 Q50 78 68 66 L64 74 Q50 82 36 74 Z" fill="url(#fcGold)"/>
+</svg>

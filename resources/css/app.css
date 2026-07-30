@@ -1,0 +1,526 @@
+/*
+ * SportBridge design system.
+ * Bootstrap 5.3 itself is loaded via CDN in layouts/partials/head.
+ * This file only holds custom properties, Bootstrap variable overrides,
+ * and component-level styling on top of Bootstrap.
+ * Note: the "fc-" custom-property/class prefix predates the SportBridge
+ * rename (it originally stood for Football-Connect) and is kept as-is
+ * to avoid a repo-wide CSS class rename.
+ */
+
+:root {
+    /* Core brand palette - mixed blues (navy -> royal -> sky/cyan) with a gold accent */
+    --fc-navy-900: #050B1F;
+    --fc-navy-800: #0A1633;
+
+    --fc-blue-900: #0B2B6B;
+    --fc-blue-700: #123FAE;
+    --fc-blue-600: #1B54D6;
+    --fc-blue-500: #2F7DF0;
+    --fc-blue-100: #E7EFFC;
+
+    --fc-cyan-400: #38D6FF;
+
+    --fc-gold-600: #C98A0A;
+    --fc-gold-500: #F5B301;
+    --fc-gold-400: #FFCC33;
+
+    --fc-primary: var(--fc-blue-600);
+    --fc-primary-light: var(--fc-blue-500);
+    --fc-gold: var(--fc-gold-500);
+    --fc-gold-light: var(--fc-gold-400);
+    --fc-ivory: #F5F8FC;
+    --fc-ink: #0B1220;
+    --fc-muted: #5B6472;
+
+    --fc-radius: 14px;
+    --fc-radius-lg: 20px;
+    --fc-radius-pill: 999px;
+
+    --fc-shadow-sm: 0 1px 3px rgba(5, 11, 31, .08);
+    --fc-shadow: 0 10px 28px -12px rgba(11, 43, 107, .30), 0 2px 8px rgba(5, 11, 31, .06);
+    --fc-shadow-lg: 0 28px 56px -20px rgba(11, 43, 107, .40);
+    --fc-shadow-gold: 0 10px 24px -8px rgba(245, 179, 1, .5);
+
+    --fc-gradient-primary: linear-gradient(135deg, var(--fc-blue-500) 0%, var(--fc-blue-700) 100%);
+    --fc-gradient-gold: linear-gradient(135deg, var(--fc-gold-400) 0%, var(--fc-gold-500) 55%, var(--fc-gold-600) 100%);
+    --fc-gradient-hero:
+        radial-gradient(circle at 12% 18%, rgba(56, 214, 255, .28), transparent 42%),
+        radial-gradient(circle at 88% -5%, rgba(245, 179, 1, .22), transparent 40%),
+        linear-gradient(160deg, var(--fc-blue-900) 0%, var(--fc-navy-800) 62%, var(--fc-navy-900) 100%);
+
+    --fc-hero-photo:
+        radial-gradient(circle at 12% 18%, rgba(56, 214, 255, .30), transparent 42%),
+        linear-gradient(100deg, rgba(5, 11, 31, .96) 0%, rgba(10, 22, 51, .88) 40%, rgba(11, 43, 107, .65) 75%, rgba(11, 43, 107, .45) 100%),
+        url('/img/stadium-night.jpg');
+    --fc-band-photo:
+        linear-gradient(120deg, rgba(11, 43, 107, .92) 0%, rgba(27, 84, 214, .85) 100%),
+        url('/img/stadium-day.jpg');
+
+    --fc-font-heading: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --fc-font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+    --bs-primary: var(--fc-blue-600);
+    --bs-primary-rgb: 27, 84, 214;
+    --bs-secondary: var(--fc-gold-500);
+    --bs-secondary-rgb: 245, 179, 1;
+    --bs-body-bg: var(--fc-ivory);
+    --bs-body-color: var(--fc-ink);
+    --bs-link-color: var(--fc-blue-700);
+    --bs-link-color-rgb: 18, 63, 174;
+    --bs-link-hover-color: var(--fc-blue-600);
+    --bs-link-hover-color-rgb: 27, 84, 214;
+}
+
+[data-bs-theme="dark"] {
+    --fc-ivory: #0B0F16;
+    --fc-ink: #F2F5FA;
+    --fc-muted: #9AA6B8;
+    --bs-body-bg: #070A11;
+    --bs-body-color: var(--fc-ink);
+    --bs-link-color: var(--fc-gold-400);
+    --bs-link-color-rgb: 255, 204, 51;
+    --bs-link-hover-color: var(--fc-gold-500);
+    --bs-link-hover-color-rgb: 245, 179, 1;
+    --bs-border-color: rgba(255, 255, 255, .1);
+}
+
+[data-bs-theme="dark"] .card {
+    background-color: #11182A;
+    box-shadow: 0 10px 28px -14px rgba(0, 0, 0, .6);
+}
+
+::selection {
+    background: var(--fc-gold-400);
+    color: var(--fc-navy-900);
+}
+
+html {
+    overflow-x: hidden;
+}
+
+body {
+    font-family: var(--fc-font-body);
+    font-size: 1rem;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--fc-font-heading);
+    font-weight: 700;
+    letter-spacing: -.01em;
+}
+
+a {
+    text-decoration: none;
+}
+
+/* Buttons */
+.btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--fc-radius);
+    font-weight: 600;
+    letter-spacing: .01em;
+    transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease, color .18s ease;
+    border-width: 1.5px;
+}
+
+.btn-sm {
+    min-height: 36px;
+}
+
+.btn-primary {
+    background: var(--fc-gradient-primary);
+    border-color: transparent;
+    box-shadow: var(--fc-shadow-sm);
+}
+
+.btn-primary:hover,
+.btn-primary:focus-visible {
+    background: var(--fc-gradient-primary);
+    border-color: transparent;
+    transform: translateY(-2px);
+    box-shadow: var(--fc-shadow);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-secondary,
+.btn-secondary:hover,
+.btn-secondary:focus,
+.btn-secondary:active {
+    color: var(--fc-navy-900) !important;
+}
+
+.btn-secondary {
+    background: var(--fc-gradient-gold);
+    border-color: transparent;
+    box-shadow: var(--fc-shadow-sm);
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+    background: var(--fc-gradient-gold);
+    border-color: transparent;
+    transform: translateY(-2px);
+    box-shadow: var(--fc-shadow-gold);
+}
+
+.btn-outline-secondary {
+    border-color: var(--fc-gold-500);
+    color: var(--fc-blue-700);
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus-visible {
+    background: var(--fc-gold-500);
+    border-color: var(--fc-gold-500);
+    color: var(--fc-navy-900);
+    transform: translateY(-2px);
+}
+
+.btn-outline-primary {
+    color: var(--fc-blue-700);
+    border-color: var(--fc-blue-600);
+}
+
+.btn-outline-primary:hover {
+    background: var(--fc-gradient-primary);
+    border-color: transparent;
+    transform: translateY(-2px);
+}
+
+.btn-outline-light:hover {
+    color: var(--fc-navy-900);
+}
+
+.btn-link {
+    font-weight: 600;
+}
+
+.badge.text-bg-secondary,
+.badge.bg-secondary {
+    background: var(--fc-gradient-gold) !important;
+    color: var(--fc-navy-900) !important;
+}
+
+/* Cards */
+.card {
+    border: 1px solid rgba(11, 22, 51, .06);
+    border-radius: var(--fc-radius);
+    box-shadow: var(--fc-shadow-sm);
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+a.card:hover,
+a.card:focus-visible,
+.card.fc-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--fc-shadow-lg);
+    border-color: var(--fc-gold-500);
+}
+
+.form-control,
+.form-select {
+    min-height: 44px;
+    border-radius: calc(var(--fc-radius) - 4px);
+}
+
+.form-control:focus,
+.form-select:focus,
+.btn:focus-visible,
+a:focus-visible,
+button:focus-visible {
+    outline: 2px solid var(--fc-gold-500);
+    outline-offset: 2px;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--fc-blue-500);
+    box-shadow: 0 0 0 .2rem rgba(27, 84, 214, .15);
+}
+
+/* Navbar */
+.navbar {
+    background: linear-gradient(120deg, rgba(5, 11, 31, .94) 0%, rgba(11, 43, 107, .94) 100%);
+    backdrop-filter: saturate(160%) blur(10px);
+    -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid rgba(245, 179, 1, .12);
+}
+
+.navbar-brand {
+    font-family: var(--fc-font-heading);
+    font-weight: 800;
+    letter-spacing: .01em;
+}
+
+.navbar .nav-link {
+    position: relative;
+    font-weight: 500;
+}
+
+.navbar .nav-link::after {
+    content: "";
+    position: absolute;
+    left: .5rem;
+    right: .5rem;
+    bottom: 2px;
+    height: 2px;
+    background: var(--fc-gradient-gold);
+    border-radius: var(--fc-radius-pill);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform .2s ease;
+}
+
+.navbar .nav-link:hover::after,
+.navbar .nav-link.active::after {
+    transform: scaleX(1);
+}
+
+/* Hero */
+.fc-hero {
+    position: relative;
+    background: var(--fc-hero-photo);
+    background-size: cover;
+    background-position: center 65%;
+    color: #F7F9FC;
+    border-radius: 0 0 var(--fc-radius-lg) var(--fc-radius-lg);
+    overflow: hidden;
+}
+
+.fc-band-photo {
+    background: var(--fc-band-photo);
+    background-size: cover;
+    background-position: center;
+}
+
+.fc-hero-ball {
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    right: -40px;
+    bottom: -50px;
+    opacity: .18;
+    transform: rotate(-12deg);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.fc-hero > .container {
+    position: relative;
+    z-index: 1;
+}
+
+.fc-hero .text-muted {
+    color: rgba(247, 249, 252, .72) !important;
+}
+
+.fc-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .16);
+    color: #F7F9FC;
+    border-radius: var(--fc-radius-pill);
+    padding: .4rem .9rem;
+    font-size: .8125rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+}
+
+.fc-gradient-text {
+    background: var(--fc-gradient-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.fc-stat-value {
+    font-family: var(--fc-font-heading);
+    font-weight: 800;
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    line-height: 1;
+}
+
+/* Icon badges used for feature highlights */
+.fc-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--fc-radius);
+    background: var(--fc-gradient-primary);
+    color: #fff;
+    font-size: 1.5rem;
+    box-shadow: var(--fc-shadow-sm);
+}
+
+.fc-icon-badge.fc-icon-badge-gold {
+    background: var(--fc-gradient-gold);
+    color: var(--fc-navy-900);
+}
+
+/* Fade/slide-in entrance animation */
+@keyframes fc-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fc-animate-in {
+    animation: fc-fade-up .6s ease both;
+}
+
+.fc-delay-1 { animation-delay: .08s; }
+.fc-delay-2 { animation-delay: .16s; }
+.fc-delay-3 { animation-delay: .24s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .fc-animate-in {
+        animation: none;
+    }
+}
+
+/* Dashboard topbar - must stay theme-aware, unlike the always-dark sidebar */
+.fc-dashboard-header {
+    background-color: var(--fc-ivory);
+    color: var(--bs-body-color);
+}
+
+/* Dashboard sidebar shell */
+.fc-sidebar {
+    background: linear-gradient(180deg, var(--fc-navy-800) 0%, var(--fc-blue-900) 100%);
+    color: var(--fc-ivory);
+    min-height: 100%;
+}
+
+.fc-sidebar .nav-link {
+    color: rgba(247, 249, 252, .78);
+    border-radius: var(--fc-radius);
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.fc-sidebar .nav-link.active,
+.fc-sidebar .nav-link:hover {
+    background: rgba(245, 179, 1, .14);
+    color: #fff;
+}
+
+.fc-sidebar .nav-link.active {
+    box-shadow: inset 3px 0 0 var(--fc-gold-500);
+}
+
+/* Player grid */
+.player-card .photo-wrap {
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: var(--fc-radius) var(--fc-radius) 0 0;
+}
+
+.player-card .photo-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .3s ease;
+}
+
+.player-card:hover .photo-wrap img {
+    transform: scale(1.05);
+}
+
+/* Horizontally scrollable stat strip on mobile */
+.stat-strip {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.stat-strip > * {
+    flex: 0 0 auto;
+}
+
+/* Dropzone */
+.fc-dropzone {
+    border: 2px dashed var(--fc-muted);
+    border-radius: var(--fc-radius);
+    background: rgba(27, 84, 214, .03);
+    transition: border-color .15s ease, background-color .15s ease;
+}
+
+.fc-dropzone.is-dragover {
+    border-color: var(--fc-gold-500);
+    background: rgba(245, 179, 1, .08);
+}
+
+/* Inbox mobile thread toggle */
+@media (max-width: 767.98px) {
+    .fc-inbox-list.thread-open {
+        display: none;
+    }
+
+    .fc-thread-pane {
+        display: none;
+    }
+
+    .fc-thread-pane.thread-open {
+        display: block;
+    }
+}
+
+/* Empty states */
+.fc-empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--fc-muted);
+}
+
+.fc-empty-state i {
+    font-size: 2.5rem;
+    color: var(--fc-muted);
+}
+
+/* No horizontal scroll safety net */
+img, video {
+    max-width: 100%;
+    height: auto;
+}
+
+/* RTL (Arabic) overrides - Bootstrap's own RTL build handles most of the
+   layout automatically; these are the few spots with hardcoded directions. */
+[dir="rtl"] .navbar .nav-link::after {
+    transform-origin: right;
+}
+
+[dir="rtl"] .fc-hero-ball {
+    right: auto;
+    left: -40px;
+    transform: rotate(12deg) scaleX(-1);
+}
+
+[dir="rtl"] .fc-icon-badge i,
+[dir="rtl"] .bi-arrow-right {
+    display: inline-block;
+    transform: scaleX(-1);
+}
