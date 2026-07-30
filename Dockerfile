@@ -20,6 +20,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" pdo_mysql gd zip \
     && a2enmod rewrite \
+    # This base image ships both mpm_event and mpm_prefork enabled, which
+    # Apache refuses to start with ("More than one MPM loaded") - mod_php
+    # requires the (non-threaded) prefork MPM specifically, so disable event.
+    && a2dismod mpm_event \
+    && a2enmod mpm_prefork \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
