@@ -1,5 +1,18 @@
 # SportBridge production image for Railway.
-# php:8.2-apache matches composer.json's "php": "^8.2" requirement.
+
+# Stage 1: compile Vite assets in a real Node image - far more reliable than
+# installing Node.js on top of a Debian PHP image via a curl|bash script
+# (that approach previously failed the Railway build: curl wasn't even
+# installed in the base image, so the install command failed immediately).
+FROM node:20-slim AS assets
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY vite.config.js ./
+COPY resources resources
+RUN npm run build
+
+# Stage 2: the actual app. php:8.2-apache matches composer.json's "php": "^8.2".
 FROM php:8.2-apache AS app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -22,15 +35,8 @@ COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-interaction --prefer-dist --no-autoloader
 
 COPY . .
+COPY --from=assets /app/public/build public/build
 RUN composer dump-autoload --optimize --no-dev
-
-# Built by Netlify too (see netlify.toml) - built here as a same-origin
-# fallback so the app still renders correctly if ASSET_URL isn't set.
-RUN if [ -f package.json ]; then \
-        curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-        && apt-get install -y --no-install-recommends nodejs \
-        && npm ci && npm run build && npm cache clean --force; \
-    fi
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
