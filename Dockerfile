@@ -20,11 +20,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" pdo_mysql gd zip \
     && a2enmod rewrite \
-    # This base image ships both mpm_event and mpm_prefork enabled, which
-    # Apache refuses to start with ("More than one MPM loaded") - mod_php
-    # requires the (non-threaded) prefork MPM specifically, so disable event.
-    && a2dismod mpm_event \
+    # This base image ships more than one MPM enabled, which Apache refuses to
+    # start with ("More than one MPM loaded") - mod_php requires the
+    # (non-threaded) prefork MPM specifically. `a2dismod mpm_event` alone
+    # wasn't enough (still failed at runtime), so this forcibly removes every
+    # MPM's enabled symlink - whichever ones actually exist, no assumptions -
+    # before enabling only prefork, then fails the BUILD (not just the
+    # container at runtime) if the config is still broken.
+    && rm -f /etc/apache2/mods-enabled/mpm_*.load /etc/apache2/mods-enabled/mpm_*.conf \
     && a2enmod mpm_prefork \
+    && apache2ctl configtest \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
