@@ -16,7 +16,18 @@ if [ ! -f /var/www/html/.env ]; then
 fi
 
 php artisan config:clear
-php artisan migrate --force
+
+# Deliberately non-fatal: Laravel's /up health route (see railway.json's
+# healthcheckPath) never touches the database, so a broken DB_* connection
+# should not prevent Apache from starting and answering the healthcheck -
+# it should surface as a normal error on DB-backed pages instead, visible
+# in `php artisan logs`/Railway's runtime logs, not as an opaque container
+# crash-loop with no way to see why. Set DB_* correctly in Railway's
+# Variables tab (see DEPLOYMENT.md) and redeploy to clear this warning.
+if ! php artisan migrate --force; then
+    echo "WARNING: migrations failed - check DB_* environment variables. Continuing to start Apache so the app (and its real error) is still reachable." >&2
+fi
+
 php artisan storage:link || true
 php artisan config:cache
 php artisan route:cache
