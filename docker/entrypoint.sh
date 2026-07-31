@@ -10,6 +10,17 @@ set -e
 sed -ri "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf
 sed -ri "s/:80>/:${PORT}>/" /etc/apache2/sites-available/*.conf
 
+# Debug: the build's own `apache2ctl configtest` passes (see Dockerfile), yet
+# "More than one MPM loaded" still occurs at container start on Railway -
+# something differs between build-time and runtime state. Print the actual
+# runtime mods-enabled contents and `apache2ctl -M` output to the deploy logs
+# so the next failure shows exactly what's loaded instead of another guess.
+echo "--- DEBUG: mods-enabled mpm files ---"
+ls -la /etc/apache2/mods-enabled/ | grep -i mpm || echo "(no mpm files found)"
+echo "--- DEBUG: apache2ctl -M ---"
+apache2ctl -M 2>&1 || true
+echo "--- DEBUG: PORT=${PORT} ---"
+
 # APP_KEY, DB_* etc. come from Railway's environment variables (see DEPLOYMENT.md).
 if [ ! -f /var/www/html/.env ]; then
     cp /var/www/html/.env.example /var/www/html/.env
