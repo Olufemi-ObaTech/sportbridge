@@ -10,16 +10,21 @@ set -e
 sed -ri "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf
 sed -ri "s/:80>/:${PORT}>/" /etc/apache2/sites-available/*.conf
 
-# Debug: the build's own `apache2ctl configtest` passes (see Dockerfile), yet
-# "More than one MPM loaded" still occurs at container start on Railway -
-# something differs between build-time and runtime state. Print the actual
-# runtime mods-enabled contents and `apache2ctl -M` output to the deploy logs
-# so the next failure shows exactly what's loaded instead of another guess.
-echo "--- DEBUG: mods-enabled mpm files ---"
+# Belt-and-suspenders: the Dockerfile's own build-time fix verifiably
+# leaves the image with only mpm_prefork enabled (confirmed via its build
+# log output), yet mpm_event.load/.conf were still observed present at
+# actual container start on Railway - something between build completion
+# and this script running reintroduces it, cause still unconfirmed.
+# Re-applying the same cleanup here, immediately before Apache starts,
+# guarantees correctness regardless of what's happening in between.
+echo "--- mods-enabled mpm state on container start (before cleanup) ---"
 ls -la /etc/apache2/mods-enabled/ | grep -i mpm || echo "(no mpm files found)"
-echo "--- DEBUG: apache2ctl -M ---"
-apache2ctl -M 2>&1 || true
-echo "--- DEBUG: PORT=${PORT} ---"
+rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_event.conf \
+      /etc/apache2/mods-enabled/mpm_worker.load /etc/apache2/mods-enabled/mpm_worker.conf
+a2enmod mpm_prefork >/dev/null
+echo "--- mods-enabled mpm state on container start (after cleanup) ---"
+ls -la /etc/apache2/mods-enabled/ | grep -i mpm
+apache2ctl configtest
 
 # APP_KEY, DB_* etc. come from Railway's environment variables (see DEPLOYMENT.md).
 if [ ! -f /var/www/html/.env ]; then
