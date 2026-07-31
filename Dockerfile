@@ -20,17 +20,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" pdo_mysql gd zip \
     && a2enmod rewrite \
-    # This base image ships more than one MPM enabled, which Apache refuses to
-    # start with ("More than one MPM loaded") - mod_php requires the
-    # (non-threaded) prefork MPM specifically. `a2dismod mpm_event` alone
-    # wasn't enough (still failed at runtime), so this forcibly removes every
-    # MPM's enabled symlink - whichever ones actually exist, no assumptions -
-    # before enabling only prefork, then fails the BUILD (not just the
-    # container at runtime) if the config is still broken.
-    && rm -f /etc/apache2/mods-enabled/mpm_*.load /etc/apache2/mods-enabled/mpm_*.conf \
-    && a2enmod mpm_prefork \
-    && apache2ctl configtest \
     && rm -rf /var/lib/apt/lists/*
+
+# Isolated into its own layer (previously bundled into the RUN above, which
+# turned out to be unreliable for reasons still unclear - runtime logs kept
+# showing mpm_event.load/.conf present alongside mpm_prefork.load/.conf
+# despite this exact rm+enmod appearing to succeed and its own configtest
+# passing at build time). Explicit paths (no globs), unconditional before/
+# after output printed straight to the build log, and a hard configtest
+# gate so this is fully verifiable from Build Logs on the next attempt.
+RUN echo "MPM state BEFORE fix:" \
+    && (ls -la /etc/apache2/mods-enabled/ | grep -i mpm || echo "(none found)") \
+    && rm -f /etc/apache2/mods-enabled/mpm_event.load \
+             /etc/apache2/mods-enabled/mpm_event.conf \
+             /etc/apache2/mods-enabled/mpm_worker.load \
+             /etc/apache2/mods-enabled/mpm_worker.conf \
+             /etc/apache2/mods-enabled/mpm_prefork.load \
+             /etc/apache2/mods-enabled/mpm_prefork.conf \
+    && a2enmod mpm_prefork \
+    && echo "MPM state AFTER fix:" \
+    && ls -la /etc/apache2/mods-enabled/ | grep -i mpm \
+    && apache2ctl configtest
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
