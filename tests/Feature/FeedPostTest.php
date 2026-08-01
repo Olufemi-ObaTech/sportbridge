@@ -134,4 +134,48 @@ class FeedPostTest extends TestCase
 
         $this->assertSame(0, FeedPost::count());
     }
+
+    /**
+     * The create-post form, FeedPostPolicy::create, and the route itself all
+     * gate purely on isActive() - no role check anywhere - so every role
+     * should be able to upload media and host live/training sessions. This
+     * proves it explicitly rather than relying on Player-only coverage above.
+     */
+    public function test_every_role_can_upload_media_and_host_live_and_training_sessions(): void
+    {
+        Storage::fake('public');
+
+        foreach ([User::ROLE_ACADEMY, User::ROLE_AGENT, User::ROLE_COACH, User::ROLE_PLAYER] as $role) {
+            $user = User::factory()->create(['role' => $role, 'status' => User::STATUS_ACTIVE]);
+
+            $this->actingAs($user)->post(route('feed.store'), [
+                'content' => "{$role} sharing a photo and video",
+                'media' => [
+                    UploadedFile::fake()->image('photo.jpg'),
+                    UploadedFile::fake()->create('clip.mp4', 3000, 'video/mp4'),
+                ],
+            ])->assertRedirect();
+
+            $mediaPost = FeedPost::where('author_id', $user->id)->latest()->firstOrFail();
+            $this->assertCount(2, $mediaPost->media_urls);
+
+            $this->actingAs($user)->post(route('feed.store'), [
+                'content' => "{$role} hosting live training",
+                'is_training' => '1',
+                'training_link' => 'https://meet.google.com/abc-defg-hij',
+            ])->assertRedirect();
+
+            $trainingPost = FeedPost::where('author_id', $user->id)->where('is_training', true)->latest()->firstOrFail();
+            $this->assertSame('https://meet.google.com/abc-defg-hij', $trainingPost->training_link);
+
+            $this->actingAs($user)->post(route('feed.store'), [
+                'content' => "{$role} going live",
+                'is_live' => '1',
+                'live_link' => 'https://youtube.com/live/xyz',
+            ])->assertRedirect();
+
+            $livePost = FeedPost::where('author_id', $user->id)->where('is_live', true)->latest()->firstOrFail();
+            $this->assertSame('https://youtube.com/live/xyz', $livePost->live_link);
+        }
+    }
 }
