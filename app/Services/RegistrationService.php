@@ -126,6 +126,7 @@ class RegistrationService
                 // so a real verification email can never reach anyone - gating on it
                 // would permanently lock every user out. Revisit once real email is set up.
                 'email_verified_at' => now(),
+                'referred_by' => $this->resolveReferrer($data['ref'] ?? null),
             ]);
 
             $playerModel = $data['sport'] === Player::SPORT_BASKETBALL
@@ -174,7 +175,23 @@ class RegistrationService
             // so a real verification email can never reach anyone - gating on it
             // would permanently lock every user out. Revisit once real email is set up.
             'email_verified_at' => now(),
+            'referred_by' => $this->resolveReferrer($data['ref'] ?? null),
         ]);
+    }
+
+    /**
+     * The invite link carries the referrer's username (?ref=), not their id,
+     * since a username is what a user actually sees/shares - resolved here
+     * rather than trusted as-is so an invalid/stale ?ref= just silently
+     * results in no referrer instead of a validation error blocking signup.
+     */
+    protected function resolveReferrer(?string $username): ?int
+    {
+        if (! $username) {
+            return null;
+        }
+
+        return User::where('username', $username)->where('status', User::STATUS_ACTIVE)->value('id');
     }
 
     protected function uniqueUsername(string $seed): string

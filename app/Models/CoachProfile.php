@@ -63,6 +63,7 @@ class CoachProfile extends Model
         'nationality',
         'cv_url',
         'about',
+        'achievements',
         'cover_image_url',
         'photo_url',
         'open_to_work',

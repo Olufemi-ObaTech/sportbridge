@@ -21,7 +21,10 @@ class RegisteredAgentController extends Controller
 
     public function store(RegisterAgentRequest $request, string $sport): RedirectResponse
     {
-        $user = $this->registration->registerAgent(array_merge($request->validated(), ['sport' => $sport]));
+        $user = $this->registration->registerAgent(array_merge($request->validated(), [
+            'sport' => $sport,
+            'ref' => $request->input('ref'),
+        ]));
 
         event(new Registered($user));
 

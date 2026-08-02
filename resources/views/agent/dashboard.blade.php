@@ -79,6 +79,10 @@
                 </div>
             </div>
 
+            <div class="mb-4">
+                <x-invite-card />
+            </div>
+
             <div class="card">
                 <div class="card-body">
                     <h2 class="h6">{{ __('Supporting Documents') }}</h2>

@@ -21,6 +21,7 @@ class UpdateAcademyProfileRequest extends FormRequest
             'phone' => ['required', 'string', 'max:30'],
             'year_founded' => ['nullable', 'integer', 'min:1850', 'max:'.date('Y')],
             'about' => ['nullable', 'string', 'max:20000'],
+            'achievements' => ['nullable', 'string', 'max:5000'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:4096'],
             'leagues' => ['nullable', 'string', 'max:2000'],

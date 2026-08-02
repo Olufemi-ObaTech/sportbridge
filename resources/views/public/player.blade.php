@@ -90,7 +90,13 @@
             </ul>
 
             <div class="tab-content d-none d-md-block border border-top-0 p-3 rounded-bottom bg-white">
-                <div class="tab-pane fade show active" id="p-tab-bio">{{ $player->bio ?: __('No bio provided.') }}</div>
+                <div class="tab-pane fade show active" id="p-tab-bio">
+                    {{ $player->bio ?: __('No bio provided.') }}
+                    @if ($player->achievements)
+                        <h3 class="h6 mt-3">{{ __('Achievements') }}</h3>
+                        <p class="mb-0" style="white-space: pre-line;">{{ $player->achievements }}</p>
+                    @endif
+                </div>
                 <div class="tab-pane fade" id="p-tab-media">@include('public.partials.player-media')</div>
                 @if ($canViewPrivateDetails && $player->academy)
                     <div class="tab-pane fade" id="p-tab-contact">@include('public.partials.player-contact')</div>
@@ -103,7 +109,13 @@
                         <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#pub-acc-bio">{{ __('Bio') }}</button>
                     </h2>
                     <div id="pub-acc-bio" class="accordion-collapse collapse show" data-bs-parent="#playerPublicAccordion">
-                        <div class="accordion-body">{{ $player->bio ?: __('No bio provided.') }}</div>
+                        <div class="accordion-body">
+                            {{ $player->bio ?: __('No bio provided.') }}
+                            @if ($player->achievements)
+                                <h3 class="h6 mt-3">{{ __('Achievements') }}</h3>
+                                <p class="mb-0" style="white-space: pre-line;">{{ $player->achievements }}</p>
+                            @endif
+                        </div>
                     </div>
                 </div>
                 <div class="accordion-item">

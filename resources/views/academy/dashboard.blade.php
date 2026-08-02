@@ -91,13 +91,15 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card mb-4">
                 <div class="card-body">
                     <h2 class="h6">{{ __('Messages') }}</h2>
                     <p class="mb-2">{{ __(':count unread', ['count' => $unreadMessages]) }}</p>
                     <a href="{{ route('inbox.index') }}" class="btn btn-sm btn-outline-primary">{{ __('Go to inbox') }}</a>
                 </div>
             </div>
+
+            <x-invite-card />
         </div>
     </div>
 </x-dashboard-layout>

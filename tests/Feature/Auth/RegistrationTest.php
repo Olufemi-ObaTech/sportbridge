@@ -187,4 +187,47 @@ class RegistrationTest extends TestCase
         $response->assertSessionHasErrors('license_document');
         $this->assertGuest();
     }
+
+    public function test_registering_via_an_invite_link_records_the_referrer(): void
+    {
+        $referrer = User::factory()->create(['username' => 'inviter-jane', 'status' => User::STATUS_ACTIVE]);
+
+        $response = $this->post('/register/player/football', [
+            'ref' => 'inviter-jane',
+            'name' => 'Invited Player',
+            'email' => 'invited@example.com',
+            'password' => 'Str0ng!Passw0rd2026',
+            'password_confirmation' => 'Str0ng!Passw0rd2026',
+            'dob' => now()->subYears(18)->format('Y-m-d'),
+            'nationality' => 'Nigeria',
+            'position' => 'ST',
+            'foot' => 'right',
+        ]);
+
+        $response->assertRedirect(route('dashboard', absolute: false));
+
+        $newUser = User::where('email', 'invited@example.com')->firstOrFail();
+        $this->assertSame($referrer->id, $newUser->referred_by);
+        $this->assertSame(1, $referrer->referrals()->count());
+    }
+
+    public function test_an_invalid_ref_does_not_block_registration(): void
+    {
+        $response = $this->post('/register/player/football', [
+            'ref' => 'no-such-username',
+            'name' => 'Unreferred Player',
+            'email' => 'unreferred@example.com',
+            'password' => 'Str0ng!Passw0rd2026',
+            'password_confirmation' => 'Str0ng!Passw0rd2026',
+            'dob' => now()->subYears(18)->format('Y-m-d'),
+            'nationality' => 'Nigeria',
+            'position' => 'ST',
+            'foot' => 'right',
+        ]);
+
+        $response->assertRedirect(route('dashboard', absolute: false));
+
+        $newUser = User::where('email', 'unreferred@example.com')->firstOrFail();
+        $this->assertNull($newUser->referred_by);
+    }
 }

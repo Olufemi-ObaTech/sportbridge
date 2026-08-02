@@ -12,6 +12,7 @@
 
     <form method="POST" action="{{ route('register.player', $sport) }}" enctype="multipart/form-data">
         @csrf
+        <input type="hidden" name="ref" value="{{ request('ref') }}">
 
         <div class="row g-3">
             <div class="col-12 col-md-6">

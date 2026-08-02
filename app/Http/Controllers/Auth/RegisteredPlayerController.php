@@ -21,7 +21,10 @@ class RegisteredPlayerController extends Controller
 
     public function store(RegisterPlayerRequest $request, string $sport): RedirectResponse
     {
-        $user = $this->registration->registerPlayer(array_merge($request->validated(), ['sport' => $sport]));
+        $user = $this->registration->registerPlayer(array_merge($request->validated(), [
+            'sport' => $sport,
+            'ref' => $request->input('ref'),
+        ]));
 
         event(new Registered($user));
 

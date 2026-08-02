@@ -77,6 +77,12 @@
                             <div class="col-12">
                                 <x-wysiwyg-editor name="about" :value="$agent->about" label="About you" />
                             </div>
+
+                            <div class="col-12">
+                                <x-input-label for="achievements" :value="__('Achievements (optional)')" />
+                                <textarea id="achievements" name="achievements" rows="3" class="form-control" placeholder="{{ __('e.g. Placed 20+ players in professional clubs since 2020') }}">{{ old('achievements', $agent->achievements) }}</textarea>
+                                <x-input-error :messages="$errors->get('achievements')" />
+                            </div>
                         </div>
 
                         <div class="mt-4">

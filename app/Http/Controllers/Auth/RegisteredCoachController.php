@@ -21,7 +21,10 @@ class RegisteredCoachController extends Controller
 
     public function store(RegisterCoachRequest $request, string $sport): RedirectResponse
     {
-        $user = $this->registration->registerCoach(array_merge($request->validated(), ['sport' => $sport]));
+        $user = $this->registration->registerCoach(array_merge($request->validated(), [
+            'sport' => $sport,
+            'ref' => $request->input('ref'),
+        ]));
 
         event(new Registered($user));
 

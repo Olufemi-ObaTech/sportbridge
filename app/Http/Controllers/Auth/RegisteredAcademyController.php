@@ -21,7 +21,10 @@ class RegisteredAcademyController extends Controller
 
     public function store(RegisterAcademyRequest $request, string $sport): RedirectResponse
     {
-        $user = $this->registration->registerAcademy(array_merge($request->validated(), ['sports' => [$sport]]));
+        $user = $this->registration->registerAcademy(array_merge($request->validated(), [
+            'sports' => [$sport],
+            'ref' => $request->input('ref'),
+        ]));
 
         event(new Registered($user));
 

@@ -32,6 +32,7 @@ class AgentProfile extends Model
         'regions',
         'id_doc_url',
         'about',
+        'achievements',
         'cover_image_url',
         'photo_url',
         'verification_body',

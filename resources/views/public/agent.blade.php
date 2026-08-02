@@ -81,6 +81,15 @@
                 </div>
             @endif
 
+            @if ($agent->achievements)
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="h6"><i class="bi bi-trophy-fill text-warning me-1" aria-hidden="true"></i>{{ __('Achievements') }}</h2>
+                        <p class="mb-0" style="white-space: pre-line;">{{ $agent->achievements }}</p>
+                    </div>
+                </div>
+            @endif
+
             @if ($mediaPosts->isNotEmpty())
                 <x-media-gallery :posts="$mediaPosts" />
             @endif

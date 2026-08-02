@@ -29,6 +29,7 @@ class UpdateCoachProfileRequest extends FormRequest
             'nationality' => ['required', 'string', 'max:100'],
             'open_to_work' => ['nullable', 'boolean'],
             'about' => ['nullable', 'string', 'max:20000'],
+            'achievements' => ['nullable', 'string', 'max:5000'],
             'linkedin' => ['nullable', 'string', 'max:255'],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:4096'],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],

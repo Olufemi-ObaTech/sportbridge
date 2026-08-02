@@ -43,10 +43,10 @@
                     <h2 class="h6 mb-1">{{ $item['title'] }}</h2>
                     <p class="small text-muted mb-3">{{ $item['description'] }}</p>
                     <div class="d-flex gap-2 justify-content-center mt-auto">
-                        <a href="{{ route('register.'.$item['role'], 'football') }}" class="btn btn-outline-primary btn-sm flex-fill">
+                        <a href="{{ route('register.'.$item['role'], ['sport' => 'football'] + (request('ref') ? ['ref' => request('ref')] : [])) }}" class="btn btn-outline-primary btn-sm flex-fill">
                             <i class="bi bi-dribbble me-1" aria-hidden="true"></i>{{ __('Football') }}
                         </a>
-                        <a href="{{ route('register.'.$item['role'], 'basketball') }}" class="btn btn-outline-primary btn-sm flex-fill">
+                        <a href="{{ route('register.'.$item['role'], ['sport' => 'basketball'] + (request('ref') ? ['ref' => request('ref')] : [])) }}" class="btn btn-outline-primary btn-sm flex-fill">
                             <i class="bi bi-circle me-1" aria-hidden="true"></i>{{ __('Basketball') }}
                         </a>
                     </div>

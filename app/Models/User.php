@@ -8,6 +8,7 @@ use App\Models\Basketball\BasketballPlayer;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -61,6 +62,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'username',
         'profile_photo_path',
         'email_verified_at',
+        'referred_by',
     ];
 
     protected $hidden = [
@@ -106,6 +108,22 @@ class User extends Authenticatable implements MustVerifyEmail
     public function feedPosts(): HasMany
     {
         return $this->hasMany(FeedPost::class, 'author_id');
+    }
+
+    public function referredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'referred_by');
+    }
+
+    /**
+     * Every role can already refer others via their personalized invite
+     * link (see the invite-card component) - this counts who actually
+     * completed registration through it, shown as a lightweight social
+     * proof stat rather than tracking clicks.
+     */
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(User::class, 'referred_by');
     }
 
     public function sentConversations(): HasMany

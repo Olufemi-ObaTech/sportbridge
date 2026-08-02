@@ -108,6 +108,12 @@
                             <div class="col-12">
                                 <x-wysiwyg-editor name="about" :value="$coach->about" label="About you" />
                             </div>
+
+                            <div class="col-12">
+                                <x-input-label for="achievements" :value="__('Achievements / Honours (optional)')" />
+                                <textarea id="achievements" name="achievements" rows="3" class="form-control" placeholder="{{ __('e.g. Won Regional Championship 2023, promoted 3 clubs to top division') }}">{{ old('achievements', $coach->achievements) }}</textarea>
+                                <x-input-error :messages="$errors->get('achievements')" />
+                            </div>
                         </div>
 
                         <div class="mt-4">

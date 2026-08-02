@@ -20,6 +20,7 @@ class UpdateAgentProfileRequest extends FormRequest
             'regions' => ['required', 'array', 'min:1'],
             'regions.*' => ['string', 'max:100'],
             'about' => ['nullable', 'string', 'max:20000'],
+            'achievements' => ['nullable', 'string', 'max:5000'],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:4096'],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
             'verification_body' => ['nullable', 'string', 'max:255'],

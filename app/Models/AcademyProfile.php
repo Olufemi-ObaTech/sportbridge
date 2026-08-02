@@ -51,6 +51,7 @@ class AcademyProfile extends Model
         'logo_url',
         'cover_image_url',
         'about',
+        'achievements',
         'verified_badge',
         'leagues',
         'languages',
