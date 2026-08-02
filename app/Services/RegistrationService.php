@@ -122,6 +122,10 @@ class RegistrationService
                 'status' => User::STATUS_ACTIVE,
                 'username' => $this->uniqueUsername($data['name']),
                 'sport' => $data['sport'],
+                // No transactional mail provider is configured yet (MAIL_MAILER=log),
+                // so a real verification email can never reach anyone - gating on it
+                // would permanently lock every user out. Revisit once real email is set up.
+                'email_verified_at' => now(),
             ]);
 
             $playerModel = $data['sport'] === Player::SPORT_BASKETBALL
@@ -166,6 +170,10 @@ class RegistrationService
             'username' => $this->uniqueUsername($data['name'] ?? $data['club_name'] ?? $data['agency_name']),
             // Academies are multi-sport (see `sports` JSON) and have no single value here.
             'sport' => $data['sport'] ?? null,
+            // No transactional mail provider is configured yet (MAIL_MAILER=log),
+            // so a real verification email can never reach anyone - gating on it
+            // would permanently lock every user out. Revisit once real email is set up.
+            'email_verified_at' => now(),
         ]);
     }
 
