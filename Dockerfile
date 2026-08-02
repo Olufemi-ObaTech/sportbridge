@@ -16,11 +16,17 @@ RUN npm run build
 FROM php:8.2-apache AS app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git unzip libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libonig-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+        git unzip libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libwebp-dev libonig-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" pdo_mysql gd zip \
     && a2enmod rewrite \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    # ImageService converts every uploaded photo to WebP - without
+    # libwebp-dev + --with-webp, GD compiles fine but imagewebp() doesn't
+    # exist, so every photo upload platform-wide (registration, feed,
+    # profile photos) 500s at runtime instead of at build time. Verify here.
+    && php -r "exit(function_exists('imagewebp') ? 0 : 1);" \
+        || (echo "FATAL: GD compiled without WebP support" && exit 1)
 
 # Isolated into its own layer (previously bundled into the RUN above, which
 # turned out to be unreliable for reasons still unclear - runtime logs kept
