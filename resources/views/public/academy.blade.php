@@ -73,6 +73,12 @@
         </div>
     @endif
 
+    @if ($mediaPosts->isNotEmpty())
+        <div class="mb-4">
+            <x-media-gallery :posts="$mediaPosts" />
+        </div>
+    @endif
+
     <h2 class="h5 mb-3">{{ __('Featured Players') }}</h2>
 
     @if ($academy->players->isEmpty())

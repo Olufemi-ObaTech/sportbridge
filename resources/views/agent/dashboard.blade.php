@@ -51,6 +51,10 @@
                     @endforelse
                 </div>
             </div>
+
+            <div class="mt-4">
+                <x-media-gallery :posts="$myMediaPosts" :show-upload-link="true" />
+            </div>
         </div>
 
         <div class="col-12 col-lg-4">

@@ -63,6 +63,16 @@ class FeedPost extends Model
         return $query->where('is_pinned', true);
     }
 
+    /**
+     * Posts carrying at least one uploaded photo/video - used to build a
+     * "my videos & photos" gallery from existing feed posts, rather than a
+     * separate media table, since every role can already upload media here.
+     */
+    public function scopeHasMedia($query)
+    {
+        return $query->whereNotNull('media_urls')->whereJsonLength('media_urls', '>', 0);
+    }
+
     public function scopePublicVisibility($query)
     {
         return $query->where('visibility', 'public');

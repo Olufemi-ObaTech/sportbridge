@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FeedPost;
 use App\Models\Message;
 use App\Models\User;
 use App\Services\ProfileCompletenessService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class DashboardController extends Controller
 {
@@ -67,6 +69,7 @@ class DashboardController extends Controller
             'unreadMessages' => $this->unreadMessageCount($user),
             'recentJobPosts' => $recentJobPosts,
             'recentPlayers' => $recentPlayers,
+            'myMediaPosts' => $this->myMediaPosts($user),
         ]);
     }
 
@@ -87,6 +90,7 @@ class DashboardController extends Controller
             'completeness' => $this->completeness->forAgent($agent),
             'unreadMessages' => $this->unreadMessageCount($user),
             'watchedPlayers' => $agent->watchedPlayers()->with('academy')->latest('watchlists.created_at')->take(5)->get(),
+            'myMediaPosts' => $this->myMediaPosts($user),
         ]);
     }
 
@@ -106,6 +110,7 @@ class DashboardController extends Controller
             'completeness' => $this->completeness->forCoach($coach),
             'unreadMessages' => $this->unreadMessageCount($user),
             'recentApplications' => $coach->jobApplications()->with('jobPost')->latest()->take(5)->get(),
+            'myMediaPosts' => $this->myMediaPosts($user),
         ]);
     }
 
@@ -124,7 +129,19 @@ class DashboardController extends Controller
             'stats' => $stats,
             'completeness' => $this->completeness->forPlayer($player),
             'unreadMessages' => $this->unreadMessageCount($user),
+            'myMediaPosts' => $this->myMediaPosts($user),
         ]);
+    }
+
+    /**
+     * Every role can already upload photos/video via the Community Feed
+     * (FeedPostPolicy::create has no role check) - this builds a gallery of
+     * a user's own uploads from those posts rather than a separate media
+     * table, so "my videos & photos" works identically for all four roles.
+     */
+    protected function myMediaPosts(User $user): Collection
+    {
+        return FeedPost::where('author_id', $user->id)->hasMedia()->latest()->take(12)->get();
     }
 
     protected function unreadMessageCount(User $user): int

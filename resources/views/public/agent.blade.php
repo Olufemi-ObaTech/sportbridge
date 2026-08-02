@@ -76,9 +76,13 @@
     <div class="row g-4">
         <div class="col-12 col-lg-8">
             @if ($agent->about)
-                <div class="card">
+                <div class="card mb-4">
                     <div class="card-body">{!! $agent->about !!}</div>
                 </div>
+            @endif
+
+            @if ($mediaPosts->isNotEmpty())
+                <x-media-gallery :posts="$mediaPosts" />
             @endif
         </div>
         <div class="col-12 col-lg-4">

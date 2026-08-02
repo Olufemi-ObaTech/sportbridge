@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademyProfile;
+use App\Models\FeedPost;
 use App\Models\Player;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class PublicProfileController extends Controller
 {
@@ -26,8 +28,9 @@ class PublicProfileController extends Controller
         );
 
         $pinnedPost = $academy->user->feedPosts()->pinned()->latest()->first();
+        $mediaPosts = $this->mediaPostsFor($academy->user->id);
 
-        return view('public.academy', ['academy' => $academy, 'pinnedPost' => $pinnedPost]);
+        return view('public.academy', ['academy' => $academy, 'pinnedPost' => $pinnedPost, 'mediaPosts' => $mediaPosts]);
     }
 
     public function agent(string $username): View
@@ -38,7 +41,7 @@ class PublicProfileController extends Controller
             ->withCount('ratings')
             ->firstOrFail();
 
-        return view('public.agent', ['agent' => $agent, 'user' => $user]);
+        return view('public.agent', ['agent' => $agent, 'user' => $user, 'mediaPosts' => $this->mediaPostsFor($user->id)]);
     }
 
     public function coach(string $username): View
@@ -46,7 +49,7 @@ class PublicProfileController extends Controller
         $user = User::where('username', $username)->where('role', User::ROLE_COACH)->active()->firstOrFail();
         $coach = $user->coachProfile;
 
-        return view('public.coach', ['coach' => $coach, 'user' => $user]);
+        return view('public.coach', ['coach' => $coach, 'user' => $user, 'mediaPosts' => $this->mediaPostsFor($user->id)]);
     }
 
     public function player(Request $request, Player $player): View
@@ -61,6 +64,17 @@ class PublicProfileController extends Controller
         return view('public.player', [
             'player' => $player,
             'canViewPrivateDetails' => $canViewPrivateDetails,
+            'mediaPosts' => $player->user_id ? $this->mediaPostsFor($player->user_id) : collect(),
         ]);
+    }
+
+    /**
+     * Every role can already upload photos/video via the Community Feed -
+     * this surfaces a user's own uploads as a public gallery on their
+     * profile, built from those posts rather than a separate media table.
+     */
+    protected function mediaPostsFor(int $userId): Collection
+    {
+        return FeedPost::where('author_id', $userId)->publicVisibility()->hasMedia()->latest()->take(12)->get();
     }
 }
