@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ in_array(app()->getLocale(), \App\Http\Middleware\SetLocale::RTL, true) ? 'rtl' : 'ltr' }}" data-bs-theme="light">
 <head>
-    @include('layouts.partials.head')
+    @include('layouts.partials.head', ['title' => $title ? $title.' - '.config('app.name') : null])
 </head>
 <body class="d-flex flex-column min-vh-100" style="background: var(--fc-gradient-hero);">
     <main class="flex-grow-1 d-flex align-items-center justify-content-center py-5 position-relative">

@@ -1,5 +1,8 @@
-<x-guest-layout max-width="720px">
+<x-guest-layout max-width="720px" :title="$sport === 'basketball' ? __('Register Your Basketball Academy or Club - Free') : __('Register Your Football Academy or Club - Free')">
     @php $isBasketball = $sport === 'basketball'; @endphp
+    @push('meta')
+        <meta name="description" content="{{ $isBasketball ? __('List your basketball academy or club on SportBridge for free. Showcase your player roster and post coaching job openings to a global audience.') : __('List your football academy or club on SportBridge for free. Showcase your player roster and post coaching job openings to a global audience.') }}">
+    @endpush
 
     <h1 class="h4 mb-1">{{ $isBasketball ? __('Register your Basketball Academy / Club') : __('Register your Football Academy / Club') }}</h1>
     <p class="text-muted mb-4">{{ __('Showcase your players and post job openings.') }}</p>

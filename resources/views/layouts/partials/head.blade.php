@@ -5,6 +5,7 @@
 <title>{{ $title ?? config('app.name', 'SportBridge') }}</title>
 
 <meta name="description" content="{{ config('app.name') }} - connecting players, clubs, academies, agents, scouts and coaches across football and basketball, worldwide.">
+<link rel="canonical" href="{{ url()->current() }}">
 @stack('meta')
 
 <link rel="icon" type="image/svg+xml" href="{{ asset('img/logo-mark.svg') }}">

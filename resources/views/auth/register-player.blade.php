@@ -1,8 +1,11 @@
-<x-guest-layout max-width="640px">
+<x-guest-layout max-width="640px" :title="$sport === 'basketball' ? __('Create Your Free Basketball Player Profile') : __('Create Your Free Football Player Profile')">
     @php
         $isBasketball = $sport === 'basketball';
         $positions = \App\Models\Player::positionsFor($sport);
     @endphp
+    @push('meta')
+        <meta name="description" content="{{ $isBasketball ? __('Create a free basketball player profile on SportBridge. Get discovered by academies, clubs, agents and scouts worldwide - no fees, ever.') : __('Create a free football player profile on SportBridge. Get discovered by academies, clubs, agents and scouts worldwide - no fees, ever.') }}">
+    @endpush
 
     <h1 class="h4 mb-1">{{ $isBasketball ? __('Create your Basketball Player Profile') : __('Create your Football Player Profile') }}</h1>
     <p class="text-muted mb-4">{{ __('Free forever. Get discovered by academies, clubs, agents and scouts worldwide.') }}</p>

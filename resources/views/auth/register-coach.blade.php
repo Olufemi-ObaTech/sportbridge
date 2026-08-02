@@ -1,9 +1,12 @@
-<x-guest-layout max-width="720px">
+<x-guest-layout max-width="720px" :title="$sport === 'basketball' ? __('Register as a Basketball Coach or Manager - Free') : __('Register as a Football Coach or Manager - Free')">
     @php
         $isBasketball = $sport === 'basketball';
         $roles = \App\Models\CoachProfile::rolesFor($sport);
         $badges = \App\Models\CoachProfile::badgesFor($sport);
     @endphp
+    @push('meta')
+        <meta name="description" content="{{ $isBasketball ? __('Create a free basketball coaching profile on SportBridge. Browse and apply to coaching vacancies at academies and clubs worldwide.') : __('Create a free football coaching profile on SportBridge. Browse and apply to coaching vacancies at academies and clubs worldwide.') }}">
+    @endpush
 
     <h1 class="h4 mb-1">{{ $isBasketball ? __('Register as a Basketball Coach / Manager') : __('Register as a Football Coach / Manager') }}</h1>
     <p class="text-muted mb-4">{{ __('Find your next role at a club or academy.') }}</p>

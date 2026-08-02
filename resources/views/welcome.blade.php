@@ -1,3 +1,29 @@
+@push('meta')
+    <script type="application/ld+json" nonce="{{ request()->attributes->get('csp_nonce') }}">
+        {!! json_encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => config('app.name'),
+            'url' => route('home'),
+            'potentialAction' => [
+                '@type' => 'SearchAction',
+                'target' => route('players.index').'?q={search_term_string}',
+                'query-input' => 'required name=search_term_string',
+            ],
+        ]) !!}
+    </script>
+    <script type="application/ld+json" nonce="{{ request()->attributes->get('csp_nonce') }}">
+        {!! json_encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'Organization',
+            'name' => config('app.name'),
+            'url' => route('home'),
+            'logo' => asset('img/logo.svg'),
+            'description' => 'Connecting players, academies, agents and coaches across football and basketball, worldwide.',
+        ]) !!}
+    </script>
+@endpush
+
 <x-app-layout>
     @php $heroSport = session('sport', \App\Http\Middleware\SetSport::DEFAULT); @endphp
     <div class="fc-hero px-3 px-md-5 py-5 mb-5">

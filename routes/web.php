@@ -30,6 +30,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SportController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\WatchlistController;
@@ -42,6 +43,26 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::view('/', 'welcome')->name('home');
+
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+
+// Dynamic (not a static public/robots.txt file) so the Sitemap: line always
+// matches the real APP_URL instead of going stale if the domain changes.
+Route::get('/robots.txt', function () {
+    // Registration/login pages stay crawlable on purpose - they're exactly
+    // the landing pages worth ranking for ("register as a football agent"
+    // etc.). Only genuinely private or purely functional (no content of
+    // their own) paths are blocked.
+    $disallow = ['/dashboard', '/inbox', '/admin', '/password', '/verify-email'];
+
+    $lines = array_merge(
+        ['User-agent: *'],
+        array_map(fn ($path) => "Disallow: {$path}", $disallow),
+        ['', 'Sitemap: '.route('sitemap')]
+    );
+
+    return response(implode("\n", $lines), 200, ['Content-Type' => 'text/plain']);
+})->name('robots');
 
 Route::get('/locale/{locale}', [LocaleController::class, 'update'])
     ->middleware('throttle:60,1')
