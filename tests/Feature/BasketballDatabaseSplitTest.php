@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AcademyProfile;
+use App\Models\AgentDocument;
 use App\Models\AgentProfile;
 use App\Models\Basketball\BasketballAgentProfile;
 use App\Models\Basketball\BasketballCoachProfile;
@@ -158,6 +159,31 @@ class BasketballDatabaseSplitTest extends TestCase
         $this->actingAs($coachUser)->post(route('coach.jobs.apply', $footballJobPost), [
             'cover_letter' => 'I would like to apply.',
         ])->assertForbidden();
+    }
+
+    /**
+     * Regression test: AgentDocument didn't declare its own connection, so
+     * Eloquent's newRelatedInstance() auto-inherited whatever connection the
+     * calling AgentProfile happened to have - for a basketball agent, that's
+     * mysql_basketball, where agent_documents doesn't exist (it lives
+     * centrally, like agent_ratings/agent_recommendations). 500'd on every
+     * basketball agent's dashboard until AgentDocument got the same
+     * getConnectionName() override AgentRating already had.
+     */
+    public function test_basketball_agents_dashboard_loads_documents_from_the_central_database(): void
+    {
+        [$agentUser, $agentProfile] = $this->makeBasketballAgent();
+
+        AgentDocument::create([
+            'agent_profile_id' => $agentProfile->id,
+            'sport' => 'basketball',
+            'title' => 'FIBA License Certificate',
+            'file_url' => 'seed/doc-test.pdf',
+        ]);
+
+        $this->actingAs($agentUser)->get(route('agent.dashboard'))
+            ->assertOk()
+            ->assertSee('FIBA License Certificate');
     }
 
     public function test_resolve_route_binding_reaches_a_real_basketball_team_by_id(): void
