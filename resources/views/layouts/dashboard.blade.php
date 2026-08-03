@@ -33,6 +33,7 @@
                     </div>
 
                     <div class="d-flex align-items-center gap-2">
+                        <x-notification-bell />
                         <x-language-switcher />
                         <button type="button" class="btn btn-link text-body" data-theme-toggle aria-pressed="false" aria-label="{{ __('Toggle dark mode') }}">
                             <i class="bi bi-moon-stars" aria-hidden="true"></i>

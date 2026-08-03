@@ -40,6 +40,9 @@
                         <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">{{ __('Dashboard') }}</x-nav-link>
                     </li>
                     <li class="nav-item">
+                        <x-notification-bell variant="dark" />
+                    </li>
+                    <li class="nav-item">
                         <x-dropdown align="end" width="48">
                             <x-slot name="trigger">
                                 <span class="nav-link d-inline-flex align-items-center gap-1">

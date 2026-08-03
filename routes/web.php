@@ -23,6 +23,7 @@ use App\Http\Controllers\LikeController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerImportController;
 use App\Http\Controllers\PlayerProfileController;
@@ -106,6 +107,10 @@ Route::middleware(['auth', 'verified', 'status'])->group(function () {
     Route::post('/feed/{feed_post}/like', [LikeController::class, 'toggle'])->name('feed.like');
     Route::post('/feed/{feed_post}/comments', [CommentController::class, 'store'])->middleware('throttle:comment')->name('feed.comments.store');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
 
     // Job posts for agents/coaches who don't have an academy profile (mirrors academy.jobs.*)
     Route::get('/my-jobs', [JobController::class, 'mineIndex'])->name('jobs.mine.index');
