@@ -25,6 +25,12 @@
                 </form>
             @endif
         </div>
+        @if (config('services.webpush.public_key'))
+            <div data-push-prompt class="d-flex justify-content-between align-items-center gap-2 px-3 py-2 border-bottom bg-body-tertiary">
+                <span class="small text-muted">{{ __('Get notified even when the tab is closed.') }}</span>
+                <button type="button" data-enable-push class="btn btn-primary btn-sm text-nowrap">{{ __('Enable') }}</button>
+            </div>
+        @endif
         <div style="max-height: 360px; overflow-y: auto;">
             @forelse ($recent as $notification)
                 @php $presented = \App\Support\NotificationPresenter::present($notification); @endphp

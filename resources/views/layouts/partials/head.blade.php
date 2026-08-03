@@ -26,3 +26,6 @@
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 
 <meta name="pusher-key" content="{{ config('broadcasting.connections.pusher.key') }}">
+@auth
+    <meta name="vapid-public-key" content="{{ config('services.webpush.public_key') }}">
+@endauth

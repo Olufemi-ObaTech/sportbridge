@@ -16,8 +16,17 @@ class NotificationPresenter
 {
     public static function present(DatabaseNotification $notification): array
     {
-        $data = $notification->data;
+        return self::presentData($notification->data);
+    }
 
+    /**
+     * Shared by present() (reads a saved DatabaseNotification's ->data) and
+     * each Notification class's toWebPush() (which has the same shape from
+     * its own toArray(), before it's ever saved) - keeps the bell dropdown
+     * and the push notification payload worded identically.
+     */
+    public static function presentData(array $data): array
+    {
         return match ($data['type'] ?? null) {
             'account_approved' => [
                 'message' => __('Your account has been approved.'),

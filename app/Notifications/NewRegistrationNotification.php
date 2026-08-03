@@ -3,6 +3,8 @@
 namespace App\Notifications;
 
 use App\Models\User;
+use App\Notifications\Channels\WebPushChannel;
+use App\Support\NotificationPresenter;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -12,7 +14,7 @@ class NewRegistrationNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', WebPushChannel::class];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -31,6 +33,17 @@ class NewRegistrationNotification extends Notification
             'user_id' => $this->registrant->id,
             'name' => $this->registrant->name,
             'role' => $this->registrant->role,
+        ];
+    }
+
+    public function toWebPush(object $notifiable): array
+    {
+        $presented = NotificationPresenter::presentData($this->toArray($notifiable));
+
+        return [
+            'title' => config('app.name'),
+            'body' => $presented['message'],
+            'url' => $presented['url'],
         ];
     }
 }

@@ -29,6 +29,7 @@ use App\Http\Controllers\PlayerImportController;
 use App\Http\Controllers\PlayerProfileController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicProfileController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SitemapController;
@@ -111,6 +112,9 @@ Route::middleware(['auth', 'verified', 'status'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
+
+    Route::post('/webpush/subscribe', [PushSubscriptionController::class, 'store'])->name('webpush.subscribe');
+    Route::post('/webpush/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('webpush.unsubscribe');
 
     // Job posts for agents/coaches who don't have an academy profile (mirrors academy.jobs.*)
     Route::get('/my-jobs', [JobController::class, 'mineIndex'])->name('jobs.mine.index');

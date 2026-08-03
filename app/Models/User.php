@@ -126,6 +126,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(User::class, 'referred_by');
     }
 
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
+
     public function sentConversations(): HasMany
     {
         return $this->hasMany(Conversation::class, 'initiator_id');

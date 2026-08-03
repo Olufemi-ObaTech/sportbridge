@@ -7,6 +7,7 @@ import { initPlayerFilters } from './modules/filters.js';
 import { initUploader } from './modules/uploader.js';
 import { initChat } from './modules/chat.js';
 import { initCsvImport } from './modules/csv-import.js';
+import { initPushNotifications } from './modules/push-subscribe.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     initInteractions();
@@ -14,4 +15,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initUploader();
     initChat();
     initCsvImport();
+    initPushNotifications();
 });

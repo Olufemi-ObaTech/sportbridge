@@ -3,6 +3,8 @@
 namespace App\Notifications;
 
 use App\Models\AccessRequest;
+use App\Notifications\Channels\WebPushChannel;
+use App\Support\NotificationPresenter;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -12,7 +14,7 @@ class AccessRequestReceivedNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', WebPushChannel::class];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -32,6 +34,17 @@ class AccessRequestReceivedNotification extends Notification
             'type' => 'access_request_received',
             'access_request_id' => $this->accessRequest->id,
             'player_id' => $this->accessRequest->player_id,
+        ];
+    }
+
+    public function toWebPush(object $notifiable): array
+    {
+        $presented = NotificationPresenter::presentData($this->toArray($notifiable));
+
+        return [
+            'title' => config('app.name'),
+            'body' => $presented['message'],
+            'url' => $presented['url'],
         ];
     }
 }
