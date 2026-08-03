@@ -3,15 +3,11 @@
 namespace App\Notifications;
 
 use App\Models\Report;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class NewReportNotification extends Notification implements ShouldQueue
+class NewReportNotification extends Notification
 {
-    use Queueable;
-
     public function __construct(public Report $report) {}
 
     public function via(object $notifiable): array

@@ -6,11 +6,48 @@ use App\Models\Player;
 use App\Models\User;
 use App\Notifications\AccountApprovedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class NotificationTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * Railway runs no queue worker (QUEUE_CONNECTION=database, nothing ever
+     * calls queue:work), so a notification implementing ShouldQueue would
+     * sit in the `jobs` table forever and never actually reach a user. All 7
+     * notification classes had this bug until it was found here - this test
+     * pins the fix by registering for real (no Notification::fake) and
+     * checking the row lands in `notifications` in the same request.
+     */
+    public function test_registering_notifies_admins_immediately_without_a_queue_worker(): void
+    {
+        Storage::fake('public');
+        Storage::fake('local');
+
+        $admin = User::factory()->create([
+            'role' => User::ROLE_SUPER_ADMIN,
+            'status' => User::STATUS_ACTIVE,
+        ]);
+
+        $this->post('/register/academy/football', [
+            'club_name' => 'Sync Test FC',
+            'email' => 'sync-test@example.com',
+            'password' => 'Str0ng!Passw0rd2026',
+            'password_confirmation' => 'Str0ng!Passw0rd2026',
+            'license_number' => 'LIC-SYNC-1',
+            'country' => 'Nigeria',
+            'state' => 'Lagos',
+            'address' => '1 Stadium Road',
+            'phone' => '+2348000000000',
+            'license_document' => UploadedFile::fake()->create('license.pdf', 200, 'application/pdf'),
+        ])->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertSame(1, $admin->fresh()->unreadNotifications()->count());
+        $this->assertDatabaseCount('jobs', 0);
+    }
 
     public function test_a_user_can_see_their_notifications_list(): void
     {

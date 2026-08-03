@@ -3,15 +3,11 @@
 namespace App\Notifications;
 
 use App\Models\AccessRequest;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class AccessRequestReceivedNotification extends Notification implements ShouldQueue
+class AccessRequestReceivedNotification extends Notification
 {
-    use Queueable;
-
     public function __construct(public AccessRequest $accessRequest) {}
 
     public function via(object $notifiable): array

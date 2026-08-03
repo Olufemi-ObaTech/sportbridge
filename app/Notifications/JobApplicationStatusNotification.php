@@ -3,15 +3,11 @@
 namespace App\Notifications;
 
 use App\Models\JobApplication;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class JobApplicationStatusNotification extends Notification implements ShouldQueue
+class JobApplicationStatusNotification extends Notification
 {
-    use Queueable;
-
     public function __construct(public JobApplication $application) {}
 
     public function via(object $notifiable): array
