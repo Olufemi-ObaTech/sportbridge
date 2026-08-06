@@ -50,10 +50,39 @@
         <input type="text" id="filter-nationality" name="nationality" class="form-control">
     </div>
 
+    <div class="row g-2 mb-3">
+        <div class="col-6">
+            <x-input-label for="filter-min-height" value="{{ __('Min Height (cm)') }}" />
+            <input type="number" id="filter-min-height" name="min_height" class="form-control" min="100" max="230">
+        </div>
+        <div class="col-6">
+            <x-input-label for="filter-max-height" value="{{ __('Max Height (cm)') }}" />
+            <input type="number" id="filter-max-height" name="max_height" class="form-control" min="100" max="230">
+        </div>
+    </div>
+
     <div class="mb-3">
-        <x-input-label for="filter-min-height" value="{{ __('Min Height (cm)') }}" />
-        <input type="number" id="filter-min-height" name="min_height" class="form-control" min="100" max="230">
+        <x-input-label for="filter-club" value="{{ __('Club / Academy') }}" />
+        <input type="text" id="filter-club" name="club" class="form-control" placeholder="{{ __('Search by club name') }}">
+    </div>
+
+    <div class="mb-3">
+        <x-input-label for="filter-sort" value="{{ __('Sort by') }}" />
+        <select id="filter-sort" name="sort" class="form-select">
+            <option value="newest">{{ __('Newest first') }}</option>
+            <option value="oldest">{{ __('Oldest first') }}</option>
+            <option value="name_asc">{{ __('Name (A-Z)') }}</option>
+            <option value="name_desc">{{ __('Name (Z-A)') }}</option>
+            <option value="age_asc">{{ __('Youngest first') }}</option>
+            <option value="age_desc">{{ __('Oldest player first') }}</option>
+        </select>
     </div>
 
     <button type="button" id="filter-reset" class="btn btn-outline-secondary btn-sm w-100">{{ __('Reset filters') }}</button>
+
+    @auth
+        <button type="button" id="filter-save-search" class="btn btn-outline-primary btn-sm w-100 mt-2" data-save-search>
+            <i class="bi bi-bookmark-plus me-1" aria-hidden="true"></i>{{ __('Save this search') }}
+        </button>
+    @endauth
 </form>

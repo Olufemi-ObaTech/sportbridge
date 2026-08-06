@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
 
 class RegistrationService
 {
-    public function __construct(protected ImageService $images) {}
+    public function __construct(protected ImageService $images, protected SavedSearchMatcher $savedSearchMatcher) {}
 
     public function registerAcademy(array $data): User
     {
@@ -111,7 +111,7 @@ class RegistrationService
 
     public function registerPlayer(array $data): User
     {
-        return DB::transaction(function () use ($data) {
+        [$user, $player] = DB::transaction(function () use ($data) {
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -133,7 +133,7 @@ class RegistrationService
                 ? BasketballPlayer::class
                 : Player::class;
 
-            $playerModel::create(Player::sanitizeFootHand([
+            $player = $playerModel::create(Player::sanitizeFootHand([
                 'user_id' => $user->id,
                 'team_id' => null,
                 'academy_id' => null,
@@ -154,8 +154,15 @@ class RegistrationService
                 'is_public' => true,
             ], $data['sport']));
 
-            return $user;
+            return [$user, $player];
         });
+
+        // Deliberately outside the transaction: notifying is a side effect
+        // (mail log write, DB insert, an outbound webpush HTTP call) that
+        // must never fire before the player row is actually committed.
+        $this->savedSearchMatcher->matchAndNotify($player);
+
+        return $user;
     }
 
     protected function createUser(array $data, string $role): User

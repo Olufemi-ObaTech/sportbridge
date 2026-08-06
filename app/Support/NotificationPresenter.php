@@ -66,6 +66,30 @@ class NotificationPresenter
                 'url' => route('admin.reports.index'),
                 'icon' => 'bi-flag-fill text-warning',
             ],
+            'saved_search_match' => [
+                'message' => __(':name matches your saved search ":label".', [
+                    'name' => $data['player_name'] ?? __('A new player'),
+                    'label' => $data['saved_search_label'] ?? '',
+                ]),
+                'url' => isset($data['player_slug']) ? route('player.show', $data['player_slug']) : route('saved-searches.index'),
+                'icon' => 'bi-bookmark-star-fill text-primary',
+            ],
+            'trial_proposed' => [
+                'message' => __(':name proposed a trial with :player.', [
+                    'name' => $data['organizer_name'] ?? __('Someone'),
+                    'player' => $data['player_name'] ?? __('a player'),
+                ]),
+                'url' => route('trials.index'),
+                'icon' => 'bi-calendar-event-fill text-primary',
+            ],
+            'trial_responded' => [
+                'message' => __('Your trial proposal for :player was :status.', [
+                    'player' => $data['player_name'] ?? __('a player'),
+                    'status' => __($data['status'] ?? 'updated'),
+                ]),
+                'url' => route('trials.index'),
+                'icon' => 'bi-calendar-check-fill text-primary',
+            ],
             default => [
                 'message' => __('You have a new notification.'),
                 'url' => route('dashboard'),

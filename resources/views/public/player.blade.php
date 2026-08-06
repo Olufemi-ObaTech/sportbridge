@@ -29,6 +29,14 @@
                         @endif
                     </div>
                 @endif
+
+                @if (auth()->id() !== $player->user_id)
+                    <div class="d-grid mt-2">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#proposeTrialModal">
+                            <i class="bi bi-calendar-event me-1" aria-hidden="true"></i>{{ __('Propose a Trial') }}
+                        </button>
+                    </div>
+                @endif
             @endauth
 
             @if ($player->user)
@@ -156,6 +164,36 @@
                     <div class="modal-footer">
                         <x-secondary-button data-bs-dismiss="modal">{{ __('Cancel') }}</x-secondary-button>
                         <x-primary-button>{{ __('Send Request') }}</x-primary-button>
+                    </div>
+                </form>
+            </x-modal>
+        @endif
+
+        @if (auth()->id() !== $player->user_id)
+            <x-modal name="proposeTrialModal">
+                <form method="POST" action="{{ route('trials.store', $player) }}">
+                    @csrf
+                    <div class="modal-header">
+                        <h2 class="modal-title h5">{{ __('Propose a Trial') }}</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <x-input-label for="trial-scheduled-at" :value="__('Date & time')" />
+                            <input type="datetime-local" id="trial-scheduled-at" name="scheduled_at" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <x-input-label for="trial-location" :value="__('Location (or \"Online\")')" />
+                            <input type="text" id="trial-location" name="location" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <x-input-label for="trial-notes" :value="__('Notes')" />
+                            <textarea id="trial-notes" name="notes" rows="3" class="form-control"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <x-secondary-button data-bs-dismiss="modal">{{ __('Cancel') }}</x-secondary-button>
+                        <x-primary-button>{{ __('Send Proposal') }}</x-primary-button>
                     </div>
                 </form>
             </x-modal>

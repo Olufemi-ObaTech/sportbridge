@@ -9,6 +9,7 @@ use App\Models\Basketball\BasketballPlayer;
 use App\Models\Player;
 use App\Models\Team;
 use App\Services\ImageService;
+use App\Services\SavedSearchMatcher;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ class PlayerController extends Controller
 {
     use MergesCrossDatabaseResults;
 
-    public function __construct(protected ImageService $images) {}
+    public function __construct(protected ImageService $images, protected SavedSearchMatcher $savedSearchMatcher) {}
 
     public function index(Request $request): View
     {
@@ -63,6 +64,8 @@ class PlayerController extends Controller
 
         $playerModel = $team->sport === Player::SPORT_BASKETBALL ? BasketballPlayer::class : Player::class;
         $player = $playerModel::create(Player::sanitizeFootHand($data, $data['sport']));
+
+        $this->savedSearchMatcher->matchAndNotify($player);
 
         return redirect()->route('academy.players.show', $player)->with('status', __('Player added successfully.'));
     }

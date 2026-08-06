@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AcademyProfileController;
 use App\Http\Controllers\AccessRequestController;
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\DataRecordsController;
 use App\Http\Controllers\Admin\LogController;
 use App\Http\Controllers\Admin\ModerationController;
@@ -31,10 +32,11 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicProfileController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SavedSearchController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SportController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\TrialController;
 use App\Http\Controllers\WatchlistController;
 use Illuminate\Support\Facades\Route;
 
@@ -83,10 +85,6 @@ Route::get('/jobs/{jobPost}', [JobController::class, 'show'])->name('jobs.show')
 
 Route::get('/feed', [FeedController::class, 'index'])->name('feed.index');
 
-Route::get('/api/players/search', [SearchController::class, 'players'])
-    ->middleware('throttle:api')
-    ->name('api.players.search');
-
 /*
 |--------------------------------------------------------------------------
 | Authenticated routes
@@ -115,6 +113,15 @@ Route::middleware(['auth', 'verified', 'status'])->group(function () {
 
     Route::post('/webpush/subscribe', [PushSubscriptionController::class, 'store'])->name('webpush.subscribe');
     Route::post('/webpush/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('webpush.unsubscribe');
+
+    Route::get('/saved-searches', [SavedSearchController::class, 'index'])->name('saved-searches.index');
+    Route::post('/saved-searches', [SavedSearchController::class, 'store'])->name('saved-searches.store');
+    Route::delete('/saved-searches/{saved_search}', [SavedSearchController::class, 'destroy'])->name('saved-searches.destroy');
+
+    Route::get('/trials', [TrialController::class, 'index'])->name('trials.index');
+    Route::post('/players/{player}/trials', [TrialController::class, 'store'])->name('trials.store');
+    Route::post('/trials/{trial}/respond', [TrialController::class, 'respond'])->name('trials.respond');
+    Route::post('/trials/{trial}/cancel', [TrialController::class, 'cancel'])->name('trials.cancel');
 
     // Job posts for agents/coaches who don't have an academy profile (mirrors academy.jobs.*)
     Route::get('/my-jobs', [JobController::class, 'mineIndex'])->name('jobs.mine.index');
@@ -279,6 +286,8 @@ Route::middleware(['auth', 'verified', 'status'])->group(function () {
     */
     Route::prefix('admin')->middleware('role:super_admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [ModerationController::class, 'pending'])->name('dashboard');
+
+        Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
 
         Route::get('/moderation/pending', [ModerationController::class, 'pending'])->name('moderation.pending');
         Route::post('/moderation/{user}/approve', [ModerationController::class, 'approve'])->name('moderation.approve');

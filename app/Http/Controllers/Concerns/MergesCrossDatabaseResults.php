@@ -14,9 +14,9 @@ trait MergesCrossDatabaseResults
      * that can paginate across both, so both sides are fetched in full (this
      * app's per-scope result sets are small) and paginated here in PHP.
      */
-    protected function paginateMerged(Collection $items, Request $request, int $perPage = 12, string $sortBy = 'created_at'): LengthAwarePaginator
+    protected function paginateMerged(Collection $items, Request $request, int $perPage = 12, string $sortBy = 'created_at', string $direction = 'desc'): LengthAwarePaginator
     {
-        $sorted = $items->sortByDesc($sortBy)->values();
+        $sorted = $direction === 'asc' ? $items->sortBy($sortBy)->values() : $items->sortByDesc($sortBy)->values();
         $page = $request->integer('page', 1);
 
         return new LengthAwarePaginator(
