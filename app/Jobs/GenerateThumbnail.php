@@ -3,14 +3,21 @@
 namespace App\Jobs;
 
 use App\Models\MediaAsset;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
 
-class GenerateThumbnail implements ShouldQueue
+/**
+ * Dispatches synchronously in-request - Railway runs no queue worker
+ * (QUEUE_CONNECTION=database, nothing ever calls queue:work), so a job
+ * implementing ShouldQueue would just sit unprocessed forever. Matches the
+ * fix already applied to every Notification class for the same reason.
+ * Keeps Dispatchable (not the full Queueable bundle) so ::dispatch() still
+ * works from MediaController - it just runs handle() immediately now.
+ */
+class GenerateThumbnail
 {
-    use Queueable;
+    use Dispatchable;
 
     public function __construct(public int $mediaAssetId) {}
 

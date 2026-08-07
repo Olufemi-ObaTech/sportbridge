@@ -44,6 +44,14 @@ if ! php artisan migrate --force; then
     echo "WARNING: migrations failed - check DB_* environment variables. Continuing to start Apache so the app (and its real error) is still reachable." >&2
 fi
 
+# Railway's persistent volume for storage/app (uploaded player media and
+# private documents - licenses, IDs, CVs) mounts owned by root, not
+# www-data, and a fresh empty volume has neither the public/ nor private/
+# subdirectory yet - without this, the first upload after attaching the
+# volume fails with a permission error instead of actually persisting.
+mkdir -p /var/www/html/storage/app/public /var/www/html/storage/app/private
+chown -R www-data:www-data /var/www/html/storage/app
+
 php artisan storage:link || true
 php artisan config:cache
 php artisan route:cache
