@@ -42,7 +42,14 @@ function createProgressRow(file) {
         };
         reader.readAsDataURL(file);
     } else {
-        row.querySelector('img').src = 'https://placehold.co/40x40?text=%F0%9F%8E%A5';
+        // The CSP's img-src only allows 'self' data: blob: and img.youtube.com
+        // (see SecurityHeaders middleware) - an external placehold.co request
+        // would be blocked outright, showing a broken-image icon. An inline
+        // SVG data URI needs no network request at all.
+        const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">'
+            + '<rect width="40" height="40" fill="#343a40"/>'
+            + '<text x="50%" y="55%" font-size="20" text-anchor="middle" dominant-baseline="middle">🎥</text></svg>';
+        row.querySelector('img').src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
     }
 
     return row;
@@ -96,11 +103,15 @@ function uploadFile(uploadUrl, file, row) {
 }
 
 export function initUploader() {
-    const root = document.getElementById('player-uploader');
-    if (!root) {
-        return;
-    }
+    // The uploader is rendered twice (desktop tab + mobile accordion, only
+    // one visible at a time) - getElementById would only ever find the first
+    // (desktop) copy, leaving the mobile one completely unwired.
+    // querySelectorAll, unlike getElementById, still matches every element
+    // sharing that id.
+    document.querySelectorAll('#player-uploader').forEach(initUploaderRoot);
+}
 
+function initUploaderRoot(root) {
     const dropzone = root.querySelector('.fc-dropzone');
     const fileInput = root.querySelector('input[type="file"]');
     const progressList = root.querySelector('.upload-progress-list');

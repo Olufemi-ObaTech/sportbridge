@@ -9,7 +9,11 @@ export function initSavedSearch() {
             return;
         }
 
-        const form = document.getElementById('player-filter-form');
+        // The filter form is rendered twice (desktop + mobile offcanvas) with
+        // the same id - resolve from the actual button clicked rather than
+        // getElementById, which would always grab the desktop copy regardless
+        // of which form the visitor was actually looking at.
+        const form = trigger.closest('form');
         if (!form) {
             return;
         }

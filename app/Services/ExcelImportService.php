@@ -27,7 +27,10 @@ class ExcelImportService
         ])->all();
 
         return [
-            'imported' => $import->imported - count($errors),
+            // $import->imported already excludes failed rows - model() only runs
+            // after a row passes validation (see SkipsOnFailure), so it's never
+            // incremented for a row that ends up in $errors.
+            'imported' => $import->imported,
             'failed' => count($errors),
             'errors' => $errors,
         ];

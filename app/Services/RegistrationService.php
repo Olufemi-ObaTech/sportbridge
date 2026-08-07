@@ -52,13 +52,17 @@ class RegistrationService
 
     public function registerAgent(array $data): User
     {
-        return DB::transaction(function () use ($data) {
+        $user = DB::transaction(function () use ($data) {
             $user = $this->createUser($data, User::ROLE_AGENT);
 
             $agentModel = $data['sport'] === AgentProfile::SPORT_BASKETBALL
                 ? BasketballAgentProfile::class
                 : AgentProfile::class;
 
+            // A basketball profile lands on a different physical database
+            // connection than $user - this transaction can't roll it back.
+            // Nothing below this point may throw, or the user row would roll
+            // back while the profile stays committed as an orphan.
             $agentModel::create([
                 'user_id' => $user->id,
                 'agency_name' => $data['agency_name'],
@@ -73,21 +77,31 @@ class RegistrationService
                 'id_doc_url' => $this->images->storePrivateDocument($data['id_document'], 'agent-ids'),
             ]);
 
-            $this->notifyAdmins($user);
-
             return $user;
         });
+
+        // Deliberately outside the transaction - notifying is a side effect
+        // that must never fire before the records are actually committed,
+        // and (per the note above) must never come after a cross-connection
+        // write either, since a failure here can no longer roll anything back.
+        $this->notifyAdmins($user);
+
+        return $user;
     }
 
     public function registerCoach(array $data): User
     {
-        return DB::transaction(function () use ($data) {
+        $user = DB::transaction(function () use ($data) {
             $user = $this->createUser($data, User::ROLE_COACH);
 
             $coachModel = $data['sport'] === CoachProfile::SPORT_BASKETBALL
                 ? BasketballCoachProfile::class
                 : CoachProfile::class;
 
+            // A basketball profile lands on a different physical database
+            // connection than $user - this transaction can't roll it back.
+            // Nothing below this point may throw, or the user row would roll
+            // back while the profile stays committed as an orphan.
             $coachModel::create([
                 'user_id' => $user->id,
                 'sport' => $data['sport'],
@@ -103,10 +117,13 @@ class RegistrationService
                 'cv_url' => $this->images->storePrivateDocument($data['cv'], 'coach-cvs'),
             ]);
 
-            $this->notifyAdmins($user);
-
             return $user;
         });
+
+        // Deliberately outside the transaction - see registerAgent() above.
+        $this->notifyAdmins($user);
+
+        return $user;
     }
 
     public function registerPlayer(array $data): User

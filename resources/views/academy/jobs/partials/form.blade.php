@@ -13,11 +13,16 @@
 
     <div class="col-12 col-md-4">
         <x-input-label for="sport" :value="__('Sport')" />
-        <select id="sport" name="sport" class="form-select" required>
-            <option value="football" @selected(old('sport', $jobPost->sport ?? session('sport', \App\Http\Middleware\SetSport::DEFAULT)) === 'football')>{{ __('Football') }}</option>
-            <option value="basketball" @selected(old('sport', $jobPost->sport ?? session('sport', \App\Http\Middleware\SetSport::DEFAULT)) === 'basketball')>{{ __('Basketball') }}</option>
-        </select>
-        <x-input-error :messages="$errors->get('sport')" />
+        @if ($jobPost)
+            {{-- Sport is fixed once a job post exists - it determines which physical database the row lives in. --}}
+            <input type="text" class="form-control" value="{{ __(ucfirst($jobPost->sport)) }}" disabled>
+        @else
+            <select id="sport" name="sport" class="form-select" required>
+                <option value="football" @selected(old('sport', session('sport', \App\Http\Middleware\SetSport::DEFAULT)) === 'football')>{{ __('Football') }}</option>
+                <option value="basketball" @selected(old('sport', session('sport', \App\Http\Middleware\SetSport::DEFAULT)) === 'basketball')>{{ __('Basketball') }}</option>
+            </select>
+            <x-input-error :messages="$errors->get('sport')" />
+        @endif
     </div>
 
     <div class="col-12 col-md-4">
@@ -99,6 +104,7 @@
     (function () {
         var sportSelect = document.getElementById('sport');
         var roleSelect = document.getElementById('role_type');
+        if (!sportSelect) { return; }
         var ROLES = {
             football: {{ \Illuminate\Support\Js::from(\App\Models\JobPost::rolesFor('football')) }},
             basketball: {{ \Illuminate\Support\Js::from(\App\Models\JobPost::rolesFor('basketball')) }}

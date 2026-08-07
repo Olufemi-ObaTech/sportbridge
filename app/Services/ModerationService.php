@@ -68,8 +68,12 @@ class ModerationService
     public function verify(User $admin, AcademyProfile|AgentProfile $profile): void
     {
         DB::transaction(function () use ($admin, $profile) {
-            $profile->update(['verified_badge' => true]);
+            // Logged first: a basketball agent profile lands on a different
+            // physical database connection, so this transaction can't roll
+            // its update back. Updating it last means a failed log write
+            // still rolls back cleanly instead of leaving an unlogged verify.
             $this->log($admin, $profile->user, 'verify');
+            $profile->update(['verified_badge' => true]);
         });
     }
 

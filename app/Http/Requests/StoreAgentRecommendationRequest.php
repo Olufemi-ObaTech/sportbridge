@@ -13,10 +13,17 @@ class StoreAgentRecommendationRequest extends FormRequest
 
     public function rules(): array
     {
+        // The players table lives in a different physical database per sport
+        // (see config/database.php's mysql_basketball connection) - validate
+        // existence against whichever one matches the agent being recommended to.
+        $playersTable = $this->route('agent')?->sport === 'basketball'
+            ? 'mysql_basketball.players'
+            : 'players';
+
         return [
             // Exactly one of the two: required_without covers "at least one",
             // prohibits covers "not both" so a request can't set both at once.
-            'player_id' => ['required_without:recommended_to_name', 'nullable', 'exists:players,id', 'prohibits:recommended_to_name'],
+            'player_id' => ['required_without:recommended_to_name', 'nullable', "exists:{$playersTable},id", 'prohibits:recommended_to_name'],
             'recommended_to_name' => ['required_without:player_id', 'nullable', 'string', 'max:255'],
             'proposed_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'note' => ['nullable', 'string', 'max:2000'],

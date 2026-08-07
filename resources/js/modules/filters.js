@@ -34,14 +34,24 @@ export function initPlayerFilters() {
     const grid = document.getElementById('player-results-grid');
     const sentinel = document.getElementById('player-results-sentinel');
     const template = document.getElementById('player-card-template');
-    const form = document.getElementById('player-filter-form');
+    // The filter form is rendered twice (desktop sidebar + mobile offcanvas,
+    // only one visible at a time depending on viewport) - getElementById
+    // would only ever find the first (desktop) copy, leaving the mobile one
+    // completely unwired. querySelectorAll, unlike getElementById, still
+    // matches every element sharing that id.
+    const forms = document.querySelectorAll('#player-filter-form');
     const searchUrl = root.dataset.searchUrl;
+
+    if (!forms.length) {
+        return;
+    }
 
     let currentPage = 1;
     let lastPage = 1;
+    let activeForm = forms[0];
 
     function currentParams(page) {
-        const params = new URLSearchParams(new FormData(form));
+        const params = new URLSearchParams(new FormData(activeForm));
         params.set('page', page);
         [...params.keys()].forEach((key) => {
             if (params.get(key) === '') {
@@ -92,54 +102,63 @@ export function initPlayerFilters() {
         basketball: ['PG', 'SG', 'SF', 'PF', 'C'],
     };
 
-    const sportSelect = form.querySelector('.filter-sport');
-    const positionSelect = form.querySelector('.filter-position');
-    const footField = form.querySelector('.filter-foot-field');
+    forms.forEach((form) => {
+        const sportSelect = form.querySelector('.filter-sport');
+        const positionSelect = form.querySelector('.filter-position');
+        const footField = form.querySelector('.filter-foot-field');
 
-    function syncSportFields() {
-        if (!sportSelect || !positionSelect) {
-            return;
+        function syncSportFields() {
+            if (!sportSelect || !positionSelect) {
+                return;
+            }
+
+            const sport = sportSelect.value;
+            const positions = POSITIONS[sport] || [...POSITIONS.football, ...POSITIONS.basketball];
+            const current = positionSelect.value;
+
+            positionSelect.innerHTML = '';
+            const anyOption = document.createElement('option');
+            anyOption.value = '';
+            anyOption.textContent = 'Any';
+            positionSelect.appendChild(anyOption);
+            positions.forEach((position) => {
+                const option = document.createElement('option');
+                option.value = position;
+                option.textContent = position;
+                if (position === current) {
+                    option.selected = true;
+                }
+                positionSelect.appendChild(option);
+            });
+
+            if (footField) {
+                const isBasketball = sport === 'basketball';
+                footField.style.display = isBasketball ? 'none' : '';
+                const footSelect = footField.querySelector('select');
+                if (footSelect) {
+                    footSelect.disabled = isBasketball;
+                    if (isBasketball) { footSelect.value = ''; }
+                }
+            }
         }
 
-        const sport = sportSelect.value;
-        const positions = POSITIONS[sport] || [...POSITIONS.football, ...POSITIONS.basketball];
-        const current = positionSelect.value;
+        sportSelect?.addEventListener('change', syncSportFields);
+        syncSportFields();
 
-        positionSelect.innerHTML = '';
-        const anyOption = document.createElement('option');
-        anyOption.value = '';
-        anyOption.textContent = 'Any';
-        positionSelect.appendChild(anyOption);
-        positions.forEach((position) => {
-            const option = document.createElement('option');
-            option.value = position;
-            option.textContent = position;
-            if (position === current) {
-                option.selected = true;
-            }
-            positionSelect.appendChild(option);
+        form.addEventListener('input', () => {
+            activeForm = form;
+            debouncedSearch();
+        });
+        form.addEventListener('change', () => {
+            activeForm = form;
+            debouncedSearch();
         });
 
-        if (footField) {
-            const isBasketball = sport === 'basketball';
-            footField.style.display = isBasketball ? 'none' : '';
-            const footSelect = footField.querySelector('select');
-            if (footSelect) {
-                footSelect.disabled = isBasketball;
-                if (isBasketball) { footSelect.value = ''; }
-            }
-        }
-    }
-
-    sportSelect?.addEventListener('change', syncSportFields);
-    syncSportFields();
-
-    form.addEventListener('input', debouncedSearch);
-    form.addEventListener('change', debouncedSearch);
-
-    document.getElementById('filter-reset')?.addEventListener('click', () => {
-        form.reset();
-        fetchPlayers(1);
+        form.querySelector('#filter-reset')?.addEventListener('click', () => {
+            form.reset();
+            activeForm = form;
+            fetchPlayers(1);
+        });
     });
 
     initInfiniteScroll({

@@ -36,10 +36,14 @@ class PublicProfileController extends Controller
     public function agent(string $username): View
     {
         $user = User::where('username', $username)->where('role', User::ROLE_AGENT)->active()->firstOrFail();
-        $agent = $user->agentProfile()
-            ->withAvg('ratings', 'score')
-            ->withCount('ratings')
-            ->firstOrFail();
+
+        // withAvg/withCount compile a correlated subquery against agent_ratings
+        // on the *parent's own* connection - for a basketball agent that's
+        // mysql_basketball, where agent_ratings doesn't exist (it's always in
+        // the main database). AgentProfile's ratingsAvgScore/ratingsCount
+        // accessors already fall back to computing this via ratings(), which
+        // correctly forces the main connection - so just skip the eager load.
+        $agent = $user->agentProfile()->firstOrFail();
 
         return view('public.agent', ['agent' => $agent, 'user' => $user, 'mediaPosts' => $this->mediaPostsFor($user->id)]);
     }

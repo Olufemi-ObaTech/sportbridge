@@ -15,10 +15,13 @@ class AgentProfileController extends Controller
 
     public function edit(Request $request): View
     {
-        $agent = $request->user()->agentProfile()
-            ->withAvg('ratings', 'score')
-            ->withCount('ratings')
-            ->firstOrFail();
+        // withAvg/withCount compile a correlated subquery against agent_ratings
+        // on the *parent's own* connection - for a basketball agent that's
+        // mysql_basketball, where agent_ratings doesn't exist (it's always in
+        // the main database). AgentProfile's ratingsAvgScore/ratingsCount
+        // accessors already fall back to computing this via ratings(), which
+        // correctly forces the main connection - so just skip the eager load.
+        $agent = $request->user()->agentProfile()->firstOrFail();
 
         return view('agent.profile.edit', ['agent' => $agent]);
     }

@@ -92,6 +92,15 @@ class JobPost extends Model
     {
         $basketball = new BasketballJobPost;
 
+        // Ids can collide across the two databases (independent auto-increment
+        // sequences) - resolve whichever table matches the visitor's current
+        // sport context first, so a collision favors the sport they're
+        // actually browsing instead of always favoring football.
+        if (session('sport') === 'basketball') {
+            return $basketball->resolveRouteBindingQuery($basketball, $value, $field)->first()
+                ?? parent::resolveRouteBinding($value, $field);
+        }
+
         return parent::resolveRouteBinding($value, $field)
             ?? $basketball->resolveRouteBindingQuery($basketball, $value, $field)->first();
     }

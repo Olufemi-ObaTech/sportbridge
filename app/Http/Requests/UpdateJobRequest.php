@@ -14,10 +14,13 @@ class UpdateJobRequest extends FormRequest
 
     public function rules(): array
     {
-        $roles = JobPost::rolesFor($this->input('sport', $this->route('job_post')?->sport));
+        // Sport is not editable here - a job post's sport is fixed at creation
+        // because it determines which physical database the row lives in
+        // (JobPost vs BasketballJobPost); changing it would leave the row in
+        // the wrong table for its new sport.
+        $roles = JobPost::rolesFor($this->route('job_post')?->sport);
 
         return [
-            'sport' => ['required', 'in:football,basketball'],
             'title' => ['required', 'string', 'max:255'],
             'role_type' => ['required', 'in:'.implode(',', array_keys($roles))],
             'description' => ['required', 'string', 'max:10000'],

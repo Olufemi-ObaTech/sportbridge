@@ -17,6 +17,7 @@ class AgentRecommendationController extends Controller
         AgentRecommendation::create(array_merge($request->validated(), [
             'recommender_user_id' => $request->user()->id,
             'agent_profile_id' => $agent->id,
+            'sport' => $agent->sport,
             'status' => AgentRecommendation::STATUS_PENDING,
         ]));
 

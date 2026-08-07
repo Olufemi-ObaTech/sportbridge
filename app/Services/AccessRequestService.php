@@ -25,15 +25,7 @@ class AccessRequestService
             ? BasketballAccessRequest::class
             : AccessRequest::class;
 
-        return DB::transaction(function () use ($agent, $player, $message, $accessRequestModel) {
-            $accessRequest = $accessRequestModel::create([
-                'agent_id' => $agent->id,
-                'player_id' => $player->id,
-                'academy_id' => $player->academy_id,
-                'status' => 'pending',
-                'message' => $message,
-            ]);
-
+        $accessRequest = DB::transaction(function () use ($agent, $player, $message, $accessRequestModel) {
             $academyUserId = $player->academy->user_id;
 
             $conversation = Conversation::firstOrCreate(
@@ -51,10 +43,25 @@ class AccessRequestService
                 'content' => $message,
             ]);
 
-            $player->academy->user->notify(new AccessRequestReceivedNotification($accessRequest));
-
-            return $accessRequest;
+            // Created last: a basketball access request lands on a different
+            // physical database connection than the conversation/message
+            // above, so this transaction can't roll it back once it commits.
+            // Doing it last means a failure anywhere above still rolls back
+            // cleanly with nothing left orphaned on the other connection.
+            return $accessRequestModel::create([
+                'agent_id' => $agent->id,
+                'player_id' => $player->id,
+                'academy_id' => $player->academy_id,
+                'status' => 'pending',
+                'message' => $message,
+            ]);
         });
+
+        // Deliberately outside the transaction - notifying is a side effect
+        // that must never fire before the records are actually committed.
+        $player->academy->user->notify(new AccessRequestReceivedNotification($accessRequest));
+
+        return $accessRequest;
     }
 
     public function respond(AccessRequest $accessRequest, bool $grant): AccessRequest
