@@ -53,6 +53,14 @@ return [
             'transport' => 'ses',
         ],
 
+        // Brevo's HTTP API, not their SMTP relay - Railway blocks outbound
+        // SMTP ports entirely, but never HTTPS. See the Mail::extend('brevo', ...)
+        // registration in AppServiceProvider for how this transport is built.
+        'brevo' => [
+            'transport' => 'brevo',
+            'key' => env('BREVO_API_KEY'),
+        ],
+
         'postmark' => [
             'transport' => 'postmark',
             // 'message_stream_id' => env('POSTMARK_MESSAGE_STREAM_ID'),

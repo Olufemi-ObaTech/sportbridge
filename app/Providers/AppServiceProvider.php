@@ -4,9 +4,12 @@ namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
+use Symfony\Component\Mailer\Transport\Dsn;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -60,5 +63,17 @@ class AppServiceProvider extends ServiceProvider
             ->symbols()
             ->uncompromised()
         );
+
+        // Railway (like most PaaS platforms) blocks outbound SMTP ports
+        // entirely for anti-abuse reasons - confirmed by a connection
+        // timeout on both 587 and 2525 to Brevo's SMTP relay. Brevo's HTTP
+        // API (over standard HTTPS, never blocked) is the only viable path
+        // to real email delivery from this host, hence the API transport
+        // instead of Brevo's own SMTP relay.
+        Mail::extend('brevo', function (array $config) {
+            return (new BrevoTransportFactory)->create(
+                new Dsn('brevo+api', 'default', $config['key'] ?? null)
+            );
+        });
     }
 }
