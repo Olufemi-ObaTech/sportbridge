@@ -8,9 +8,12 @@ use App\Models\Basketball\BasketballAgentProfile;
 use App\Models\Basketball\BasketballCoachProfile;
 use App\Models\Basketball\BasketballPlayer;
 use App\Models\CoachProfile;
+use App\Models\Conversation;
+use App\Models\Message;
 use App\Models\Player;
 use App\Models\User;
 use App\Notifications\NewRegistrationNotification;
+use App\Notifications\WelcomeNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -21,7 +24,7 @@ class RegistrationService
 
     public function registerAcademy(array $data): User
     {
-        return DB::transaction(function () use ($data) {
+        $user = DB::transaction(function () use ($data) {
             $user = $this->createUser($data, User::ROLE_ACADEMY);
 
             AcademyProfile::create([
@@ -44,10 +47,16 @@ class RegistrationService
                 'logo_url' => isset($data['logo']) ? $this->images->storePublicImage($data['logo'], 'academies/logos', 600) : null,
             ]);
 
-            $this->notifyAdmins($user);
-
             return $user;
         });
+
+        // Deliberately outside the transaction - see registerAgent() above.
+        // Mail now goes over a real HTTP call (Brevo's API), so a transient
+        // failure here must never roll back an already-created account.
+        $this->notifyAdmins($user);
+        $this->notifyWelcome($user);
+
+        return $user;
     }
 
     public function registerAgent(array $data): User
@@ -85,6 +94,7 @@ class RegistrationService
         // and (per the note above) must never come after a cross-connection
         // write either, since a failure here can no longer roll anything back.
         $this->notifyAdmins($user);
+        $this->notifyWelcome($user);
 
         return $user;
     }
@@ -122,6 +132,7 @@ class RegistrationService
 
         // Deliberately outside the transaction - see registerAgent() above.
         $this->notifyAdmins($user);
+        $this->notifyWelcome($user);
 
         return $user;
     }
@@ -139,9 +150,11 @@ class RegistrationService
                 'status' => User::STATUS_ACTIVE,
                 'username' => $this->uniqueUsername($data['name']),
                 'sport' => $data['sport'],
-                // No transactional mail provider is configured yet (MAIL_MAILER=log),
-                // so a real verification email can never reach anyone - gating on it
-                // would permanently lock every user out. Revisit once real email is set up.
+                // Auto-verified: this app has no email-verification flow built (no
+                // confirmation link is ever sent), so leaving this unset would
+                // permanently lock every user out at the "verified" gate for no
+                // reason. Not a mail-delivery workaround - build the actual flow
+                // before relying on this field to mean anything.
                 'email_verified_at' => now(),
                 'referred_by' => $this->resolveReferrer($data['ref'] ?? null),
             ]);
@@ -175,8 +188,10 @@ class RegistrationService
         });
 
         // Deliberately outside the transaction: notifying is a side effect
-        // (mail log write, DB insert, an outbound webpush HTTP call) that
-        // must never fire before the player row is actually committed.
+        // (email send, DB insert, an outbound webpush HTTP call) that must
+        // never fire before the player row is actually committed.
+        $this->notifyAdmins($user);
+        $this->notifyWelcome($user);
         $this->savedSearchMatcher->matchAndNotify($player);
 
         return $user;
@@ -251,5 +266,35 @@ class RegistrationService
         if ($admins->isNotEmpty()) {
             Notification::send($admins, new NewRegistrationNotification($registrant));
         }
+    }
+
+    /**
+     * Greets a brand-new member by name on both channels the product asks
+     * for: an email, and a real message in their Inbox (not just a bell
+     * notification) from the Super Admin account, so it reads as a genuine
+     * welcome from the platform rather than a system log entry.
+     */
+    protected function notifyWelcome(User $registrant): void
+    {
+        $registrant->notify(new WelcomeNotification);
+
+        $admin = User::role(User::ROLE_SUPER_ADMIN)->first();
+
+        if (! $admin) {
+            return;
+        }
+
+        $conversation = Conversation::firstOrCreate(
+            ['initiator_id' => $admin->id, 'recipient_id' => $registrant->id],
+            ['subject' => 'Welcome to '.config('app.name'), 'last_message_at' => now()]
+        );
+
+        $conversation->update(['last_message_at' => now()]);
+
+        Message::create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $admin->id,
+            'content' => 'Welcome to '.config('app.name').", {$registrant->name}! We're glad to have you here. If you have any questions getting started, just reply here.",
+        ]);
     }
 }

@@ -37,6 +37,8 @@ use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SportController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TrialController;
+use App\Http\Controllers\TryOutController;
+use App\Http\Controllers\TryOutInterestController;
 use App\Http\Controllers\WatchlistController;
 use Illuminate\Support\Facades\Route;
 
@@ -83,6 +85,18 @@ Route::get('/players', function () {
 Route::get('/jobs', [JobController::class, 'index'])->name('jobs.index');
 Route::get('/jobs/{jobPost}', [JobController::class, 'show'])->name('jobs.show');
 
+// Try-out opportunities - browsable by anyone, postable by any active
+// signed-in user (academy, agent, coach, or player). /create MUST be
+// registered before the {try_out} wildcard below, or a GET request to
+// /try-outs/create would match try-outs.show first, with "create" wrongly
+// treated as the route-key value (same class of bug as the public wildcard
+// profile routes at the bottom of this file - see that comment).
+Route::get('/try-outs', [TryOutController::class, 'index'])->name('try-outs.index');
+Route::middleware(['auth', 'verified', 'status'])->group(function () {
+    Route::get('/try-outs/create', [TryOutController::class, 'create'])->name('try-outs.create');
+});
+Route::get('/try-outs/{try_out}', [TryOutController::class, 'show'])->name('try-outs.show');
+
 Route::get('/feed', [FeedController::class, 'index'])->name('feed.index');
 
 /*
@@ -122,6 +136,18 @@ Route::middleware(['auth', 'verified', 'status'])->group(function () {
     Route::post('/players/{player}/trials', [TrialController::class, 'store'])->name('trials.store');
     Route::post('/trials/{trial}/respond', [TrialController::class, 'respond'])->name('trials.respond');
     Route::post('/trials/{trial}/cancel', [TrialController::class, 'cancel'])->name('trials.cancel');
+
+    // Try-out opportunities - any active user can post one; only players
+    // express interest (see TryOutPolicy). GET /try-outs/create is
+    // registered earlier, above, before the public {try_out} wildcard.
+    Route::get('/my-try-outs', [TryOutController::class, 'mineIndex'])->name('try-outs.mine');
+    Route::post('/try-outs', [TryOutController::class, 'store'])->name('try-outs.store');
+    Route::get('/try-outs/{try_out}/edit', [TryOutController::class, 'edit'])->name('try-outs.edit');
+    Route::put('/try-outs/{try_out}', [TryOutController::class, 'update'])->name('try-outs.update');
+    Route::post('/try-outs/{try_out}/close', [TryOutController::class, 'close'])->name('try-outs.close');
+    Route::get('/try-outs/{try_out}/interested', [TryOutController::class, 'interested'])->name('try-outs.interested');
+    Route::post('/try-outs/{try_out}/interest', [TryOutInterestController::class, 'store'])->name('try-outs.interest.store');
+    Route::delete('/try-outs/{try_out}/interest', [TryOutInterestController::class, 'destroy'])->name('try-outs.interest.destroy');
 
     // Job posts for agents/coaches who don't have an academy profile (mirrors academy.jobs.*)
     Route::get('/my-jobs', [JobController::class, 'mineIndex'])->name('jobs.mine.index');

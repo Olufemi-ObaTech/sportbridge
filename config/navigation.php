@@ -9,6 +9,7 @@ return [
         ['label' => 'Job Board', 'route' => 'academy.jobs.index', 'icon' => 'bi-briefcase'],
         ['label' => 'Access Requests', 'route' => 'academy.access-requests.index', 'icon' => 'bi-shield-check'],
         ['label' => 'Trials', 'route' => 'trials.index', 'icon' => 'bi-calendar-event'],
+        ['label' => 'Try-outs', 'route' => 'try-outs.index', 'icon' => 'bi-calendar2-week'],
         ['label' => 'Feed', 'route' => 'feed.index', 'icon' => 'bi-newspaper'],
         ['label' => 'Inbox', 'route' => 'inbox.index', 'icon' => 'bi-chat-dots'],
         ['label' => 'Club Profile', 'route' => 'academy.profile.edit', 'icon' => 'bi-building'],
@@ -20,6 +21,7 @@ return [
         ['label' => 'Watchlist', 'route' => 'agent.watchlist.index', 'icon' => 'bi-bookmark-star'],
         ['label' => 'Saved Searches', 'route' => 'saved-searches.index', 'icon' => 'bi-bookmark-star'],
         ['label' => 'Trials', 'route' => 'trials.index', 'icon' => 'bi-calendar-event'],
+        ['label' => 'Try-outs', 'route' => 'try-outs.index', 'icon' => 'bi-calendar2-week'],
         ['label' => 'Job Board', 'route' => 'jobs.index', 'icon' => 'bi-briefcase'],
         ['label' => 'My Job Posts', 'route' => 'jobs.mine.index', 'icon' => 'bi-briefcase-fill'],
         ['label' => 'Feed', 'route' => 'feed.index', 'icon' => 'bi-newspaper'],
@@ -30,6 +32,7 @@ return [
     'player' => [
         ['label' => 'Dashboard', 'route' => 'player.dashboard', 'icon' => 'bi-speedometer2'],
         ['label' => 'Trials', 'route' => 'trials.index', 'icon' => 'bi-calendar-event'],
+        ['label' => 'Try-outs', 'route' => 'try-outs.index', 'icon' => 'bi-calendar2-week'],
         ['label' => 'Feed', 'route' => 'feed.index', 'icon' => 'bi-newspaper'],
         ['label' => 'Inbox', 'route' => 'inbox.index', 'icon' => 'bi-chat-dots'],
         ['label' => 'My Profile', 'route' => 'player.profile.edit', 'icon' => 'bi-person-vcard'],
@@ -37,6 +40,7 @@ return [
 
     'coach' => [
         ['label' => 'Dashboard', 'route' => 'coach.dashboard', 'icon' => 'bi-speedometer2'],
+        ['label' => 'Try-outs', 'route' => 'try-outs.index', 'icon' => 'bi-calendar2-week'],
         ['label' => 'Job Board', 'route' => 'jobs.index', 'icon' => 'bi-briefcase'],
         ['label' => 'My Job Posts', 'route' => 'jobs.mine.index', 'icon' => 'bi-briefcase-fill'],
         ['label' => 'Feed', 'route' => 'feed.index', 'icon' => 'bi-newspaper'],

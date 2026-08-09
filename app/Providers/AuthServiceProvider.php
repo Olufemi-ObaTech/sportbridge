@@ -11,6 +11,7 @@ use App\Models\FeedPost;
 use App\Models\JobPost;
 use App\Models\Player;
 use App\Models\Team;
+use App\Models\TryOut;
 use App\Policies\AgentRecommendationPolicy;
 use App\Policies\ConversationPolicy;
 use App\Policies\FeedPostPolicy;
@@ -18,6 +19,7 @@ use App\Policies\JobPostPolicy;
 use App\Policies\PlayerPolicy;
 use App\Policies\ProfilePolicy;
 use App\Policies\TeamPolicy;
+use App\Policies\TryOutPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -36,6 +38,7 @@ class AuthServiceProvider extends ServiceProvider
         AgentProfile::class => ProfilePolicy::class,
         CoachProfile::class => ProfilePolicy::class,
         AgentRecommendation::class => AgentRecommendationPolicy::class,
+        TryOut::class => TryOutPolicy::class,
     ];
 
     public function boot(): void

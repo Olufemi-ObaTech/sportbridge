@@ -3,9 +3,13 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\Basketball\BasketballAgentProfile;
+use App\Models\Conversation;
 use App\Models\User;
+use App\Notifications\NewRegistrationNotification;
+use App\Notifications\WelcomeNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -141,6 +145,35 @@ class RegistrationTest extends TestCase
         $this->assertSame(User::ROLE_PLAYER, $user->role);
         $this->assertSame(User::STATUS_ACTIVE, $user->status);
         $this->assertNotNull($user->playerProfile);
+    }
+
+    public function test_registering_notifies_the_admin_and_sends_the_new_member_a_welcome(): void
+    {
+        Notification::fake();
+        $admin = User::factory()->create(['role' => User::ROLE_SUPER_ADMIN, 'status' => User::STATUS_ACTIVE]);
+
+        $response = $this->post('/register/player/football', [
+            'name' => 'Welcome Test Player',
+            'email' => 'welcome-test@example.com',
+            'password' => 'Str0ng!Passw0rd2026',
+            'password_confirmation' => 'Str0ng!Passw0rd2026',
+            'dob' => now()->subYears(18)->format('Y-m-d'),
+            'nationality' => 'Nigeria',
+            'position' => 'ST',
+            'foot' => 'right',
+        ]);
+
+        $response->assertRedirect(route('dashboard', absolute: false));
+
+        $newUser = User::where('email', 'welcome-test@example.com')->firstOrFail();
+
+        Notification::assertSentTo($admin, NewRegistrationNotification::class);
+        Notification::assertSentTo($newUser, WelcomeNotification::class);
+
+        $conversation = Conversation::where('initiator_id', $admin->id)->where('recipient_id', $newUser->id)->first();
+        $this->assertNotNull($conversation);
+        $this->assertSame(1, $conversation->messages()->count());
+        $this->assertStringContainsString($newUser->name, $conversation->messages()->first()->content);
     }
 
     public function test_basketball_agent_registers_into_the_basketball_database(): void

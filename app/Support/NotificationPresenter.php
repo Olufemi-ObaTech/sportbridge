@@ -90,6 +90,14 @@ class NotificationPresenter
                 'url' => route('trials.index'),
                 'icon' => 'bi-calendar-check-fill text-primary',
             ],
+            'try_out_interest' => [
+                'message' => __(':name is interested in your try-out ":title".', [
+                    'name' => $data['interested_user_name'] ?? __('A player'),
+                    'title' => $data['try_out_title'] ?? '',
+                ]),
+                'url' => isset($data['try_out_id']) ? route('try-outs.interested', $data['try_out_id']) : route('try-outs.mine'),
+                'icon' => 'bi-person-check-fill text-primary',
+            ],
             default => [
                 'message' => __('You have a new notification.'),
                 'url' => route('dashboard'),
