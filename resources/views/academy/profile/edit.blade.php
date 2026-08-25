@@ -15,6 +15,16 @@
                             </div>
 
                             <div class="col-12 col-md-6">
+                                <x-input-label for="team_gender" :value="__('Team(s)')" />
+                                <select id="team_gender" name="team_gender" class="form-select" required>
+                                    <option value="male" @selected(old('team_gender', $academy->team_gender) === 'male')>{{ __('Male Team') }}</option>
+                                    <option value="female" @selected(old('team_gender', $academy->team_gender) === 'female')>{{ __('Female Team') }}</option>
+                                    <option value="mixed" @selected(old('team_gender', $academy->team_gender) === 'mixed')>{{ __('Mixed / Both') }}</option>
+                                </select>
+                                <x-input-error :messages="$errors->get('team_gender')" />
+                            </div>
+
+                            <div class="col-12 col-md-6">
                                 <x-input-label for="phone" :value="__('Contact Phone')" />
                                 <x-text-input id="phone" name="phone" type="text" :value="old('phone', $academy->phone)" required />
                                 <x-input-error :messages="$errors->get('phone')" />

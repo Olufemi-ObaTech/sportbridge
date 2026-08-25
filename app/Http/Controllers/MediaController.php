@@ -97,7 +97,7 @@ class MediaController extends Controller
     {
         $this->authorize('update', $mediaAsset->player);
 
-        $mediaAsset->player->mediaAssets()->update(['is_featured' => false]);
+        $mediaAsset->player?->mediaAssets()->update(['is_featured' => false]);
         $mediaAsset->update(['is_featured' => true]);
 
         return response()->json(['status' => 'ok']);

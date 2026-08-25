@@ -26,10 +26,16 @@ class AccessRequestService
             : AccessRequest::class;
 
         $accessRequest = DB::transaction(function () use ($agent, $player, $message, $accessRequestModel) {
-            $academyUserId = $player->academy->user_id;
+            $academyUserId = $player->academy?->user_id;
+
+            // A free-agent player has no academy - send the message/request
+            // to the player's own account if no academy is attached.
+            $recipientUserId = $academyUserId ?? $player->user_id;
+
+            abort_unless($recipientUserId, 422, 'Player has no reachable owner for an access request.');
 
             $conversation = Conversation::firstOrCreate(
-                ['initiator_id' => $agent->user_id, 'recipient_id' => $academyUserId],
+                ['initiator_id' => $agent->user_id, 'recipient_id' => $recipientUserId],
                 ['subject' => "Access request: {$player->full_name}", 'last_message_at' => now()]
             );
 
@@ -59,7 +65,11 @@ class AccessRequestService
 
         // Deliberately outside the transaction - notifying is a side effect
         // that must never fire before the records are actually committed.
-        $player->academy->user->notify(new AccessRequestReceivedNotification($accessRequest));
+        if ($player->academy?->user) {
+            $player->academy->user->notify(new AccessRequestReceivedNotification($accessRequest));
+        } elseif ($player->user) {
+            $player->user->notify(new AccessRequestReceivedNotification($accessRequest));
+        }
 
         return $accessRequest;
     }
@@ -71,7 +81,7 @@ class AccessRequestService
             'responded_at' => now(),
         ]);
 
-        $accessRequest->agent->user->notify(new AccessRequestRespondedNotification($accessRequest));
+        $accessRequest->agent?->user?->notify(new AccessRequestRespondedNotification($accessRequest));
 
         return $accessRequest;
     }

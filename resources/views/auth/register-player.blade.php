@@ -52,6 +52,16 @@
             </div>
 
             <div class="col-6 col-md-4">
+                <x-input-label for="gender" :value="__('Gender')" />
+                <select id="gender" name="gender" class="form-select" required>
+                    <option value="">{{ __('Select') }}</option>
+                    <option value="male" @selected(old('gender') === 'male')>{{ __('Male') }}</option>
+                    <option value="female" @selected(old('gender') === 'female')>{{ __('Female') }}</option>
+                </select>
+                <x-input-error :messages="$errors->get('gender')" />
+            </div>
+
+            <div class="col-6 col-md-4">
                 <x-input-label for="position" :value="__('Position')" />
                 <select id="position" name="position" class="form-select" required>
                     <option value="">{{ __('Select') }}</option>

@@ -16,7 +16,7 @@
                         <div class="list-group-item">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <div class="fw-semibold">{{ $recommendation->agentProfile->agency_name }}</div>
+                                    <div class="fw-semibold">{{ $recommendation->agentProfile?->agency_name ?? __('Deleted agent') }}</div>
                                     <div class="small text-muted">
                                         {{ __('To') }}: {{ $recommendation->player?->full_name ?? $recommendation->recommended_to_name }}
                                         &middot; {{ $recommendation->proposed_percentage }}%
@@ -40,9 +40,9 @@
                         <div class="list-group-item">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <div class="fw-semibold">{{ $recommendation->agentProfile->agency_name }}</div>
+                                    <div class="fw-semibold">{{ $recommendation->agentProfile?->agency_name ?? __('Deleted agent') }}</div>
                                     <div class="small text-muted">
-                                        {{ __('From') }}: {{ $recommendation->recommender->name }}
+                                        {{ __('From') }}: {{ $recommendation->recommender?->name ?? __('Deleted user') }}
                                         &middot; {{ $recommendation->proposed_percentage }}%
                                     </div>
                                 </div>

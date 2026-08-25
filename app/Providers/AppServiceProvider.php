@@ -57,12 +57,17 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perDay(10)->by($request->user()?->id ?: $request->ip());
         });
 
-        Password::defaults(fn () => Password::min(10)
-            ->mixedCase()
-            ->numbers()
-            ->symbols()
-            ->uncompromised()
-        );
+        Password::defaults(function () {
+            $rule = Password::min(10)
+                ->mixedCase()
+                ->numbers()
+                ->symbols();
+
+            // The uncompromised() check calls out to api.pwnedpasswords.com.
+            // In testing there's no reliable egress, so it was hanging every
+            // registration test for the full 60s timeout before failing.
+            return app()->environment('testing') ? $rule : $rule->uncompromised();
+        });
 
         // Railway (like most PaaS platforms) blocks outbound SMTP ports
         // entirely for anti-abuse reasons - confirmed by a connection

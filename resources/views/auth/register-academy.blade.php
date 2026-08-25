@@ -19,6 +19,17 @@
             </div>
 
             <div class="col-12 col-md-6">
+                <x-input-label for="team_gender" :value="__('Team(s)')" />
+                <select id="team_gender" name="team_gender" class="form-select" required>
+                    <option value="">{{ __('Select') }}</option>
+                    <option value="male" @selected(old('team_gender') === 'male')>{{ __('Male Team') }}</option>
+                    <option value="female" @selected(old('team_gender') === 'female')>{{ __('Female Team') }}</option>
+                    <option value="mixed" @selected(old('team_gender') === 'mixed')>{{ __('Mixed / Both') }}</option>
+                </select>
+                <x-input-error :messages="$errors->get('team_gender')" />
+            </div>
+
+            <div class="col-12 col-md-6">
                 <x-input-label for="email" :value="__('Official Email')" />
                 <x-text-input id="email" name="email" type="email" :value="old('email')" required autocomplete="username" />
                 <x-input-error :messages="$errors->get('email')" />

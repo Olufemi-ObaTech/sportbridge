@@ -35,6 +35,15 @@
         </div>
     </div>
 
+    <div class="mb-3">
+        <x-input-label for="filter-gender" value="{{ __('Gender') }}" />
+        <select id="filter-gender" name="gender" class="form-select">
+            <option value="">{{ __('Any') }}</option>
+            <option value="male">{{ __('Male') }}</option>
+            <option value="female">{{ __('Female') }}</option>
+        </select>
+    </div>
+
     <div class="mb-3 filter-foot-field">
         <x-input-label for="filter-foot" value="{{ __('Preferred Foot') }}" />
         <select id="filter-foot" name="foot" class="form-select">

@@ -49,7 +49,7 @@ class JobApplicationService
             $application->jobPost->update(['status' => 'filled']);
         }
 
-        $application->coachProfile->user->notify(new JobApplicationStatusNotification($application));
+        $application->coachProfile?->user?->notify(new JobApplicationStatusNotification($application));
 
         return $application;
     }

@@ -39,7 +39,7 @@
                                         <span class="badge text-bg-light border">{{ __(ucfirst(str_replace('_', ' ', $job->contract_type))) }}</span>
                                         <span class="badge text-bg-light border">{{ __(ucfirst(str_replace('_', ' ', $job->role_type))) }}</span>
                                     </div>
-                                    <p class="small text-muted mb-0">{{ __('Deadline') }}: {{ $job->application_deadline->format('M j, Y') }}</p>
+                                    <p class="small text-muted mb-0">{{ __('Deadline') }}: {{ $job->application_deadline?->format('M j, Y') ?? __('N/A') }}</p>
                                 </div>
                             </div>
                         </div>

@@ -15,6 +15,7 @@ class UpdateAcademyProfileRequest extends FormRequest
     {
         return [
             'club_name' => ['required', 'string', 'max:255'],
+            'team_gender' => ['nullable', 'in:male,female,mixed'],
             'country' => ['required', 'string', 'max:100'],
             'state' => ['nullable', 'string', 'max:100'],
             'address' => ['required', 'string', 'max:255'],

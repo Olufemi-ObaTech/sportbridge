@@ -36,6 +36,7 @@ class Player extends Model
         'slug',
         'dob',
         'nationality',
+        'gender',
         'position',
         'secondary_position',
         'foot',

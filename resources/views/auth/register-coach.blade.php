@@ -49,6 +49,8 @@
                     @endforeach
                 </select>
                 <x-input-error :messages="$errors->get('preferred_role')" />
+                <x-text-input id="other_preferred_role" name="other_preferred_role" type="text" class="mt-2" :value="old('other_preferred_role')" placeholder="{{ __('If Other, enter your preferred role') }}" />
+                <x-input-error :messages="$errors->get('other_preferred_role')" />
             </div>
 
             <div class="col-12 col-md-6">
@@ -61,6 +63,16 @@
                 <x-input-label for="nationality" :value="__('Nationality')" />
                 <x-text-input id="nationality" name="nationality" type="text" :value="old('nationality')" required />
                 <x-input-error :messages="$errors->get('nationality')" />
+            </div>
+
+            <div class="col-12 col-md-6">
+                <x-input-label for="gender" :value="__('Gender')" />
+                <select id="gender" name="gender" class="form-select" required>
+                    <option value="">{{ __('Select') }}</option>
+                    <option value="male" @selected(old('gender') === 'male')>{{ __('Male') }}</option>
+                    <option value="female" @selected(old('gender') === 'female')>{{ __('Female') }}</option>
+                </select>
+                <x-input-error :messages="$errors->get('gender')" />
             </div>
 
             <div class="col-12 col-md-6">
@@ -83,6 +95,8 @@
                     @endforeach
                 </div>
                 <x-input-error :messages="$errors->get('badges')" />
+                <x-text-input id="other_badge" name="other_badge" type="text" class="mt-2" :value="old('other_badge')" placeholder="{{ __('If Other, enter your coaching badge') }}" />
+                <x-input-error :messages="$errors->get('other_badge')" />
             </div>
 
             <div class="col-12">

@@ -3,14 +3,14 @@
         <i class="bi bi-arrow-left fs-5" aria-hidden="true"></i>
     </button>
     <div>
-        <div class="fw-semibold">{{ $otherUser->name }}</div>
+        <div class="fw-semibold">{{ $otherUser?->name ?? __('Deleted user') }}</div>
         @if ($conversation->subject)
             <div class="small text-muted">{{ $conversation->subject }}</div>
         @endif
     </div>
 </div>
 
-@if ($otherUser->role === \App\Models\User::ROLE_AGENT)
+@if ($otherUser?->role === \App\Models\User::ROLE_AGENT)
     <x-disclaimer-banner class="m-2 mb-0 py-2">
         {{ __('Never send money, fees, or payment of any kind to an agent or scout to arrange a trial, tryout, or introduction. Always independently verify their credentials first.') }}
     </x-disclaimer-banner>

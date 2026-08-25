@@ -21,6 +21,7 @@ class RegisterAgentRequest extends FormRequest
             'password' => ['required', 'confirmed', Password::defaults()],
             'license_number' => ['required', 'string', 'max:100'],
             'nationality' => ['required', 'string', 'max:100'],
+            'gender' => ['nullable', 'in:male,female'],
             'experience_years' => ['required', 'integer', 'min:0', 'max:60'],
             'regions' => ['required', 'array', 'min:1'],
             'regions.*' => ['string', 'max:100'],

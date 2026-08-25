@@ -4,7 +4,7 @@
             <div class="d-flex align-items-center gap-2 mb-2">
                 <i class="bi bi-person-circle fs-3 text-muted" aria-hidden="true"></i>
                 <div>
-                    <div class="fw-semibold">{{ $post->author->name }}</div>
+                    <div class="fw-semibold">{{ $post->author?->name ?? __('Deleted user') }}</div>
                     <div class="small text-muted">{{ $post->created_at->diffForHumans() }}</div>
                 </div>
             </div>
@@ -105,7 +105,7 @@
         @if ($post->comments->isNotEmpty())
             <div class="mt-2 border-top pt-2">
                 @foreach ($post->comments as $comment)
-                    <div class="small mb-1"><strong>{{ $comment->user->name }}</strong> {{ $comment->body }}</div>
+                    <div class="small mb-1"><strong>{{ $comment->user?->name ?? __('Deleted user') }}</strong> {{ $comment->body }}</div>
                 @endforeach
             </div>
         @endif

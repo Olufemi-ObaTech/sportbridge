@@ -32,6 +32,7 @@ class RegistrationService
                 'club_name' => $data['club_name'],
                 'slug' => $this->uniqueSlug(AcademyProfile::class, $data['club_name']),
                 'license_number' => $data['license_number'],
+                'team_gender' => $data['team_gender'] ?? null,
                 'license_doc_url' => $this->images->storePrivateDocument($data['license_document'], 'licenses'),
                 'fifa_connect_id' => $data['fifa_connect_id'] ?? null,
                 'has_fifa_tms_account' => $data['has_fifa_tms_account'] ?? null,
@@ -78,6 +79,7 @@ class RegistrationService
                 'sport' => $data['sport'],
                 'license_number' => $data['license_number'],
                 'nationality' => $data['nationality'],
+                'gender' => $data['gender'] ?? null,
                 'experience_years' => $data['experience_years'],
                 'regions' => $data['regions'],
                 'verification_body' => $data['verification_body'] ?? null,
@@ -112,16 +114,22 @@ class RegistrationService
             // connection than $user - this transaction can't roll it back.
             // Nothing below this point may throw, or the user row would roll
             // back while the profile stays committed as an orphan.
+            $badges = $data['badges'];
+            if (in_array('Other', $badges, true)) {
+                $badges[array_search('Other', $badges, true)] = 'Other: '.trim($data['other_badge']);
+            }
+
             $coachModel::create([
                 'user_id' => $user->id,
                 'sport' => $data['sport'],
                 'full_name' => $data['name'],
-                'badges' => $data['badges'],
+                'badges' => $badges,
                 'certificates' => array_values(array_filter(array_map('trim', explode("\n", $data['certificates'] ?? '')))),
-                'preferred_role' => $data['preferred_role'],
+                'preferred_role' => $data['preferred_role'] === 'other' ? 'Other: '.trim($data['other_preferred_role']) : $data['preferred_role'],
                 'experience_years' => $data['experience_years'],
                 'current_club' => $data['current_club'] ?? null,
                 'nationality' => $data['nationality'],
+                'gender' => $data['gender'] ?? null,
                 'linkedin' => $data['linkedin'] ?? null,
                 'photo_url' => isset($data['photo']) ? $this->images->storePublicImage($data['photo'], 'coaches/photos', 800) : null,
                 'cv_url' => $this->images->storePrivateDocument($data['cv'], 'coach-cvs'),
@@ -172,6 +180,7 @@ class RegistrationService
                 'slug' => Player::uniqueSlug($data['name']),
                 'dob' => $data['dob'],
                 'nationality' => $data['nationality'],
+                'gender' => $data['gender'] ?? null,
                 'position' => $data['position'],
                 'secondary_position' => $data['secondary_position'] ?? null,
                 'foot' => $data['foot'] ?? null,

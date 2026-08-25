@@ -55,6 +55,16 @@
             </div>
 
             <div class="col-12 col-md-6">
+                <x-input-label for="gender" :value="__('Gender')" />
+                <select id="gender" name="gender" class="form-select" required>
+                    <option value="">{{ __('Select') }}</option>
+                    <option value="male" @selected(old('gender') === 'male')>{{ __('Male') }}</option>
+                    <option value="female" @selected(old('gender') === 'female')>{{ __('Female') }}</option>
+                </select>
+                <x-input-error :messages="$errors->get('gender')" />
+            </div>
+
+            <div class="col-12 col-md-6">
                 <x-input-label for="experience_years" :value="__('Years of Experience')" />
                 <x-text-input id="experience_years" name="experience_years" type="number" min="0" max="60" :value="old('experience_years')" required />
                 <x-input-error :messages="$errors->get('experience_years')" />

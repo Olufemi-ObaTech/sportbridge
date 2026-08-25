@@ -64,7 +64,7 @@ php artisan admin:sync-user-records
 php artisan db:fresh-all --seed
 ```
 
-`migrate --seed` runs `AdminSeeder` (creates the super admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD` in `.env`) and `DemoSeeder` (3 academies, 5 agents, 8 coaches, ~40 players, 10 job posts, sample feed activity, plus one pending/suspended account per role so the moderation queue isn't empty). All seeded demo users share the password `password`; the super admin uses `ADMIN_PASSWORD`.
+`migrate --seed` runs `AdminSeeder` only. It creates the super admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD` in `.env`; no demo accounts or sample data are created.
 
 Run the app (in separate terminals):
 
@@ -80,7 +80,7 @@ Or all at once:
 composer run dev
 ```
 
-Visit `http://localhost:8000`. Log in as the seeded super admin (`ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`) to review pending registrations, or register a new Academy/Agent/Coach account to see the pending-review holding page.
+Visit `http://localhost:8000`. Log in as the seeded super admin using `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.env`, or register a new account.
 
 ## Running tests
 

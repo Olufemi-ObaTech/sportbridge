@@ -43,7 +43,7 @@
                 </div>
             </div>
 
-            <p class="small text-muted">{{ __('Application deadline') }}: {{ $jobPost->application_deadline->format('F j, Y') }}</p>
+            <p class="small text-muted">{{ __('Application deadline') }}: {{ $jobPost->application_deadline?->format('F j, Y') ?? __('N/A') }}</p>
         </div>
 
         <div class="col-12 col-lg-4">

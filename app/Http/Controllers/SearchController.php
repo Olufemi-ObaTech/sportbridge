@@ -38,6 +38,7 @@ class SearchController extends Controller
             ->visible()
             ->when($request->filled('position'), fn ($q) => $q->byPosition($request->string('position')))
             ->when(! $isBasketball && $request->filled('foot'), fn ($q) => $q->where('foot', $request->string('foot')))
+            ->when($request->filled('gender') && in_array($request->string('gender')->value(), ['male', 'female'], true), fn ($q) => $q->where('gender', $request->string('gender')))
             ->when($request->filled('nationality'), fn ($q) => $q->where('nationality', $request->string('nationality')))
             ->when($request->filled('min_height'), fn ($q) => $q->where('height_cm', '>=', $request->integer('min_height')))
             ->when($request->filled('max_height'), fn ($q) => $q->where('height_cm', '<=', $request->integer('max_height')))
@@ -83,6 +84,7 @@ class SearchController extends Controller
                 'sport' => $player->sport,
                 'position' => $player->position,
                 'nationality' => $player->nationality,
+                'gender' => $player->gender,
                 'foot' => $player->foot,
                 'dominant_hand' => $player->dominant_hand,
                 'height_cm' => $player->height_cm,

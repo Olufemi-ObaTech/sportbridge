@@ -26,6 +26,16 @@
         <x-input-error :messages="$errors->get('nationality')" />
     </div>
 
+    <div class="col-6 col-md-4">
+        <x-input-label for="gender" :value="__('Gender')" />
+        <select id="gender" name="gender" class="form-select" required>
+            <option value="">{{ __('Select') }}</option>
+            <option value="male" @selected(old('gender', $player->gender ?? '') === 'male')>{{ __('Male') }}</option>
+            <option value="female" @selected(old('gender', $player->gender ?? '') === 'female')>{{ __('Female') }}</option>
+        </select>
+        <x-input-error :messages="$errors->get('gender')" />
+    </div>
+
     <div class="col-12 col-md-4">
         <x-input-label :value="__('Sport')" />
         <x-text-input type="text" :value="ucfirst($currentSport)" disabled />

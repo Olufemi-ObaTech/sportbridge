@@ -24,6 +24,7 @@ class UpdatePlayerRequest extends FormRequest
             'full_name' => ['required', 'string', 'max:255'],
             'dob' => ['required', 'date', 'before:today'],
             'nationality' => ['required', 'string', 'max:100'],
+            'gender' => ['nullable', 'in:male,female'],
             'position' => ['required', 'in:'.implode(',', $positions)],
             'secondary_position' => ['nullable', 'in:'.implode(',', $positions)],
             'foot' => [$isBasketball ? 'nullable' : 'required', 'in:left,right,both'],

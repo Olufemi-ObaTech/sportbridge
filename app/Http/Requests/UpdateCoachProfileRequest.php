@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\CoachProfile;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateCoachProfileRequest extends FormRequest
 {
@@ -22,11 +23,14 @@ class UpdateCoachProfileRequest extends FormRequest
             'full_name' => ['required', 'string', 'max:255'],
             'badges' => ['required', 'array', 'min:1'],
             'badges.*' => ['string', 'in:'.implode(',', $badges)],
+            'other_badge' => [Rule::requiredIf(fn () => in_array('Other', $this->input('badges', []), true)), 'nullable', 'string', 'max:255'],
             'certificates' => ['nullable', 'string', 'max:2000'],
             'preferred_role' => ['required', 'in:'.implode(',', array_keys($roles))],
+            'other_preferred_role' => [Rule::requiredIf($this->input('preferred_role') === 'other'), 'nullable', 'string', 'max:255'],
             'experience_years' => ['required', 'integer', 'min:0', 'max:60'],
             'current_club' => ['nullable', 'string', 'max:255'],
             'nationality' => ['required', 'string', 'max:100'],
+            'gender' => ['nullable', 'in:male,female'],
             'open_to_work' => ['nullable', 'boolean'],
             'about' => ['nullable', 'string', 'max:20000'],
             'achievements' => ['nullable', 'string', 'max:5000'],

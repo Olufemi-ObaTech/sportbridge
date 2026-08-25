@@ -16,6 +16,7 @@ class UpdateAgentProfileRequest extends FormRequest
         return [
             'agency_name' => ['required', 'string', 'max:255'],
             'nationality' => ['required', 'string', 'max:100'],
+            'gender' => ['nullable', 'in:male,female'],
             'experience_years' => ['required', 'integer', 'min:0', 'max:60'],
             'regions' => ['required', 'array', 'min:1'],
             'regions.*' => ['string', 'max:100'],

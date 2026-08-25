@@ -28,6 +28,7 @@ class AgentProfile extends Model
         'sport',
         'license_number',
         'nationality',
+        'gender',
         'experience_years',
         'regions',
         'id_doc_url',

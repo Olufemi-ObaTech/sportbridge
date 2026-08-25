@@ -13,7 +13,7 @@
                                     <div>
                                         <div class="fw-semibold small">{{ $trial->player?->full_name ?? __('Player') }}</div>
                                         <div class="text-muted" style="font-size: 0.78rem;">
-                                            {{ $trial->scheduled_at->format('D, M j Y \a\t g:ia') }}
+                                            {{ $trial->scheduled_at?->format('D, M j Y \a\t g:ia') }}
                                             @if ($trial->location) &middot; {{ $trial->location }} @endif
                                         </div>
                                     </div>
@@ -41,9 +41,9 @@
                             <div class="list-group-item">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
                                     <div>
-                                        <div class="fw-semibold small">{{ $trial->organizer->name }}</div>
+                                        <div class="fw-semibold small">{{ $trial->organizer?->name ?? __('Deleted user') }}</div>
                                         <div class="text-muted" style="font-size: 0.78rem;">
-                                            {{ $trial->scheduled_at->format('D, M j Y \a\t g:ia') }}
+                                            {{ $trial->scheduled_at?->format('D, M j Y \a\t g:ia') }}
                                             @if ($trial->location) &middot; {{ $trial->location }} @endif
                                         </div>
                                         @if ($trial->notes)

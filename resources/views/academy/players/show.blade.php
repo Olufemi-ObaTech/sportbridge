@@ -2,7 +2,7 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
             <h1 class="h5 mb-0">{{ $player->full_name }}</h1>
-            <p class="small text-muted mb-0">{{ $player->team->name }}</p>
+            <p class="small text-muted mb-0">{{ $player->team?->name ?? __('Free Agent') }}</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('player.show', $player) }}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">

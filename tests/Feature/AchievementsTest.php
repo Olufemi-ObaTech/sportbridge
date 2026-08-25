@@ -82,6 +82,26 @@ class AchievementsTest extends TestCase
             ->assertSee('Won Regional Championship 2023');
     }
 
+    public function test_coach_can_update_custom_badge_and_preferred_role(): void
+    {
+        $user = User::factory()->coach()->create(['status' => User::STATUS_ACTIVE]);
+        $coach = CoachProfile::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)->put(route('coach.profile.update'), [
+            'full_name' => $coach->full_name,
+            'preferred_role' => 'other',
+            'other_preferred_role' => 'Performance Director',
+            'experience_years' => $coach->experience_years,
+            'nationality' => $coach->nationality,
+            'badges' => ['Other'],
+            'other_badge' => 'FIFA Advanced Certificate',
+        ])->assertRedirect();
+
+        $updated = $coach->fresh();
+        $this->assertSame(['Other: FIFA Advanced Certificate'], $updated->badges);
+        $this->assertSame('Other: Performance Director', $updated->preferred_role);
+    }
+
     public function test_player_can_self_edit_achievements_and_they_show_publicly(): void
     {
         $user = User::factory()->create(['role' => User::ROLE_PLAYER, 'status' => User::STATUS_ACTIVE]);

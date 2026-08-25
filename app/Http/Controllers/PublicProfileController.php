@@ -27,8 +27,8 @@ class PublicProfileController extends Controller
             $academy->players->concat($academy->basketballPlayers()->visible()->latest()->limit(12)->get())
         );
 
-        $pinnedPost = $academy->user->feedPosts()->pinned()->latest()->first();
-        $mediaPosts = $this->mediaPostsFor($academy->user->id);
+        $pinnedPost = $academy->user?->feedPosts()->pinned()->latest()->first();
+        $mediaPosts = $academy->user ? $this->mediaPostsFor($academy->user->id) : collect();
 
         return view('public.academy', ['academy' => $academy, 'pinnedPost' => $pinnedPost, 'mediaPosts' => $mediaPosts]);
     }

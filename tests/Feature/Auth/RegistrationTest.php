@@ -125,6 +125,30 @@ class RegistrationTest extends TestCase
         $this->assertNotNull($user->coachProfile);
     }
 
+    public function test_coach_can_register_with_custom_badge_and_preferred_role(): void
+    {
+        Storage::fake('public');
+        Storage::fake('local');
+
+        $this->post('/register/coach/football', [
+            'name' => 'Custom Coach',
+            'email' => 'custom-coach@example.com',
+            'password' => 'Str0ng!Passw0rd2026',
+            'password_confirmation' => 'Str0ng!Passw0rd2026',
+            'badges' => ['Other'],
+            'other_badge' => 'National Elite License',
+            'preferred_role' => 'other',
+            'other_preferred_role' => 'Technical Consultant',
+            'experience_years' => 10,
+            'nationality' => 'Nigeria',
+            'cv' => UploadedFile::fake()->create('cv.pdf', 200, 'application/pdf'),
+        ])->assertRedirect(route('dashboard', absolute: false));
+
+        $profile = User::where('email', 'custom-coach@example.com')->firstOrFail()->coachProfile;
+        $this->assertSame(['Other: National Elite License'], $profile->badges);
+        $this->assertSame('Other: Technical Consultant', $profile->preferred_role);
+    }
+
     public function test_player_can_register_and_is_active_immediately(): void
     {
         $response = $this->post('/register/player/football', [

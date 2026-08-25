@@ -25,6 +25,12 @@ class CoachProfileController extends Controller
         $data['about'] = isset($data['about']) ? Purifier::clean($data['about']) : $coach->about;
         $data['open_to_work'] = $request->boolean('open_to_work');
         $data['certificates'] = array_values(array_filter(array_map('trim', explode("\n", $data['certificates'] ?? ''))));
+        if (in_array('Other', $data['badges'], true)) {
+            $data['badges'][array_search('Other', $data['badges'], true)] = 'Other: '.trim($data['other_badge']);
+        }
+        if ($data['preferred_role'] === 'other') {
+            $data['preferred_role'] = 'Other: '.trim($data['other_preferred_role']);
+        }
 
         if ($request->hasFile('cover_image')) {
             $this->images->delete($coach->cover_image_url);
@@ -41,7 +47,7 @@ class CoachProfileController extends Controller
             $data['cv_url'] = $this->images->storePrivateDocument($request->file('cv'), 'coach-cvs');
         }
 
-        unset($data['cover_image'], $data['photo'], $data['cv']);
+        unset($data['cover_image'], $data['photo'], $data['cv'], $data['other_badge'], $data['other_preferred_role']);
 
         $coach->update($data);
 

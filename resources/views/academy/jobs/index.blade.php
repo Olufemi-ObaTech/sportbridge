@@ -34,7 +34,7 @@
                             <td>{{ __(ucfirst($job->sport)) }}</td>
                             <td><span class="badge text-bg-{{ $job->status === 'open' ? 'success' : 'secondary' }}">{{ __(ucfirst($job->status)) }}</span></td>
                             <td><a href="{{ route($applicantsRoute, $job) }}">{{ $job->applications_count }}</a></td>
-                            <td>{{ $job->application_deadline->format('M j, Y') }}</td>
+                            <td>{{ $job->application_deadline?->format('M j, Y') ?? __('N/A') }}</td>
                             <td class="text-end">
                                 <a href="{{ route($editRoute, $job) }}" class="btn btn-sm btn-outline-secondary">{{ __('Edit') }}</a>
                                 @if ($job->status === 'open')
@@ -61,7 +61,7 @@
                         <div class="small text-muted mt-1">
                             {{ __(ucfirst($job->sport)) }} &middot;
                             <a href="{{ route($applicantsRoute, $job) }}">{{ __(':count applicants', ['count' => $job->applications_count]) }}</a>
-                            &middot; {{ __('Deadline') }} {{ $job->application_deadline->format('M j, Y') }}
+                            &middot; {{ __('Deadline') }} {{ $job->application_deadline?->format('M j, Y') ?? __('N/A') }}
                         </div>
                         <a href="{{ route($editRoute, $job) }}" class="btn btn-sm btn-outline-secondary mt-2">{{ __('Edit') }}</a>
                     </div>

@@ -11,7 +11,7 @@
         <a href="{{ route('inbox.show', $conversation) }}"
            class="list-group-item list-group-item-action {{ isset($activeConversation) && $activeConversation->id === $conversation->id ? 'active' : '' }}">
             <div class="d-flex justify-content-between">
-                <span class="fw-semibold">{{ $other->name }}</span>
+                <span class="fw-semibold">{{ $other?->name ?? __('Deleted user') }}</span>
                 @if ($conversation->last_message_at)
                     <span class="small">{{ $conversation->last_message_at->diffForHumans(null, true) }}</span>
                 @endif

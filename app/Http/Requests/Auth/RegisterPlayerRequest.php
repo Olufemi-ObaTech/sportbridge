@@ -29,6 +29,7 @@ class RegisterPlayerRequest extends FormRequest
             'password' => ['required', 'confirmed', Password::defaults()],
             'dob' => ['required', 'date', 'before:-13 years'],
             'nationality' => ['required', 'string', 'max:100'],
+            'gender' => ['nullable', 'in:male,female'],
             'position' => ['required', 'in:'.implode(',', $positions)],
             'secondary_position' => ['nullable', 'in:'.implode(',', $positions)],
             'foot' => [$isBasketball ? 'nullable' : 'required', 'in:left,right,both'],

@@ -61,6 +61,7 @@ class CoachProfile extends Model
         'experience_years',
         'current_club',
         'nationality',
+        'gender',
         'cv_url',
         'about',
         'achievements',

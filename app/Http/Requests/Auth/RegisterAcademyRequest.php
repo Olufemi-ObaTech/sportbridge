@@ -22,6 +22,7 @@ class RegisterAcademyRequest extends FormRequest
 
         return [
             'club_name' => ['required', 'string', 'max:255'],
+            'team_gender' => ['nullable', 'in:male,female,mixed'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::defaults()],
             'license_number' => ['required', 'string', 'max:100'],

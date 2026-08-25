@@ -1,3 +1,7 @@
+@php
+    use Illuminate\Support\Str;
+@endphp
+
 <x-dashboard-layout title="{{ __('Reports') }}">
     <h1 class="h5 mb-3">{{ __('Reports') }}</h1>
 

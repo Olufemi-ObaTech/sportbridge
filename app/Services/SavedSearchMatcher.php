@@ -47,6 +47,10 @@ class SavedSearchMatcher
             return false;
         }
 
+        if (! empty($criteria['gender']) && $player->gender !== $criteria['gender']) {
+            return false;
+        }
+
         if (! empty($criteria['nationality']) && strcasecmp((string) $player->nationality, (string) $criteria['nationality']) !== 0) {
             return false;
         }

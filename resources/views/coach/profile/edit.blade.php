@@ -23,12 +23,15 @@
                             <div class="col-12 col-md-6">
                                 <x-input-label for="preferred_role" :value="__('Preferred Role')" />
                                 @php $roles = \App\Models\CoachProfile::rolesFor($coach->sport); @endphp
+                                @php $savedOtherRole = str_starts_with((string) $coach->preferred_role, 'Other: '); @endphp
                                 <select id="preferred_role" name="preferred_role" class="form-select" required>
                                     @foreach ($roles as $value => $label)
-                                        <option value="{{ $value }}" @selected(old('preferred_role', $coach->preferred_role) === $value)>{{ __($label) }}</option>
+                                        <option value="{{ $value }}" @selected(old('preferred_role', $savedOtherRole ? 'other' : $coach->preferred_role) === $value)>{{ __($label) }}</option>
                                     @endforeach
                                 </select>
                                 <x-input-error :messages="$errors->get('preferred_role')" />
+                                <x-text-input id="other_preferred_role" name="other_preferred_role" type="text" class="mt-2" :value="old('other_preferred_role', $savedOtherRole ? substr($coach->preferred_role, 7) : '')" placeholder="{{ __('If Other, enter your preferred role') }}" />
+                                <x-input-error :messages="$errors->get('other_preferred_role')" />
                             </div>
 
                             <div class="col-12 col-md-6">
@@ -49,6 +52,16 @@
                                 <x-input-error :messages="$errors->get('current_club')" />
                             </div>
 
+                            <div class="col-12 col-md-6">
+                                <x-input-label for="gender" :value="__('Gender')" />
+                                <select id="gender" name="gender" class="form-select" required>
+                                    <option value="">{{ __('Select') }}</option>
+                                    <option value="male" @selected(old('gender', $coach->gender) === 'male')>{{ __('Male') }}</option>
+                                    <option value="female" @selected(old('gender', $coach->gender) === 'female')>{{ __('Female') }}</option>
+                                </select>
+                                <x-input-error :messages="$errors->get('gender')" />
+                            </div>
+
                             <div class="col-12 col-md-6 d-flex align-items-end">
                                 <div class="form-check">
                                     <input type="checkbox" class="form-check-input" id="open_to_work" name="open_to_work" value="1" @checked(old('open_to_work', $coach->open_to_work))>
@@ -59,17 +72,20 @@
                             <div class="col-12">
                                 <x-input-label :value="__('Coaching Badges (select all that apply)')" />
                                 @php $selectedBadges = old('badges', $coach->badges ?? []); @endphp
+                                @php $savedOtherBadge = collect($selectedBadges)->contains(fn ($badge) => str_starts_with((string) $badge, 'Other: ')); @endphp
                                 <div class="row row-cols-2 row-cols-md-4 g-2">
                                     @foreach (\App\Models\CoachProfile::badgesFor($coach->sport) as $badge)
                                         <div class="col">
                                             <div class="form-check">
-                                                <input type="checkbox" class="form-check-input" id="badge-{{ Str::slug($badge) }}" name="badges[]" value="{{ $badge }}" @checked(in_array($badge, $selectedBadges))>
+                                                <input type="checkbox" class="form-check-input" id="badge-{{ Str::slug($badge) }}" name="badges[]" value="{{ $badge }}" @checked(in_array($badge, $selectedBadges) || ($badge === 'Other' && $savedOtherBadge))>
                                                 <label class="form-check-label" for="badge-{{ Str::slug($badge) }}">{{ $badge }}</label>
                                             </div>
                                         </div>
                                     @endforeach
                                 </div>
                                 <x-input-error :messages="$errors->get('badges')" />
+                                <x-text-input id="other_badge" name="other_badge" type="text" class="mt-2" :value="old('other_badge', $savedOtherBadge ? substr(collect($selectedBadges)->first(fn ($badge) => str_starts_with((string) $badge, 'Other: ')), 7) : '')" placeholder="{{ __('If Other, enter your coaching badge') }}" />
+                                <x-input-error :messages="$errors->get('other_badge')" />
                             </div>
 
                             <div class="col-12">

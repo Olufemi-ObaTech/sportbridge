@@ -36,6 +36,7 @@ class AcademyProfile extends Model
     protected $fillable = [
         'user_id',
         'club_name',
+        'team_gender',
         'slug',
         'license_number',
         'license_doc_url',

@@ -5,6 +5,7 @@ namespace App\Http\Requests\Auth;
 use App\Models\CoachProfile;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rule;
 
 class RegisterCoachRequest extends FormRequest
 {
@@ -27,11 +28,14 @@ class RegisterCoachRequest extends FormRequest
             'password' => ['required', 'confirmed', Password::defaults()],
             'badges' => ['required', 'array', 'min:1'],
             'badges.*' => ['string', 'in:'.implode(',', $badges)],
+            'other_badge' => [Rule::requiredIf(fn () => in_array('Other', $this->input('badges', []), true)), 'nullable', 'string', 'max:255'],
             'certificates' => ['nullable', 'string', 'max:2000'],
             'preferred_role' => ['required', 'in:'.implode(',', array_keys($roles))],
+            'other_preferred_role' => [Rule::requiredIf($this->input('preferred_role') === 'other'), 'nullable', 'string', 'max:255'],
             'experience_years' => ['required', 'integer', 'min:0', 'max:60'],
             'current_club' => ['nullable', 'string', 'max:255'],
             'nationality' => ['required', 'string', 'max:100'],
+            'gender' => ['nullable', 'in:male,female'],
             'linkedin' => ['nullable', 'string', 'max:255'],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
             'cv' => ['required', 'file', 'mimes:pdf,docx', 'max:5120'],
