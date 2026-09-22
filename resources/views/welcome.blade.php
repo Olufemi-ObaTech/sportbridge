@@ -150,6 +150,35 @@
             </div>
         </div>
 
+        <section class="mb-5" aria-labelledby="sportbridge-visuals-title">
+            <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
+                <div>
+                    <span class="text-uppercase small fw-semibold text-muted">{{ __('Built for the game') }}</span>
+                    <h2 id="sportbridge-visuals-title" class="h3 fw-bold mb-0" style="color: var(--fc-blue-700);">{{ __('A connected sporting world') }}</h2>
+                </div>
+                <p class="text-muted mb-0">{{ __('From the pitch to the next opportunity.') }}</p>
+            </div>
+            <div class="fc-visual-showcase mb-3">
+                <figure>
+                    <img src="{{ asset('img/football-stadium.jpg') }}" alt="{{ __('Football stadium ready for a match') }}" loading="lazy">
+                    <figcaption>{{ __('Find your next stage') }}</figcaption>
+                </figure>
+                <figure>
+                    <img src="{{ asset('img/football-stadium1.jpg') }}" alt="{{ __('Football stadium viewed from the stands') }}" loading="lazy">
+                    <figcaption>{{ __('Make your move') }}</figcaption>
+                </figure>
+                <figure>
+                    <img src="{{ asset('img/fifa-world-cup-ball.avif') }}" alt="{{ __('FIFA World Cup football') }}" loading="lazy">
+                    <figcaption>{{ __('Every level. Every ambition.') }}</figcaption>
+                </figure>
+            </div>
+            <div class="fc-sport-strip">
+                <img src="{{ asset('img/basketball.jpg') }}" alt="{{ __('Basketball on court') }}" loading="lazy">
+                <img src="{{ asset('img/basketball-court.jpg') }}" alt="{{ __('Basketball court') }}" loading="lazy">
+                <img src="{{ asset('img/basketball-journal.jpg') }}" alt="{{ __('Basketball journal') }}" loading="lazy">
+            </div>
+        </section>
+
         <div class="rounded-4 p-5 mb-5 text-center fc-band-photo">
             <h2 class="h3 fw-bold text-white mb-2">{{ __('Ready to make your next move?') }}</h2>
             <p class="mb-4" style="color: rgba(255,255,255,.85);">{{ __('Join :app today, free for players — it only takes a minute to get started.', ['app' => config('app.name')]) }}</p>

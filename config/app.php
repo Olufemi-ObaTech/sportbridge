@@ -54,6 +54,12 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'admin' => [
+        'name' => env('ADMIN_NAME', 'Platform Admin'),
+        'email' => env('ADMIN_EMAIL', 'admin@sportbridge.test'),
+        'password' => env('ADMIN_PASSWORD', 'change-me-immediately'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

@@ -52,10 +52,10 @@
     --fc-hero-photo:
         radial-gradient(circle at 12% 18%, rgba(56, 214, 255, .30), transparent 42%),
         linear-gradient(100deg, rgba(5, 11, 31, .96) 0%, rgba(10, 22, 51, .88) 40%, rgba(11, 43, 107, .65) 75%, rgba(11, 43, 107, .45) 100%),
-        url('/img/stadium-night.jpg');
+        url('/img/connected-cities.jpeg');
     --fc-band-photo:
         linear-gradient(120deg, rgba(11, 43, 107, .92) 0%, rgba(27, 84, 214, .85) 100%),
-        url('/img/stadium-day.jpg');
+        url('/img/suspension-bridge.jpeg');
 
     --fc-font-heading: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --fc-font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -251,8 +251,6 @@ button:focus-visible {
 /* Navbar */
 .navbar {
     background: linear-gradient(120deg, rgba(5, 11, 31, .94) 0%, rgba(11, 43, 107, .94) 100%);
-    backdrop-filter: saturate(160%) blur(10px);
-    -webkit-backdrop-filter: saturate(160%) blur(10px);
     border-bottom: 1px solid rgba(245, 179, 1, .12);
 }
 
@@ -301,6 +299,131 @@ button:focus-visible {
     background: var(--fc-band-photo);
     background-size: cover;
     background-position: center;
+}
+
+.fc-player-banner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 190px;
+    padding: 2rem 2.25rem;
+    overflow: hidden;
+    border-radius: var(--fc-radius-lg);
+    color: #fff;
+    background-position: center;
+    background-size: cover;
+    box-shadow: var(--fc-shadow);
+}
+
+.fc-player-banner::before {
+    position: absolute;
+    inset: 0;
+    content: "";
+    background: linear-gradient(90deg, rgba(5, 11, 31, .9), rgba(5, 11, 31, .28));
+}
+
+.fc-player-banner > * {
+    position: relative;
+    z-index: 1;
+}
+
+.fc-player-banner-football {
+    background-image: url('/img/football-stadium.jpg');
+}
+
+.fc-player-banner-basketball {
+    background-image: url('/img/basketball.jpg');
+}
+
+.fc-player-banner > i {
+    margin-right: 1rem;
+    color: var(--fc-gold-400);
+    font-size: 4rem;
+}
+
+@media (max-width: 575.98px) {
+    .fc-player-banner {
+        min-height: 160px;
+        padding: 1.5rem;
+    }
+
+    .fc-player-banner > i {
+        font-size: 2.5rem;
+    }
+}
+
+.fc-visual-showcase {
+    display: grid;
+    grid-template-columns: 1.3fr .7fr;
+    gap: 1rem;
+}
+
+.fc-visual-showcase figure {
+    position: relative;
+    min-height: 220px;
+    margin: 0;
+    overflow: hidden;
+    border-radius: var(--fc-radius);
+    background: var(--fc-navy-900);
+}
+
+.fc-visual-showcase figure:first-child {
+    grid-row: span 2;
+}
+
+.fc-visual-showcase img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.fc-visual-showcase figcaption {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 2rem 1rem .85rem;
+    color: #fff;
+    background: linear-gradient(transparent, rgba(5, 11, 31, .86));
+    font-weight: 600;
+}
+
+.fc-sport-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: .75rem;
+    align-items: stretch;
+}
+
+.fc-sport-strip img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    min-height: 140px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: var(--fc-radius);
+    box-shadow: var(--fc-shadow-sm);
+}
+
+@media (max-width: 767.98px) {
+    .fc-visual-showcase {
+        grid-template-columns: 1fr;
+    }
+
+    .fc-visual-showcase figure:first-child {
+        grid-row: auto;
+    }
+
+    .fc-sport-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .fc-sport-strip img {
+        aspect-ratio: 16 / 9;
+        min-height: 0;
+        max-height: 220px;
+    }
 }
 
 .fc-hero-ball {
@@ -453,8 +576,6 @@ button:focus-visible {
     display: flex;
     flex-wrap: nowrap;
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
 }
 
 .stat-strip > * {

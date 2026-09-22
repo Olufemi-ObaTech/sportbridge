@@ -33,12 +33,15 @@ class ModerationController extends Controller
             ->when($request->filled('from'), fn ($q) => $q->whereDate('created_at', '>=', $request->date('from')))
             ->when($request->filled('to'), fn ($q) => $q->whereDate('created_at', '<=', $request->date('to')))
             ->latest()
-            ->paginate(15)
-            ->withQueryString();
+            ->get();
 
         $stats = [
             'total_users' => User::count(),
-            'by_role' => User::selectRaw('role, count(*) as count')->groupBy('role')->pluck('count', 'role'),
+            'by_role' => User::pending()
+                ->whereIn('role', ['academy', 'agent', 'coach', 'player'])
+                ->selectRaw('role, count(*) as count')
+                ->groupBy('role')
+                ->pluck('count', 'role'),
             'pending_count' => User::pending()->count(),
             'new_this_week' => User::where('created_at', '>=', now()->subWeek())->count(),
         ];

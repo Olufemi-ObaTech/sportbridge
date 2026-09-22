@@ -47,6 +47,8 @@ class AnalyticsController extends Controller
             'totalUsers' => User::count(),
             'roleCounts' => $roleCounts,
             'statusCounts' => $statusCounts,
+            'pendingUsers' => User::where('status', User::STATUS_PENDING)->latest()->get(),
+            'suspendedUsers' => User::where('status', User::STATUS_SUSPENDED)->latest('updated_at')->get(),
             'weeklyRegistrations' => $weeklyRegistrations,
             'footballPlayers' => Player::count(),
             'basketballPlayers' => BasketballPlayer::count(),

@@ -20,10 +20,10 @@
         </div>
         <div class="col">
             <div class="card h-100 p-3">
-                <div class="text-muted small mb-2">{{ __('By Role') }}</div>
-                @foreach ($stats['by_role'] as $role => $count)
+                <div class="text-muted small mb-2">{{ __('Pending by role') }}</div>
+                @foreach (['academy' => __('Club / Academy'), 'agent' => __('Scouts / Agents'), 'coach' => __('Coaches'), 'player' => __('Players')] as $role => $label)
                     <div class="d-flex justify-content-between small">
-                        <span>{{ __(ucfirst(str_replace('_', ' ', $role))) }}</span><span class="fw-semibold">{{ $count }}</span>
+                        <span>{{ $label }}</span><span class="fw-semibold">{{ $stats['by_role'][$role] ?? 0 }}</span>
                     </div>
                 @endforeach
             </div>
@@ -79,6 +79,5 @@
             @endforeach
         </div>
 
-        <div class="mt-3">{{ $pending->links() }}</div>
     @endif
 </x-dashboard-layout>

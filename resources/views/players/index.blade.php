@@ -1,6 +1,15 @@
 <x-app-layout>
+    @php $playerSport = request('sport', session('sport', 'football')); @endphp
+    <section class="fc-player-banner mb-4 {{ $playerSport === 'basketball' ? 'fc-player-banner-basketball' : 'fc-player-banner-football' }}">
+        <div>
+            <span class="text-uppercase small fw-semibold">{{ $playerSport === 'basketball' ? __('Basketball talent') : __('Football talent') }}</span>
+            <h1 class="h3 mb-1">{{ $playerSport === 'basketball' ? __('Find basketball players') : __('Find football players') }}</h1>
+            <p class="mb-0">{{ __('Search verified profiles by position, age, club and more.') }}</p>
+        </div>
+        <i class="bi {{ $playerSport === 'basketball' ? 'bi-dribbble' : 'bi-globe2' }}" aria-hidden="true"></i>
+    </section>
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h4 mb-0">{{ __('Find Players') }}</h1>
+        <h2 class="h4 mb-0">{{ __('Find Players') }}</h2>
         <button type="button" class="btn btn-outline-secondary d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#playerFilters">
             <i class="bi bi-funnel me-1" aria-hidden="true"></i>{{ __('Filters') }}
         </button>

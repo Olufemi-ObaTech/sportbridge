@@ -10,14 +10,15 @@ class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        $email = env('ADMIN_EMAIL', 'admin@sportbridge.test');
+        $admin = config('app.admin');
+        $email = $admin['email'];
 
         User::updateOrCreate(
             ['email' => $email],
             [
-                'name' => env('ADMIN_NAME', 'Platform Admin'),
+                'name' => $admin['name'],
                 'username' => 'admin-'.Str::random(6),
-                'password' => env('ADMIN_PASSWORD', 'change-me-immediately'),
+                'password' => $admin['password'],
                 'role' => User::ROLE_SUPER_ADMIN,
                 'status' => User::STATUS_ACTIVE,
                 'email_verified_at' => now(),
