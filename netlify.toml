@@ -3,7 +3,7 @@
 # ASSET_URL (Railway env var) at this site's URL so Blade's @vite()
 # directive serves assets from here instead of the app's own domain.
 [build]
-  command = "npm ci && npm run build"
+  command = "npm ci && npm run build && cp netlify/index.html public/build/index.html"
   publish = "public/build"
 
 [[headers]]
