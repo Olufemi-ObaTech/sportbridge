@@ -1,7 +1,5 @@
-# Netlify hosts ONLY the compiled Vite assets (CSS/JS) as a static CDN.
-# The Laravel app itself runs on Railway - see DEPLOYMENT.md. Point
-# ASSET_URL (Railway env var) at this site's URL so Blade's @vite()
-# directive serves assets from here instead of the app's own domain.
+# Netlify hosts the public static experience and compiled Vite assets.
+# Server-side application services are being migrated to Supabase.
 [build]
   command = "npm ci && npm run build && cp netlify/index.html public/build/index.html"
   publish = "public/build"
@@ -16,8 +14,7 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# CORS: the app domain (Railway) fetches the manifest and font/asset files
-# cross-origin from this Netlify domain.
+# Allow the Supabase-backed application to fetch assets cross-origin.
 [[headers]]
   for = "/*"
   [headers.values]
