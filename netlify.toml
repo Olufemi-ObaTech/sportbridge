@@ -1,7 +1,7 @@
 # Netlify hosts the public static experience and compiled Vite assets.
 # Server-side application services are being migrated to Supabase.
 [build]
-  command = "npm ci && npm run build && cp netlify/index.html public/build/index.html"
+  command = "npm ci && npm run build && node -e \"require('fs').copyFileSync('netlify/index.html','public/build/index.html')\""
   publish = "public/build"
 
 [[headers]]
