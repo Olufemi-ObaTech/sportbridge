@@ -4,6 +4,9 @@
   command = "npm ci && npm run build && node -e \"require('fs').copyFileSync('netlify/index.html','public/build/index.html')\""
   publish = "public/build"
 
+[functions]
+  directory = "netlify/functions"
+
 [[headers]]
   for = "/assets/*"
   [headers.values]
