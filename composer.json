@@ -66,7 +66,17 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": [
+                "laravel-lang/config",
+                "laravel-lang/lang",
+                "laravel-lang/locales",
+                "laravel-lang/publisher",
+                "laravel/breeze",
+                "laravel/pail",
+                "laravel/sail",
+                "nunomaduro/collision",
+                "nunomaduro/termwind"
+            ]
         }
     },
     "config": {

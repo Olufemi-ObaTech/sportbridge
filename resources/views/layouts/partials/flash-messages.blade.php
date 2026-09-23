@@ -5,7 +5,7 @@
     </div>
 @endif
 
-@if ($errors->any())
+@if (isset($errors) && $errors->any())
     <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
         <p class="fw-semibold mb-1">{{ __('Please fix the following:') }}</p>
         <ul class="mb-0 ps-3">

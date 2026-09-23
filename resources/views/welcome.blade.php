@@ -1,7 +1,7 @@
 @push('meta')
     <script type="application/ld+json" nonce="{{ request()->attributes->get('csp_nonce') }}">
         {!! json_encode([
-            '@context' => 'https://schema.org',
+            '@@context' => 'https://schema.org',
             '@type' => 'WebSite',
             'name' => config('app.name'),
             'url' => route('home'),
@@ -14,7 +14,7 @@
     </script>
     <script type="application/ld+json" nonce="{{ request()->attributes->get('csp_nonce') }}">
         {!! json_encode([
-            '@context' => 'https://schema.org',
+            '@@context' => 'https://schema.org',
             '@type' => 'Organization',
             'name' => config('app.name'),
             'url' => route('home'),
