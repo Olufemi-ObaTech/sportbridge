@@ -34,6 +34,21 @@ jobs:
       - name: Generate app key
         run: php artisan key:generate
 
+      # Build the Laravel Vite assets so public/build/manifest.json exists
+      # when the test suite renders Blade views that call @vite().
+      - name: Setup Node for Laravel assets
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install root npm dependencies
+        run: npm ci
+
+      - name: Build Laravel Vite assets
+        run: npm run build
+
       - name: Run Pint (code style)
         run: ./vendor/bin/pint --test
 
@@ -68,12 +83,10 @@ jobs:
         # VITE_SUPABASE_URL is non-secret so it can live in netlify.toml and here.
         # VITE_SUPABASE_ANON_KEY is a publishable/anon key (safe for the browser)
         # but still kept as a GitHub secret so it isn't hardcoded in source.
-        # Add it in: GitHub repo → Settings → Secrets and variables → Actions
-        # Secret name: VITE_SUPABASE_ANON_KEY
+        # Secret name: VITE_SUPABASE_ANON_KEY (set in repo Settings → Secrets)
         env:
           VITE_SUPABASE_URL: https://pzfohowzaeunywaqukwe.supabase.co
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          # Netlify function env vars (unprefixed, server-side only)
           SUPABASE_URL: https://pzfohowzaeunywaqukwe.supabase.co
           SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
