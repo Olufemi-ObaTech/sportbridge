@@ -2,13 +2,15 @@
 
 A multi-sport (football & basketball) talent and recruitment platform connecting **Academies/Clubs**, **Agents/Scouts**, and **Coaches/Managers**. Academies showcase players and post jobs. Agents discover players and request access to full profiles. Coaches browse and apply to jobs. A Super Admin moderates every account and piece of content.
 
-Built with Laravel 11, MySQL, Bootstrap 5.3, and vanilla ES6 — no frontend framework.
+Production frontend: React/Vite in `frontend/`, hosted by Netlify and backed by Supabase. See [DEPLOYMENT.md](DEPLOYMENT.md) for provider setup, database schema, custom-domain activation, and SMS readiness.
 
-## Stack
+The Laravel 12/MySQL application below is the legacy implementation retained for local development and reference; it is not deployed by the Netlify/Supabase architecture.
+
+## Legacy Laravel stack
 
 | Layer | Choice |
 |---|---|
-| Framework | Laravel 11, PHP 8.2+ |
+| Framework | Laravel 12, PHP 8.2+ |
 | Database | MySQL 8, Eloquent |
 | Frontend | Bootstrap 5.3 (CDN), Vanilla ES6 modules |
 | Auth | Laravel Breeze (Blade) + role middleware + Policies |
@@ -85,7 +87,7 @@ Visit `http://localhost:8000`. Log in as the seeded super admin using `ADMIN_EMA
 ## Running tests
 
 ```bash
-php artisan test
+vendor/bin/phpunit
 ```
 
 Tests run against an in-memory SQLite database (configured in `phpunit.xml`) and don't touch your development MySQL database. Coverage includes: each registration flow, role-based route access (e.g. a coach hitting `/admin` gets 403), player CRUD authorization, job application uniqueness, message authorization, and admin approve/deny.

@@ -1,105 +1,66 @@
-# Deploying SportBridge
+# SportBridge deployment
 
-Three services, each doing one job:
+## Production architecture
 
-| Service | Job |
-|---|---|
-| **GitHub** | Source control. Pushing to `main` triggers Railway and Netlify automatically once they're connected (Section 3). `.github/workflows/ci.yml` also runs tests + Pint on every push/PR as a quality gate. |
-| **Railway** | Runs the actual Laravel app (PHP/Apache via `Dockerfile`) and hosts the two MySQL databases (`sportbridge` + `sportbridge_basketball`). |
-| **Netlify** | Hosts only the compiled CSS/JS (`public/build`) as a static CDN. Optional — the app works fine without it (Railway serves assets itself as a fallback), this just offloads static asset delivery to a CDN. |
+- GitHub repository: `Olufemi-ObaTech/sportbridge`, production branch `main`.
+- Netlify site: `sportbridgeng`, builds `frontend/` and publishes `frontend/dist` using the root `netlify.toml`.
+- Supabase provides Postgres, authentication, and row-level security. Netlify does not run the legacy Laravel/PHP application.
 
-Netlify cannot run the Laravel app itself — it has no PHP runtime, only static hosting and JS functions. That split is why Railway exists in this picture at all.
+The React frontend currently supports player and opportunity browsing plus Supabase email/password authentication. Laravel features have not all been migrated to this frontend.
 
-## 1. Push to GitHub
+## GitHub and Netlify
 
-```bash
-git add -A
-git commit -m "Prepare SportBridge for deployment"
-git remote add origin https://github.com/<you>/sportbridge.git
-git push -u origin main
+The Netlify site should be connected to the GitHub repository above with `main` as its production branch. Each successful push to `main` triggers a Netlify build. GitHub Actions runs PHP tests/style checks and React lint/build checks before merge or after push.
+
+```powershell
+git add DEPLOYMENT.md README.md .github/workflows/ci.yml frontend netlify.toml supabase
+git commit -m "Build SportBridge Netlify and Supabase frontend"
+git push origin main
 ```
 
-## 2. Railway — the app + all three databases
+Never commit `.env`, `.env.local`, access tokens, database passwords, or Supabase secret/service-role keys.
 
-1. **New Project → Deploy from GitHub repo**, pick this repo. Railway detects `railway.json` and builds from the `Dockerfile` automatically.
-2. **Add a MySQL database**: `+ New → Database → MySQL`. Railway provisions one MySQL instance with one default database.
-3. **Create the second and third databases on that same instance** — basketball, and the Super Admin's own read-only reporting database. Open the MySQL plugin's `Data` tab (or connect with the credentials Railway shows you) and run:
-   ```sql
-   CREATE DATABASE sportbridge_basketball CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   CREATE DATABASE sportbridge_admin CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
-   Football's and basketball's tables must stay in two physically separate databases (see `config/database.php`'s `mysql_basketball` connection) — one database with two apps' worth of tables is not the same thing and migrations will collide. The admin database is separate again: it holds a rebuildable snapshot only, not live application data (see `App\Console\Commands\SyncAdminUserRecords`).
-4. **Set environment variables** on the app service (Railway → your service → Variables). Reference the MySQL plugin's variables with Railway's `${{ MySQL.VARNAME }}` syntax so you don't hand-copy credentials:
+## Supabase setup
 
-   ```
-   APP_NAME=SportBridge
-   APP_ENV=production
-   APP_KEY=                          # generate below, don't leave blank
-   APP_DEBUG=false
-   APP_URL=https://<your-app>.up.railway.app
+1. Open the intended project in Supabase and select **SQL Editor → New query**.
+2. Paste and run `supabase/schema.sql`. This creates the tables and row-level security policies, provisions public player display names without exposing profile email addresses, and creates a listing when a player registers. It is safe to run again.
+3. In **Project Settings → API**, copy the Project URL and public anon/publishable key. Confirm the key belongs to this project before deploying; never use the service-role/secret key in browser or Netlify variables.
+4. In Netlify `sportbridgeng` → **Project configuration → Environment variables**, add these values for Production, Deploy Previews, and Local development as applicable:
 
-   DB_CONNECTION=mysql
-   DB_HOST=${{MySQL.MYSQLHOST}}
-   DB_PORT=${{MySQL.MYSQLPORT}}
-   DB_DATABASE=${{MySQL.MYSQLDATABASE}}
-   DB_USERNAME=${{MySQL.MYSQLUSER}}
-   DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}
-
-   DB_BASKETBALL_DATABASE=sportbridge_basketball
-   DB_ADMIN_DATABASE=sportbridge_admin
-   # DB_BASKETBALL_*/DB_ADMIN_* HOST/PORT/USERNAME/PASSWORD all fall back to the
-   # DB_* values above automatically (see config/database.php) - only the
-   # database name differs.
-
-   SESSION_SECURE_COOKIE=true
-   FILESYSTEM_DISK=public             # switch to s3 + fill AWS_* once you have a bucket
-   QUEUE_CONNECTION=database
-   MAIL_MAILER=log                    # point at a real provider before going live for real users
-
-   ADMIN_NAME="Platform Admin"
-   ADMIN_EMAIL=admin@sportbridge.test # change this
-   ADMIN_PASSWORD=                    # set a strong password, don't leave the repo default
-
-   # Only needed if you deploy the Netlify asset CDN in Section 4:
-   # ASSET_URL=https://sportbridge-assets.netlify.app
+   ```text
+   VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+   VITE_SUPABASE_ANON_KEY=<public-anon-or-publishable-key>
+   SUPABASE_URL=https://<project-ref>.supabase.co
+   SUPABASE_ANON_KEY=<public-anon-or-publishable-key>
    ```
 
-   Generate `APP_KEY` once locally and paste the value in:
-   ```bash
-   php artisan key:generate --show
-   ```
+   The `VITE_` variables are embedded in the frontend build. The unprefixed pair is used only by the Netlify health function. Use the same project URL and public key for each pair; do not use a service-role key.
+5. In **Authentication → URL Configuration**, set the Site URL to the Netlify production URL and add the production URL, deploy-preview URL pattern, and final custom domain to the redirect allow list.
+6. Redeploy after changing variables. Verify the home page shows live listings and the health function returns HTTP 200. A frontend build alone does not prove database access.
 
-5. **Generate a public domain before your first deploy, or right after.** Railway → your service → Settings → Networking → Public Networking → **Generate Domain**, port **80**. Without this the service stays in an "Unexposed service" state and every deployment fails its healthcheck no matter how healthy the container actually is — Railway has no route to reach it. (The `sportbridge.railway.internal` address shown by default is private service-to-service networking only; it does not satisfy this.)
-6. **Deploy.** Railway builds the `Dockerfile`, and `docker/entrypoint.sh` runs `php artisan migrate --force` against *both* databases automatically on every deploy before the server starts (safe to re-run — it only applies new migrations; if it fails because `DB_*` isn't configured yet, Apache still starts so the service stays reachable and shows the real error instead of crash-looping).
-7. **Seed once, manually**, after the first successful deploy (Railway → service → the `⋮` menu → **Run Command**, or `railway run` from the CLI):
-   ```bash
-   php artisan db:seed --force
-   ```
-   Don't run `db:fresh-all` against production after real users exist — it drops every table. It's a local/staging reset tool only.
-8. **Custom domain** (optional): Railway → Settings → Networking → add your domain, update `APP_URL` to match, and point your DNS CNAME at the address Railway gives you.
+## Custom domain activation
 
-## 3. Connect GitHub for auto-deploy
+The domain must first be registered and delegated at its registrar. Add both `sportbridge.com.ng` and `www.sportbridge.com.ng` to the Netlify site, then configure exactly the A/ALIAS/CNAME records Netlify displays for the account. Do not copy guessed IP addresses from old instructions. The domain currently returns `NXDOMAIN`; no redirect or TLS certificate can work until DNS resolves.
 
-Already done as part of step 2.1 — Railway's GitHub integration redeploys automatically on every push to `main`. No separate deploy action is needed; `.github/workflows/ci.yml` runs tests independently as a status check, it does not push to Railway itself.
+After DNS resolves, set the primary domain in Netlify, wait for its HTTPS certificate, then add `https://www.sportbridge.com.ng` to Supabase's Site URL and redirect allow list. Verify both apex and `www` URLs over HTTPS.
 
-## 4. Netlify — optional static asset CDN
+## Email and SMS activation
 
-1. **Add new site → Import an existing project**, pick the same GitHub repo. Netlify reads `netlify.toml` automatically (`npm ci && npm run build`, publishes `public/build`).
-2. Once it deploys, copy the site URL (e.g. `https://sportbridge-assets.netlify.app`).
-3. Back in Railway, set `ASSET_URL=https://sportbridge-assets.netlify.app` and redeploy. Laravel's `@vite()` directive (in `resources/views/layouts/partials/head.blade.php`) resolves asset URLs through `ASSET_URL` automatically — no code changes needed. Leave `ASSET_URL` unset and the app just serves its own compiled assets from Railway instead; nothing breaks either way.
+The static React frontend must not send SMTP directly. Brevo SMTP is for email and does not enable SMS. The current React/Supabase app has no email-notification or SMS-sending endpoint yet.
 
-## 5. Verify
+Before activating SMS, choose an SMS provider/API, enable billing and the destination countries, register/approve a sender ID where required, and define consent, rate limits, and message templates. Implement sending in a Netlify Function or Supabase Edge Function using a server-only secret; never expose provider credentials in `VITE_*` values. Then test a single opted-in number and delivery receipt.
 
-```bash
-curl -I https://<your-railway-domain>/up      # Laravel's health check route, should be 200
-```
+For transactional email, verify the sender in Brevo. To send from the custom domain, publish Brevo's domain-verification, SPF, and DKIM DNS records at the registrar. The Gmail address `sportbridge.com.ng@gmail.com` must be added and verified as a Brevo sender; it does not authenticate ownership of `sportbridge.com.ng`. Do not send until Brevo reports the sender as verified.
 
-Log in with the credentials below, click through a dashboard for each role, post to the feed, and check `/admin` as the super admin.
+## Local checks
 
-## Local development reset
+```powershell
+Push-Location frontend
+npm ci
+npm run lint
+npm run build
+Pop-Location
 
-To rebuild both databases from scratch locally (this project's custom fix for the fact that Laravel's own `migrate:fresh` only drops tables on the *default* connection and silently leaves the basketball database's tables in place):
-
-```bash
-php artisan db:fresh-all --seed
+vendor/bin/pint --test
+vendor/bin/phpunit
 ```

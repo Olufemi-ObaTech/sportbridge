@@ -1,8 +1,8 @@
 # Netlify hosts the public static experience and compiled Vite assets.
 # Server-side application services are being migrated to Supabase.
 [build]
-  command = "npm ci && npm run build && node -e \"require('fs').copyFileSync('netlify/index.html','public/build/index.html')\""
-  publish = "public/build"
+  command = "cd frontend && npm ci && npm run build"
+  publish = "frontend/dist"
 
 [functions]
   directory = "netlify/functions"
@@ -17,8 +17,25 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Allow the Supabase-backed application to fetch assets cross-origin.
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
+[[redirects]]
+  from = "http://sportbridge.com.ng/*"
+  to = "https://www.sportbridge.com.ng/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://sportbridge.com.ng/*"
+  to = "https://www.sportbridge.com.ng/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "http://www.sportbridge.com.ng/*"
+  to = "https://www.sportbridge.com.ng/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
