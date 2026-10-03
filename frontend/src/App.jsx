@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './Auth.css'
+import Dashboard from './Dashboard.jsx'
 import basketballImage from '../../public/img/basketball.jpg'
 import basketballCourtImage from '../../public/img/basketball-court.jpg'
 import basketballJournalImage from '../../public/img/basketball-journal.jpg'
@@ -30,6 +31,7 @@ const worldClocks = [
 ]
 
 function App() {
+  const [view, setView] = useState('home')
   const [section, setSection] = useState('players')
   const [records, setRecords] = useState([])
   const [search, setSearch] = useState('')
@@ -95,8 +97,10 @@ function App() {
   useEffect(() => {
     if (!supabase) return undefined
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
+      if (event === 'SIGNED_IN') setView('dashboard')
+      if (event === 'SIGNED_OUT') setView('home')
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -132,6 +136,7 @@ function App() {
     } else {
       setAuthOpen(false)
       setAuthMessage('')
+      setView('dashboard')
     }
   }
 
@@ -151,6 +156,8 @@ function App() {
           </button>
           <div className={`collapse navbar-collapse${menuOpen ? ' show' : ''}`} id="mainNavbar">
             <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+              <li className="nav-item"><a className="nav-link" href="#home" onClick={() => { setView('home'); setMenuOpen(false) }}>Home</a></li>
+              {user && <li className="nav-item"><button className={`btn btn-link nav-link${view === 'dashboard' ? ' active' : ''}`} type="button" onClick={() => { setView('dashboard'); setMenuOpen(false) }}>Dashboard</button></li>}
               <li className="nav-item"><a className="nav-link" href="#players" onClick={() => setMenuOpen(false)}>Players</a></li>
               <li className="nav-item"><a className="nav-link" href="#opportunities" onClick={() => { setSection('jobs'); setMenuOpen(false) }}>Jobs</a></li>
               <li className="nav-item"><a className="nav-link" href="#roles" onClick={() => setMenuOpen(false)}>Feed</a></li>
@@ -191,6 +198,7 @@ function App() {
       </nav>
 
       <main id="main-content" className="flex-grow-1">
+        {view === 'dashboard' && user ? <Dashboard supabase={supabase} user={user} onBack={() => setView('home')} /> : <>
         <div className="container py-4" aria-hidden="true" />
         <section className="fc-hero px-3 px-md-5 py-5 mb-5" aria-labelledby="home-heading">
           <img src={worldCupBallImage} alt="" className="fc-hero-ball d-none d-md-block" />
@@ -288,6 +296,7 @@ function App() {
               </article></div>)}</div>
               : <div className="fc-empty-state">{connection === 'missing' || connection === 'error' ? <i className="bi bi-cloud-slash" aria-hidden="true" /> : <i className="bi bi-person-lines-fill" aria-hidden="true" />}<h3 className="h5">{connection === 'missing' ? 'Connect the live directory' : recordError ? 'The directory needs attention' : 'The next opportunity starts here'}</h3><p>{connection === 'missing' ? 'Add the Supabase project URL and public anon key to Netlify to load live SportBridge listings.' : recordError ? 'Check the Supabase project key, database schema and public read policies.' : 'There are no listings here yet. Sign in to create your profile and make your next move.'}</p></div>}
         </section>
+        </>}
       </main>
 
       <footer className="mt-auto py-5" style={{ background: 'linear-gradient(160deg, var(--fc-navy-800) 0%, var(--fc-blue-900) 100%)', color: 'rgba(247,249,248,.82)' }} data-bs-theme="dark">
