@@ -99,7 +99,7 @@ function Dashboard({ supabase, user, onBack }) {
 
     const { data, error: saveError } = await supabase
       .from('profiles')
-      .update({ full_name: profileName.trim() || null })
+      .update({ full_name: profileName.trim() || null, updated_at: new Date().toISOString() })
       .eq('id', user.id)
       .select('id, email, full_name, role, created_at')
       .single()
@@ -158,7 +158,7 @@ function Dashboard({ supabase, user, onBack }) {
     setNotice('')
     const { data, error: saveError } = await supabase
       .from('profiles')
-      .update({ role: roleDrafts[accountId] })
+      .update({ role: roleDrafts[accountId], updated_at: new Date().toISOString() })
       .eq('id', accountId)
       .select('id, email, full_name, role, created_at')
       .single()

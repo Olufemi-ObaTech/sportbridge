@@ -38,11 +38,11 @@ jobs:
         run: ./vendor/bin/pint --test
 
       - name: Run test suite
-        run: php artisan test
+        run: vendor/bin/phpunit
         # phpunit.xml already points every connection at in-memory SQLite,
         # so no MySQL service container is needed here.
 
-  build-assets:
+  build-frontend:
     runs-on: ubuntu-latest
 
     steps:
@@ -51,11 +51,29 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        working-directory: frontend
         run: npm ci
 
-      - name: Build assets
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: frontend
+        # VITE_SUPABASE_URL is non-secret so it can live in netlify.toml and here.
+        # VITE_SUPABASE_ANON_KEY is a publishable/anon key (safe for the browser)
+        # but still kept as a GitHub secret so it isn't hardcoded in source.
+        # Add it in: GitHub repo → Settings → Secrets and variables → Actions
+        # Secret name: VITE_SUPABASE_ANON_KEY
+        env:
+          VITE_SUPABASE_URL: https://pzfohowzaeunywaqukwe.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Netlify function env vars (unprefixed, server-side only)
+          SUPABASE_URL: https://pzfohowzaeunywaqukwe.supabase.co
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build

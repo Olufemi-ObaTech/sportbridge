@@ -4,6 +4,18 @@
   command = "cd frontend && npm ci && npm run build"
   publish = "frontend/dist"
 
+# ---------------------------------------------------------------------------
+# Required environment variables
+# Set these in Netlify: Site configuration → Environment variables
+# Use the PUBLIC anon/publishable key from Supabase → Project Settings → API.
+# NEVER use the service_role key here — it would be exposed in the browser bundle.
+# ---------------------------------------------------------------------------
+[build.environment]
+  VITE_SUPABASE_URL    = "https://pzfohowzaeunywaqukwe.supabase.co"
+  # VITE_SUPABASE_ANON_KEY must be set as a secret in the Netlify UI —
+  # do not hardcode it here because this file is committed to the repository.
+  NODE_VERSION         = "22"
+
 [functions]
   directory = "netlify/functions"
 
@@ -19,23 +31,24 @@
 
 [[redirects]]
   from = "http://sportbridge.com.ng/*"
-  to = "https://www.sportbridge.com.ng/:splat"
+  to   = "https://www.sportbridge.com.ng/:splat"
   status = 301
-  force = true
+  force  = true
 
 [[redirects]]
   from = "https://sportbridge.com.ng/*"
-  to = "https://www.sportbridge.com.ng/:splat"
+  to   = "https://www.sportbridge.com.ng/:splat"
   status = 301
-  force = true
+  force  = true
 
 [[redirects]]
   from = "http://www.sportbridge.com.ng/*"
-  to = "https://www.sportbridge.com.ng/:splat"
+  to   = "https://www.sportbridge.com.ng/:splat"
   status = 301
-  force = true
+  force  = true
 
+# SPA fallback — all paths serve index.html so React Router can handle them
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from   = "/*"
+  to     = "/index.html"
   status = 200

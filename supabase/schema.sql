@@ -135,111 +135,41 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+-- Stale v1 policies (all superseded by the comprehensive policy block further
+-- below). Drop them here so the later CREATE POLICY statements start clean,
+-- whether the schema is applied to a brand-new project or re-run as an
+-- idempotent migration.
 drop policy if exists "profiles are viewable by everyone" on public.profiles;
 drop policy if exists "profiles are viewable by owner" on public.profiles;
 drop policy if exists "profiles are viewable by admins" on public.profiles;
 drop policy if exists "profiles can be updated by owner" on public.profiles;
 drop policy if exists "profiles can be updated by admins" on public.profiles;
 drop policy if exists "profiles can be inserted by authenticated users" on public.profiles;
-create policy "profiles are viewable by owner" on public.profiles
-  for select using (auth.uid() = id);
-create policy "profiles are viewable by admins" on public.profiles
-  for select to authenticated using (public.current_user_is_admin());
-create policy "profiles can be updated by owner" on public.profiles
-  for update using (auth.uid() = id) with check (auth.uid() = id);
-create policy "profiles can be updated by admins" on public.profiles
-  for update to authenticated using (public.current_user_is_admin()) with check (public.current_user_is_admin());
-
 drop policy if exists "clubs are viewable by everyone" on public.clubs;
 drop policy if exists "clubs are editable by authenticated users" on public.clubs;
 drop policy if exists "clubs can be created by owner" on public.clubs;
 drop policy if exists "clubs can be updated by owner" on public.clubs;
 drop policy if exists "clubs can be deleted by owner" on public.clubs;
-create policy "clubs are viewable by everyone" on public.clubs
-  for select using (true);
-create policy "clubs can be created by owner" on public.clubs
-  for insert with check (auth.uid() = owner_id);
-create policy "clubs can be updated by owner" on public.clubs
-  for update using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
-create policy "clubs can be deleted by owner" on public.clubs
-  for delete using (auth.uid() = owner_id);
-
 drop policy if exists "players are viewable by everyone" on public.players;
 drop policy if exists "players can be managed by authenticated users" on public.players;
 drop policy if exists "players can be created by profile owner" on public.players;
 drop policy if exists "players can be updated by profile owner" on public.players;
 drop policy if exists "players can be deleted by profile owner" on public.players;
-create policy "players are viewable by everyone" on public.players
-  for select using (true);
-create policy "players can be created by profile owner" on public.players
-  for insert with check (auth.uid() = profile_id);
-create policy "players can be updated by profile owner" on public.players
-  for update using (auth.uid() = profile_id) with check (auth.uid() = profile_id);
-create policy "players can be deleted by profile owner" on public.players
-  for delete using (auth.uid() = profile_id);
-
 drop policy if exists "jobs are viewable by everyone" on public.jobs;
 drop policy if exists "jobs can be managed by authenticated users" on public.jobs;
 drop policy if exists "jobs can be created by club owner" on public.jobs;
 drop policy if exists "jobs can be updated by club owner" on public.jobs;
 drop policy if exists "jobs can be deleted by club owner" on public.jobs;
-create policy "jobs are viewable by everyone" on public.jobs
-  for select using (true);
-create policy "jobs can be created by club owner" on public.jobs
-  for insert with check (
-    exists (select 1 from public.clubs where id = club_id and owner_id = auth.uid())
-  );
-create policy "jobs can be updated by club owner" on public.jobs
-  for update using (
-    exists (select 1 from public.clubs where id = club_id and owner_id = auth.uid())
-  ) with check (
-    exists (select 1 from public.clubs where id = club_id and owner_id = auth.uid())
-  );
-create policy "jobs can be deleted by club owner" on public.jobs
-  for delete using (
-    exists (select 1 from public.clubs where id = club_id and owner_id = auth.uid())
-  );
-
 drop policy if exists "applications are viewable by authenticated users" on public.applications;
 drop policy if exists "applications can be managed by authenticated users" on public.applications;
 drop policy if exists "applications are viewable by applicant or club owner" on public.applications;
 drop policy if exists "applications can be created by player owner" on public.applications;
 drop policy if exists "applications can be updated by club owner" on public.applications;
-create policy "applications are viewable by applicant or club owner" on public.applications
-  for select using (
-    exists (select 1 from public.players where id = player_id and profile_id = auth.uid())
-    or exists (
-      select 1 from public.jobs
-      join public.clubs on clubs.id = jobs.club_id
-      where jobs.id = job_id and clubs.owner_id = auth.uid()
-    )
-  );
-create policy "applications can be created by player owner" on public.applications
-  for insert with check (
-    status = 'pending'
-    and
-    exists (select 1 from public.players where id = player_id and profile_id = auth.uid())
-  );
-create policy "applications can be updated by club owner" on public.applications
-  for update using (
-    exists (
-      select 1 from public.jobs
-      join public.clubs on clubs.id = jobs.club_id
-      where jobs.id = job_id and clubs.owner_id = auth.uid()
-    )
-  ) with check (
-    exists (
-      select 1 from public.jobs
-      join public.clubs on clubs.id = jobs.club_id
-      where jobs.id = job_id and clubs.owner_id = auth.uid()
-    )
-  );
 
+-- Minimal bootstrap grants so the ALTER TABLE / CREATE TABLE statements
+-- that follow can reference existing objects. The comprehensive, column-level
+-- grants that replace these are applied at the end of the file.
 grant usage on schema public to anon, authenticated;
-grant select on public.clubs, public.players, public.jobs to anon, authenticated;
-grant select, update on public.profiles to authenticated;
-grant insert, update, delete on public.clubs, public.players, public.jobs to authenticated;
-grant select, insert, update on public.applications to authenticated;
 
 -- Account state and contact details stay on the private profile row.
 alter table public.profiles
@@ -250,7 +180,8 @@ alter table public.profiles
   add column if not exists status text not null default 'active',
   add column if not exists referred_by uuid references public.profiles(id) on delete set null,
   add column if not exists updated_at timestamptz not null default now();
-  create unique index if not exists profiles_username_unique_idx on public.profiles (lower(username)) where username is not null;
+
+create unique index if not exists profiles_username_unique_idx on public.profiles (lower(username)) where username is not null;
 
 alter table public.clubs
   add column if not exists slug text,
@@ -352,23 +283,24 @@ alter table public.players
   add column if not exists height_cm integer,
   add column if not exists weight_kg integer,
   add column if not exists jersey_number integer,
-    add column if not exists primary_photo_path text,
-    add column if not exists current_club text,
-    create table if not exists public.player_private (
-      player_id uuid primary key references public.players(id) on delete cascade,
-      cv_storage_path text,
-      guardian_name text,
-      guardian_consent_at timestamptz,
-      private_notes text,
-      created_at timestamptz not null default now(),
-      updated_at timestamptz not null default now()
-    );
+  add column if not exists primary_photo_path text,
+  add column if not exists current_club text,
   add column if not exists previous_clubs text[] not null default '{}',
   add column if not exists achievements text,
   add column if not exists linkedin text,
   add column if not exists is_public boolean not null default false,
   add column if not exists status text not null default 'active',
   add column if not exists updated_at timestamptz not null default now();
+
+create table if not exists public.player_private (
+  player_id uuid primary key references public.players(id) on delete cascade,
+  cv_storage_path text,
+  guardian_name text,
+  guardian_consent_at timestamptz,
+  private_notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
 create table if not exists public.coach_private (
   user_id uuid primary key references public.profiles(id) on delete cascade,
@@ -886,12 +818,6 @@ begin
       and new.role = 'super_admin'
       and old.role is distinct from new.role
       and not public.current_user_is_admin() then
-    grant execute on function public.current_user_is_admin() to anon;
-    grant execute on function public.current_user_owns_academy(uuid) to anon;
-    grant execute on function public.current_user_owns_player(uuid) to anon;
-    grant execute on function public.current_user_owns_agent(uuid) to anon;
-    grant execute on function public.current_user_is_conversation_member(uuid) to anon;
-    grant execute on function public.current_user_has_agent_interaction(uuid) to anon;
     raise exception 'Only an existing administrator can grant administrator access.';
   end if;
   return new;

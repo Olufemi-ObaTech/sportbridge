@@ -9,9 +9,7 @@ import footballImage from '../../public/img/football-stadium.jpg'
 import footballStandImage from '../../public/img/football-stadium1.jpg'
 import logoMark from '../../public/img/logo-mark.svg'
 import worldCupBallImage from '../../public/img/world-cup-ball.avif'
-import { supabase } from './lib/supabase'
-
-const hasSupabaseConfig = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)
+import { supabase, hasSupabaseConfig } from './lib/supabase'
 const sections = [
   { id: 'players', label: 'Players' },
   { id: 'jobs', label: 'Opportunities' },

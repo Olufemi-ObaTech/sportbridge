@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCommentRequest;
 use App\Models\FeedPost;
 use App\Models\PostComment;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {
@@ -21,9 +22,9 @@ class CommentController extends Controller
         return back()->with('status', __('Comment added.'));
     }
 
-    public function destroy(PostComment $comment): RedirectResponse
+    public function destroy(Request $request, PostComment $comment): RedirectResponse
     {
-        $user = request()->user();
+        $user = $request->user();
         $canDeleteAsPostOwner = $user->can('delete', $comment->post);
 
         abort_unless($user->id === $comment->user_id || $canDeleteAsPostOwner, 403);

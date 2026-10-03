@@ -31,6 +31,8 @@ class MediaController extends Controller
 
             GenerateThumbnail::dispatch($media->id);
         } else {
+            abort_unless($request->hasFile('video'), 422, 'An image or video file is required.');
+
             $path = $request->file('video')->store('players/media', 'public');
             $player->mediaAssets()->create([
                 'type' => MediaAsset::TYPE_VIDEO,
@@ -95,6 +97,7 @@ class MediaController extends Controller
 
     public function setFeatured(MediaAsset $mediaAsset): JsonResponse
     {
+        abort_unless($mediaAsset->player, 404);
         $this->authorize('update', $mediaAsset->player);
 
         $mediaAsset->player?->mediaAssets()->update(['is_featured' => false]);
@@ -118,6 +121,7 @@ class MediaController extends Controller
 
     public function destroy(MediaAsset $mediaAsset): RedirectResponse|JsonResponse
     {
+        abort_unless($mediaAsset->player, 404);
         $this->authorize('update', $mediaAsset->player);
 
         $this->images->delete($mediaAsset->url);

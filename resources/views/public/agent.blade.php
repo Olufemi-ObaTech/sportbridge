@@ -16,7 +16,7 @@
         'bronze' => ['label' => 'Bronze', 'class' => 'text-bg-light border'],
         'new' => ['label' => 'New', 'class' => 'text-bg-light border'],
     ];
-    $trust = $trustLabels[$agent->trust_level];
+    $trust = $trustLabels[$agent->trust_level] ?? $trustLabels['new'];
 @endphp
 
 <x-app-layout>

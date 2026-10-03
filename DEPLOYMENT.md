@@ -2,65 +2,145 @@
 
 ## Production architecture
 
-- GitHub repository: `Olufemi-ObaTech/sportbridge`, production branch `main`.
-- Netlify site: `sportbridgeng`, builds `frontend/` and publishes `frontend/dist` using the root `netlify.toml`.
-- Supabase provides Postgres, authentication, and row-level security. Netlify does not run the legacy Laravel/PHP application.
+| Service | Role |
+|---|---|
+| **GitHub** — `Olufemi-ObaTech/sportbridge`, branch `main` | Source of truth. Every push triggers CI (PHP tests + React lint/build). |
+| **Netlify** — site `sportbridgeng` | Hosts the compiled React/Vite SPA from `frontend/dist`. Builds on every push to `main`. |
+| **Supabase** — project `pzfohowzaeunywaqukwe` | Postgres database, Auth, RLS, and Storage. |
+| **XAMPP MySQL** (local only) | Three local databases: `football_connect`, `football_connect_basketball`, `football_connect_admin`. Used by the legacy Laravel app during development. |
 
-The React frontend currently supports player and opportunity browsing plus Supabase email/password authentication. Laravel features have not all been migrated to this frontend.
+The React frontend in `frontend/` is the production app. The Laravel/PHP application is retained for local development only and is **not** deployed via Netlify.
 
-## GitHub and Netlify
+---
 
-The Netlify site should be connected to the GitHub repository above with `main` as its production branch. Each successful push to `main` triggers a Netlify build. GitHub Actions runs PHP tests/style checks and React lint/build checks before merge or after push.
+## Step 1 — Supabase
 
-```powershell
-git add DEPLOYMENT.md README.md .github/workflows/ci.yml frontend netlify.toml supabase
-git commit -m "Build SportBridge Netlify and Supabase frontend"
-git push origin main
+1. Open **[https://supabase.com/dashboard/project/pzfohowzaeunywaqukwe](https://supabase.com/dashboard/project/pzfohowzaeunywaqukwe)**.
+2. Go to **SQL Editor → New query**. Paste the entire contents of `supabase/schema.sql` and click **Run**. This is idempotent — safe to re-run.
+3. Go to **Project Settings → API**. Copy:
+   - **Project URL** — `https://pzfohowzaeunywaqukwe.supabase.co` (already set in the codebase)
+   - **anon / public key** — the `eyJ...` token labelled *anon* or *publishable*. **Do not copy the service_role key.**
+4. Go to **Authentication → URL Configuration**:
+   - Set **Site URL** to `https://www.sportbridge.com.ng`
+   - Add to **Redirect URLs**:
+     ```
+     https://www.sportbridge.com.ng/**
+     https://*.netlify.app/**
+     http://localhost:5173/**
+     ```
+5. Go to **Storage** and confirm three buckets exist: `public-media`, `private-media`, `private-documents`. If not, the schema.sql run in step 2 creates them automatically.
+
+---
+
+## Step 2 — Netlify environment variables
+
+In **Netlify → Site configuration → Environment variables**, create the following for scope **All** (Production + Deploy Previews):
+
+| Variable | Value | Notes |
+|---|---|---|
+| `VITE_SUPABASE_URL` | `https://pzfohowzaeunywaqukwe.supabase.co` | Embedded in the browser bundle at build time |
+| `VITE_SUPABASE_ANON_KEY` | `eyJ...` (anon key from Supabase) | Embedded in the browser bundle — use the anon key only |
+| `SUPABASE_URL` | `https://pzfohowzaeunywaqukwe.supabase.co` | Used by the Netlify health function (server-side) |
+| `SUPABASE_ANON_KEY` | `eyJ...` (same anon key) | Used by the Netlify health function (server-side) |
+
+After saving, **trigger a redeploy** (Deploys → Trigger deploy → Deploy site). Verify:
+- The site loads at your Netlify URL and shows the SportBridge home page.
+- `https://<your-site>.netlify.app/.netlify/functions/supabase-health` returns `{"ok":true,"status":200}`.
+
+---
+
+## Step 3 — GitHub secrets (for CI builds)
+
+In **GitHub → repo Settings → Secrets and variables → Actions → New repository secret**:
+
+| Secret name | Value |
+|---|---|
+| `VITE_SUPABASE_ANON_KEY` | `eyJ...` (anon key from Supabase) |
+
+This lets the GitHub Actions `build-frontend` job build with real credentials so the CI build matches the Netlify production build exactly. The `VITE_SUPABASE_URL` is non-secret and is hardcoded in the workflow.
+
+---
+
+## Step 4 — Link Netlify to GitHub
+
+Netlify should already be connected. If not:
+1. **Netlify → Sites → sportbridgeng → Site configuration → Build & deploy → Continuous deployment**.
+2. Click **Link to a Git provider**, choose GitHub, and select `Olufemi-ObaTech/sportbridge`.
+3. Set **Branch to deploy** to `main`.
+4. Build command: `cd frontend && npm ci && npm run build`
+5. Publish directory: `frontend/dist`
+
+Every push to `main` on GitHub now triggers both:
+- **GitHub Actions CI** — runs PHP tests + Pint + React lint + React build
+- **Netlify** — deploys the new frontend to production
+
+---
+
+## Step 5 — Custom domain (`sportbridge.com.ng`)
+
+The `netlify.toml` already has HTTP→HTTPS redirects for `sportbridge.com.ng` and `www.sportbridge.com.ng`.
+
+At your domain registrar:
+1. Add an **A record**: `@` → Netlify's load balancer IP (shown in Netlify → Domain management).
+2. Add a **CNAME record**: `www` → `sportbridgeng.netlify.app`.
+3. In Netlify → Domain management, add both `sportbridge.com.ng` and `www.sportbridge.com.ng`. Set `www` as the primary domain.
+4. Wait for DNS propagation (up to 48 h), then Netlify auto-provisions a TLS certificate.
+5. Once HTTPS is live, go back to **Supabase → Auth → URL Configuration** and confirm `https://www.sportbridge.com.ng` is the Site URL.
+
+---
+
+## Step 6 — First admin account
+
+After running `schema.sql` in Supabase:
+
+1. Register an account through the SportBridge frontend using the email you want as super admin.
+2. Confirm the email in your inbox.
+3. In the Supabase **SQL Editor** run:
+
+```sql
+update public.profiles
+set role = 'super_admin'
+where email = 'your-admin@email.com';
 ```
 
-Never commit `.env`, `.env.local`, access tokens, database passwords, or Supabase secret/service-role keys.
+4. Sign back in — the dashboard will show the admin panel.
 
-## Supabase setup
+---
 
-1. Open the intended project in Supabase and select **SQL Editor → New query**.
-2. Paste and run `supabase/schema.sql`. This creates the tables and row-level security policies, provisions public player display names without exposing profile email addresses, and creates a listing when a player registers. It is safe to run again.
-3. In **Project Settings → API**, copy the Project URL and public anon/publishable key. Confirm the key belongs to this project before deploying; never use the service-role/secret key in browser or Netlify variables.
-4. In Netlify `sportbridgeng` → **Project configuration → Environment variables**, add these values for Production, Deploy Previews, and Local development as applicable:
+## Local MySQL databases (Laravel dev only)
 
-   ```text
-   VITE_SUPABASE_URL=https://<project-ref>.supabase.co
-   VITE_SUPABASE_ANON_KEY=<public-anon-or-publishable-key>
-   SUPABASE_URL=https://<project-ref>.supabase.co
-   SUPABASE_ANON_KEY=<public-anon-or-publishable-key>
-   ```
+All three databases are confirmed present on XAMPP:
 
-   The `VITE_` variables are embedded in the frontend build. The unprefixed pair is used only by the Netlify health function. Use the same project URL and public key for each pair; do not use a service-role key.
-5. In **Authentication → URL Configuration**, set the Site URL to the Netlify production URL and add the production URL, deploy-preview URL pattern, and final custom domain to the redirect allow list.
-6. Redeploy after changing variables. Verify the home page shows live listings and the health function returns HTTP 200. A frontend build alone does not prove database access.
+| Database | Tables | Purpose |
+|---|---|---|
+| `football_connect` | 40 | Main app (users, players, jobs, feed, chat, …) |
+| `football_connect_basketball` | 9 | Basketball-specific tables (separate DB by design) |
+| `football_connect_admin` | 2 | Super Admin reporting snapshot |
 
-## Custom domain activation
+The `.env` file already points at these with `DB_USERNAME=root` and no password (default XAMPP). All migrations are fully applied — `php artisan migrate:status` shows zero pending.
 
-The domain must first be registered and delegated at its registrar. Add both `sportbridge.com.ng` and `www.sportbridge.com.ng` to the Netlify site, then configure exactly the A/ALIAS/CNAME records Netlify displays for the account. Do not copy guessed IP addresses from old instructions. The domain currently returns `NXDOMAIN`; no redirect or TLS certificate can work until DNS resolves.
+---
 
-After DNS resolves, set the primary domain in Netlify, wait for its HTTPS certificate, then add `https://www.sportbridge.com.ng` to Supabase's Site URL and redirect allow list. Verify both apex and `www` URLs over HTTPS.
-
-## Email and SMS activation
-
-The static React frontend must not send SMTP directly. Brevo SMTP is for email and does not enable SMS. The current React/Supabase app has no email-notification or SMS-sending endpoint yet.
-
-Before activating SMS, choose an SMS provider/API, enable billing and the destination countries, register/approve a sender ID where required, and define consent, rate limits, and message templates. Implement sending in a Netlify Function or Supabase Edge Function using a server-only secret; never expose provider credentials in `VITE_*` values. Then test a single opted-in number and delivery receipt.
-
-For transactional email, verify the sender in Brevo. To send from the custom domain, publish Brevo's domain-verification, SPF, and DKIM DNS records at the registrar. The Gmail address `sportbridge.com.ng@gmail.com` must be added and verified as a Brevo sender; it does not authenticate ownership of `sportbridge.com.ng`. Do not send until Brevo reports the sender as verified.
-
-## Local checks
+## Local checks before pushing
 
 ```powershell
+# Frontend
 Push-Location frontend
 npm ci
 npm run lint
 npm run build
 Pop-Location
 
+# Laravel
 vendor/bin/pint --test
 vendor/bin/phpunit
 ```
+
+---
+
+## What the health function checks
+
+`GET /.netlify/functions/supabase-health` pings `https://pzfohowzaeunywaqukwe.supabase.co/auth/v1/health`.
+
+- Returns `{"ok":true,"status":200}` when Supabase is reachable and env vars are set.
+- Returns `{"ok":false,"error":"Supabase environment is not configured."}` (HTTP 503) when `SUPABASE_URL` or `SUPABASE_ANON_KEY` are missing from Netlify — this is the current state until you add the env vars.

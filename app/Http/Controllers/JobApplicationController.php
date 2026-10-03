@@ -15,7 +15,11 @@ class JobApplicationController extends Controller
 
     public function store(ApplyJobRequest $request, JobPost $jobPost): RedirectResponse
     {
-        $existing = $jobPost->applications()->where('coach_profile_id', $request->user()->coachProfile->id)->exists();
+        $coachProfile = $request->user()->coachProfile;
+
+        abort_unless($coachProfile, 403, 'A coach profile is required to apply for jobs.');
+
+        $existing = $jobPost->applications()->where('coach_profile_id', $coachProfile->id)->exists();
 
         if ($existing) {
             return back()->withErrors(['cover_letter' => __('You have already applied to this job.')]);
@@ -23,7 +27,7 @@ class JobApplicationController extends Controller
 
         $this->applications->apply(
             $jobPost,
-            $request->user()->coachProfile,
+            $coachProfile,
             $request->string('cover_letter'),
             $request->file('cv')
         );
