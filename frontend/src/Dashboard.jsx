@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import JobPostForm from './JobPostForm.jsx'
 import PlayerUploadForm from './PlayerUploadForm.jsx'
 import TryoutForm from './TryoutForm.jsx'
+import VerifyForm from './VerifyForm.jsx'
 import { blockContactInfo } from './lib/uploadGuards'
 import { FOOTBALL_POSITIONS, REGIONS, STAFF_ROLES } from './lib/features'
 
@@ -237,7 +238,7 @@ function PlayerDashboard({ supabase, user, profile }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[['profile','bi-person-vcard','My Profile'],['uploads','bi-cloud-upload','Upload CV & Media']].map(([tab, icon, label]) => (
+        {[['profile','bi-person-vcard','My Profile'],['uploads','bi-cloud-upload','Upload CV & Media'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button
               className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`}
@@ -245,6 +246,9 @@ function PlayerDashboard({ supabase, user, profile }) {
               onClick={() => setActiveTab(tab)}
             >
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
+              {tab === 'verify' && profile?.verification_status === 'verified' && (
+                <i className="bi bi-patch-check-fill text-success ms-1" aria-hidden="true" />
+              )}
             </button>
           </li>
         ))}
@@ -335,6 +339,12 @@ function PlayerDashboard({ supabase, user, profile }) {
       {activeTab === 'uploads' && (
         <SectionCard title="Upload CV & Media">
           <PlayerUploadForm supabase={supabase} user={user} player={player} onSaved={() => setNotice('Files uploaded.')} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'verify' && (
+        <SectionCard title="Verification">
+          <VerifyForm supabase={supabase} user={user} role="player" verificationStatus={profile?.verification_status} onDone={() => setNotice('Submitted for review.')} />
         </SectionCard>
       )}
     </>
@@ -571,7 +581,7 @@ function AgentDashboard({ supabase, user }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[['profile','bi-person-vcard','Agency Profile'],['post-tryout','bi-calendar2-plus','Post Tryout']].map(([tab, icon, label]) => (
+        {[['profile','bi-person-vcard','Agency Profile'],['post-tryout','bi-calendar2-plus','Post Tryout'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
@@ -627,6 +637,12 @@ function AgentDashboard({ supabase, user }) {
       {activeTab === 'post-tryout' && (
         <SectionCard title="Post a Tryout Opportunity">
           <TryoutForm supabase={supabase} user={user} onSaved={() => { setActiveTab('profile'); setNotice('Tryout posted.') }} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'verify' && (
+        <SectionCard title="Verification">
+          <VerifyForm supabase={supabase} user={user} role="agent" verificationStatus={null} onDone={() => setNotice('Submitted for review.')} />
         </SectionCard>
       )}
     </>
@@ -724,10 +740,13 @@ function AcademyDashboard({ supabase, user, profile }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[['profile','bi-building','Club Profile'],['post-job','bi-briefcase-fill','Post a Job']].map(([tab, icon, label]) => (
+        {[['profile','bi-building','Club Profile'],['post-job','bi-briefcase-fill','Post a Job'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
+              {tab === 'verify' && profile?.verification_status === 'verified' && (
+                <i className="bi bi-patch-check-fill text-success ms-1" aria-hidden="true" />
+              )}
             </button>
           </li>
         ))}
@@ -776,6 +795,12 @@ function AcademyDashboard({ supabase, user, profile }) {
       {activeTab === 'post-job' && (
         <SectionCard title="Post a Job">
           <JobPostForm supabase={supabase} user={user} onSaved={() => { setActiveTab('profile'); setStats((s) => ({ ...s, jobs: (s.jobs ?? 0) + 1 })); setNotice('Job posted.') }} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'verify' && (
+        <SectionCard title="Verification">
+          <VerifyForm supabase={supabase} user={user} role="academy" verificationStatus={profile?.verification_status} onDone={() => setNotice('Submitted for review.')} />
         </SectionCard>
       )}
     </>

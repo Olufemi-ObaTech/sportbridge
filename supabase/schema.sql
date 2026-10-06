@@ -1581,3 +1581,138 @@ grant select, insert     on public.uploads       to authenticated;
 -- =============================================================================
 -- END OF DEMO ADDITIONS
 -- =============================================================================
+
+
+-- =============================================================================
+-- SPRINT 2 ADDITIONS — Player Profile, Search, Verification
+-- Idempotent. Run in Supabase SQL Editor.
+-- =============================================================================
+
+-- ─── 1. Extended player columns ───────────────────────────────────────────────
+alter table public.players
+  add column if not exists availability text not null default 'available_now'
+    check (availability in ('available_now','available_jan_2026','available_jul_2026','under_contract')),
+  add column if not exists preferred_foot text
+    check (preferred_foot in ('left','right','both')),
+  add column if not exists stats jsonb not null default '{}'::jsonb,
+  add column if not exists achievements_data jsonb not null default '[]'::jsonb,
+  add column if not exists region text,
+  add column if not exists age_group text
+    check (age_group in ('U13','U15','U17','U20','U23','Senior'));
+
+-- ─── 2. Extended profile columns ─────────────────────────────────────────────
+alter table public.profiles
+  add column if not exists nationality text;
+
+-- ─── 3. player_history table (clubs played for) ───────────────────────────────
+create table if not exists public.player_history (
+  id          uuid primary key default gen_random_uuid(),
+  player_id   uuid not null references public.players(id) on delete cascade,
+  club_name   text not null,
+  season_from text,                         -- e.g. "2021"
+  season_to   text,                         -- e.g. "2023" or "Present"
+  appearances integer not null default 0,
+  goals       integer not null default 0,
+  assists     integer not null default 0,
+  clean_sheets integer not null default 0,
+  notes       text,
+  sort_order  integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+
+alter table public.player_history enable row level security;
+
+drop policy if exists "player history public read" on public.player_history;
+create policy "player history public read" on public.player_history
+  for select to anon, authenticated
+  using (exists (
+    select 1 from public.players p
+    where p.id = player_id and p.is_public and p.status = 'active'
+  ));
+
+drop policy if exists "player history owner write" on public.player_history;
+create policy "player history owner write" on public.player_history
+  for all to authenticated
+  using  (public.current_user_owns_player(player_id) or public.current_user_is_admin())
+  with check (public.current_user_owns_player(player_id) or public.current_user_is_admin());
+
+-- ─── 4. Verification requests table ──────────────────────────────────────────
+-- Stores uploaded verification docs; super_admin reviews via queue.
+create table if not exists public.verification_requests (
+  id                   uuid primary key default gen_random_uuid(),
+  user_id              uuid not null references public.profiles(id) on delete cascade,
+  role                 text not null,
+  -- Player docs
+  nin_number           text,
+  nin_selfie_path      text,
+  release_letter_path  text,
+  -- Club/Academy docs
+  cac_document_path    text,
+  official_email       text,
+  facility_pictures    jsonb not null default '[]'::jsonb,
+  -- Agent docs
+  license_path         text,
+  reference_club_1     text,
+  reference_club_2     text,
+  -- Meta
+  status               text not null default 'pending'
+    check (status in ('pending','approved','rejected')),
+  reviewer_id          uuid references public.profiles(id) on delete set null,
+  reviewer_notes       text,
+  submitted_at         timestamptz not null default now(),
+  reviewed_at          timestamptz
+);
+
+alter table public.verification_requests enable row level security;
+
+drop policy if exists "verif owner read" on public.verification_requests;
+create policy "verif owner read" on public.verification_requests
+  for select to authenticated
+  using (user_id = (select auth.uid()) or public.current_user_is_admin());
+
+drop policy if exists "verif owner insert" on public.verification_requests;
+create policy "verif owner insert" on public.verification_requests
+  for insert to authenticated
+  with check (user_id = (select auth.uid()));
+
+drop policy if exists "verif admin update" on public.verification_requests;
+create policy "verif admin update" on public.verification_requests
+  for update to authenticated
+  using (public.current_user_is_admin());
+
+-- ─── 5. Contact unlock table ──────────────────────────────────────────────────
+-- Tracks which authenticated user has paid to unlock a player's contact.
+create table if not exists public.contact_unlocks (
+  id          uuid primary key default gen_random_uuid(),
+  unlocker_id uuid not null references public.profiles(id) on delete cascade,
+  player_id   uuid not null references public.players(id) on delete cascade,
+  unlocked_at timestamptz not null default now(),
+  unique(unlocker_id, player_id)
+);
+
+alter table public.contact_unlocks enable row level security;
+
+drop policy if exists "contact unlock owner" on public.contact_unlocks;
+create policy "contact unlock owner" on public.contact_unlocks
+  for all to authenticated
+  using  (unlocker_id = (select auth.uid()) or public.current_user_is_admin())
+  with check (unlocker_id = (select auth.uid()));
+
+-- ─── 6. Indexes ───────────────────────────────────────────────────────────────
+create index if not exists players_availability_idx  on public.players (availability, is_public, status);
+create index if not exists players_foot_idx          on public.players (preferred_foot) where is_public;
+create index if not exists players_age_group_idx     on public.players (age_group, is_public, status);
+create index if not exists players_nationality_idx   on public.players (nationality, is_public);
+create index if not exists player_history_player_idx on public.player_history (player_id, sort_order);
+create index if not exists verif_requests_status_idx on public.verification_requests (status, submitted_at desc);
+
+-- ─── 7. Grants ────────────────────────────────────────────────────────────────
+grant select on public.player_history to anon;
+grant select, insert, update, delete on public.player_history to authenticated;
+grant select, insert on public.verification_requests to authenticated;
+grant update on public.verification_requests to authenticated;
+grant select, insert on public.contact_unlocks to authenticated;
+
+-- =============================================================================
+-- END SPRINT 2 ADDITIONS
+-- =============================================================================

@@ -734,3 +734,176 @@ button:focus-visible {
     display: inline-block;
     transform: scaleX(-1);
 }
+
+/* -----------------------------------------------------------------------
+   Sprint 2 additions — Mobile UX, skeleton loaders, profile page
+   --------------------------------------------------------------------- */
+
+/* Skeleton pulse animation */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .4; }
+}
+
+/* Player profile mobile tab bar — horizontal scroll, no wrap */
+.sb-tabs-scroll {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sb-tabs-scroll::-webkit-scrollbar { display: none; }
+
+/* Mobile sticky bottom action bar */
+.sb-mobile-sticky {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: .75rem 1rem;
+  background: var(--bs-body-bg);
+  border-top: 1px solid var(--bs-border-color);
+  z-index: 1040;
+  display: flex;
+  gap: .5rem;
+}
+
+/* Bottom sheet drawer overlay */
+.sb-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 1050;
+}
+
+/* Bottom sheet drawer panel */
+.sb-drawer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 85vh;
+  overflow-y: auto;
+  z-index: 1060;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 32px rgba(0,0,0,.22);
+  background: var(--bs-body-bg);
+  padding: 1rem 1.25rem 2rem;
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+
+.sb-drawer.is-closed {
+  transform: translateY(110%);
+}
+
+.sb-drawer-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bs-border-color);
+  margin: 0 auto .75rem;
+}
+
+/* Filter bar sticky top on desktop */
+.sb-filter-bar {
+  position: sticky;
+  top: 64px;
+  z-index: 900;
+  background: var(--bs-body-bg);
+  border-bottom: 1px solid var(--bs-border-color);
+  padding: .75rem 0;
+}
+
+/* Video player — force 16:9 inline */
+.sb-video-wrap {
+  position: relative;
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: var(--fc-radius);
+  overflow: hidden;
+}
+
+.sb-video-wrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Swipeable gallery — no text select during swipe */
+.sb-gallery {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+
+/* 44px minimum tap targets (WCAG 2.5.5) */
+.btn, .nav-link, .form-check-input, select.form-select {
+  min-height: 44px;
+}
+
+.btn-sm {
+  min-height: 36px;
+}
+
+/* On mobile, 1 field per row for all forms */
+@media (max-width: 575.98px) {
+  .row.g-3 > [class*="col-md-"],
+  .row.g-3 > [class*="col-lg-"] {
+    grid-column: 1 / -1;
+  }
+
+  /* Large readable form controls on mobile */
+  .form-control, .form-select {
+    font-size: 16px; /* prevents iOS zoom */
+  }
+
+  /* Video tab — full width */
+  .sb-video-wrap { border-radius: 0; margin: 0 -1.25rem; width: calc(100% + 2.5rem); }
+}
+
+/* Player profile top card: full-width photo on mobile */
+@media (max-width: 575.98px) {
+  .sb-player-photo {
+    width: 72px !important;
+    height: 72px !important;
+  }
+}
+
+/* Lazy load fade-in */
+img[loading="lazy"] {
+  opacity: 0;
+  transition: opacity .3s;
+}
+img[loading="lazy"].loaded {
+  opacity: 1;
+}
+
+/* Comparison pills in hero */
+.sb-compare-pill {
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: var(--fc-radius);
+  padding: .5rem .75rem;
+  font-size: 12px;
+  max-width: 340px;
+}
+
+/* Problem/solution bar text */
+.sb-ps-bar {
+  background: var(--fc-navy-900);
+  border-bottom: 1px solid rgba(245,179,1,.15);
+}
+
+/* Stats mini-bar in player cards */
+.sb-stats-bar {
+  font-size: 12px;
+  border-top: 1px solid var(--bs-border-color);
+  padding-top: .5rem;
+  margin-top: .5rem;
+}
+
+/* Verification badge pulse on pending */
+.sb-verif-pending {
+  animation: pulse 2s ease-in-out infinite;
+}

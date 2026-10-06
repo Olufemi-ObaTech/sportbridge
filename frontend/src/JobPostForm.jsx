@@ -208,6 +208,15 @@ export default function JobPostForm({ supabase, user, onSaved }) {
       {error  && <div className="alert alert-danger  mb-3" role="alert">{error}</div>}
       {notice && <div className="alert alert-success mb-3" role="status">{notice}</div>}
 
+      {/* Anti-scam notice for all job posts */}
+      <div className="alert mb-3 d-flex gap-2" style={{ background: 'rgba(220,53,69,.06)', border: '1.5px solid rgba(220,53,69,.28)', borderRadius: 8 }} role="note">
+        <i className="bi bi-shield-check text-danger flex-shrink-0 mt-1" aria-hidden="true" />
+        <div className="small">
+          <strong>Reminder:</strong> Never request payment from applicants. Legitimate jobs never charge candidates.
+          Any club found collecting fees from players or coaches will be permanently removed.
+        </div>
+      </div>
+
       <div className="row g-3">
         {/* ── Player Needed fields ─────────────────────────────────────────── */}
         {form.jobType === 'player_needed' && (<>

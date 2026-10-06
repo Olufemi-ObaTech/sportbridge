@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import './Auth.css'
 import Dashboard from './Dashboard.jsx'
+import PlayerProfile from './PlayerProfile.jsx'
+import PlayerSearch from './PlayerSearch.jsx'
 import ballImage from '../../public/img/fifa-world-cup-ball.avif'
 import footballImage from '../../public/img/football-stadium.jpg'
 import footballStandImage from '../../public/img/football-stadium1.jpg'
@@ -10,12 +12,6 @@ import { supabase, hasSupabaseConfig } from './lib/supabase'
 import { BASKETBALL_ENABLED, containsContactInfo } from './lib/features'
 
 // ─── constants ────────────────────────────────────────────────────────────────
-
-const sections = [
-  { id: 'players', label: 'Players' },
-  { id: 'jobs',    label: 'Opportunities' },
-]
-
 const ROLES = [
   { value: 'player',  label: 'Player',          icon: 'bi-person-arms-up'   },
   { value: 'academy', label: 'Academy / Club',   icon: 'bi-building'         },
@@ -564,12 +560,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
 
 function App() {
   const [view,            setView]            = useState('home')
-  const [section,         setSection]         = useState('players')
-  const [records,         setRecords]         = useState([])
-  const [search,          setSearch]          = useState('')
-  const [connection,      setConnection]      = useState(hasSupabaseConfig ? 'checking' : 'missing')
-  const [loading,         setLoading]         = useState(hasSupabaseConfig)
-  const [recordError,     setRecordError]     = useState('')
+  const [selectedPlayerId,setSelectedPlayerId]= useState(null)
   const [user,            setUser]            = useState(null)
   const [authOpen,        setAuthOpen]        = useState(false)
   const [authInitMode,    setAuthInitMode]    = useState('signin')
@@ -605,29 +596,6 @@ function App() {
     return () => window.clearInterval(t)
   }, [])
 
-  // Directory data
-  useEffect(() => {
-    if (!supabase) return
-    let alive = true
-    setLoading(true)
-    setRecords([])
-    setRecordError('')
-
-    const run = async () => {
-      const query = section === 'players'
-        ? supabase.from('players').select('id, display_name, position, age, country, bio').eq('is_public', true).eq('status', 'active').order('created_at', { ascending: false }).limit(60)
-        : supabase.from('jobs').select('id, title, description, created_at, clubs(name)').order('created_at', { ascending: false }).limit(60)
-      const { data, error } = await query
-      if (!alive) return
-      if (error) { setRecordError(error.message); setConnection('error'); setRecords([]) }
-      else        { setConnection('ready'); setRecords(data ?? []) }
-      setLoading(false)
-    }
-
-    run()
-    return () => { alive = false }
-  }, [section])
-
   // Auth state — restore session on mount and subscribe to future changes.
   // eslint-disable-next-line react/set-state-in-effect -- getSession is async external I/O; setState here is correct.
   useEffect(() => {
@@ -645,13 +613,6 @@ function App() {
     })
     return () => subscription.unsubscribe()
   }, [])
-
-  const visibleRecords = records.filter((r) => {
-    const fields = section === 'players'
-      ? [r.display_name, r.position, r.country, r.bio]
-      : [r.title, r.description, r.clubs?.name]
-    return fields.some((v) => v?.toLowerCase().includes(search.toLowerCase()))
-  })
 
   return (
     <div data-bs-theme={darkTheme ? 'dark' : 'light'}>
@@ -814,20 +775,32 @@ function App() {
               ) : (
                 <>
                   <li className="nav-item">
-                    <button
-                      className="btn btn-link nav-link"
-                      type="button"
-                      onClick={openSignin}
-                    >
+                    <button className="btn btn-link nav-link" type="button" onClick={openSignin}>
                       Log in
                     </button>
                   </li>
-                  <li className="nav-item">
+                  {/* Task 6 — role-specific navbar CTAs for guests */}
+                  <li className="nav-item d-none d-lg-flex gap-2 align-items-center ms-lg-1">
                     <button
-                      className="btn btn-secondary btn-sm ms-lg-2"
+                      className="btn btn-secondary btn-sm"
                       type="button"
-                      onClick={() => openSignup()}
+                      onClick={() => openSignup('player')}
                     >
+                      <i className="bi bi-person-plus me-1" aria-hidden="true" />
+                      Create Player Profile
+                    </button>
+                    <button
+                      className="btn btn-outline-light btn-sm"
+                      type="button"
+                      onClick={() => { setSection('players'); document.getElementById('players')?.scrollIntoView({ behavior: 'smooth' }) }}
+                    >
+                      <i className="bi bi-search me-1" aria-hidden="true" />
+                      Find Players
+                    </button>
+                  </li>
+                  {/* Mobile: single join button */}
+                  <li className="nav-item d-lg-none">
+                    <button className="btn btn-secondary btn-sm" type="button" onClick={() => openSignup()}>
                       Join SportBridge
                     </button>
                   </li>
@@ -842,41 +815,90 @@ function App() {
       <main id="main-content" className="flex-grow-1">
         {view === 'dashboard' && user ? (
           <Dashboard supabase={supabase} user={user} onBack={() => setView('home')} />
+        ) : view === 'player' && selectedPlayerId ? (
+          <PlayerProfile
+            playerId={selectedPlayerId}
+            supabase={supabase}
+            user={user}
+            onBack={() => { setSelectedPlayerId(null); setView('home') }}
+            onSignup={(role) => openSignup(role)}
+          />
         ) : (
           <>
             {/* spacer */}
             <div className="container py-4" aria-hidden="true" />
 
             {/* ── Hero ──────────────────────────────────────────────────── */}
-            <section className="fc-hero px-3 px-md-5 py-5 mb-5" aria-labelledby="home-heading">
+            <section className="fc-hero px-3 px-md-5 py-5 mb-0" aria-labelledby="home-heading">
               <img src={worldCupBallImage} alt="" className="fc-hero-ball d-none d-md-block" />
               <div className="container py-4">
                 <div className="row align-items-center g-5">
                   <div className="col-12 col-lg-7">
+
+                    {/* Badge */}
                     <span className="fc-hero-badge fc-animate-in">
                       <i className="bi bi-shield-check me-1" aria-hidden="true" />
-                      Verified Football Players, Clubs, Agents &amp; Coaches — One Bridge
+                      Nigeria&apos;s #1 Verified Football Network
                     </span>
+
+                    {/* Headline — answers "why not Instagram?" in 3 words */}
                     <h1 id="home-heading" className="display-4 fw-bold mt-3 mb-3 fc-animate-in fc-delay-1">
-                      The verified football network for players, clubs and agents.
+                      Stop Chasing Fake Agents.{' '}
+                      <span className="fc-gradient-text">Get Verified.</span>
                     </h1>
-                    <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.78)' }}>
-                      Free verified profiles for players. Clubs post jobs and manage squads.
-                      Agents discover talent. Coaches find their next role. Every stakeholder
-                      in football, connected on one bridge.
+
+                    {/* Sub-headline */}
+                    <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '56ch' }}>
+                      SportBridge connects <strong style={{ color: '#fff' }}>Verified Free Players</strong> with{' '}
+                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong> in Nigeria.
+                      Full CV + Full-Match Video + Stats + Secure Unlock —{' '}
+                      <em>not just highlights.</em>
                     </p>
-                    <div className="d-flex flex-wrap gap-2 mt-4 fc-animate-in fc-delay-3">
-                      <button type="button" className="btn btn-secondary btn-lg" onClick={() => openSignup()}>
-                        Get started <i className="bi bi-arrow-right ms-1" aria-hidden="true" />
-                      </button>
-                      <a href="#players" className="btn btn-outline-light btn-lg">Browse players</a>
+
+                    {/* Comparison pills */}
+                    <div className="d-flex flex-wrap gap-2 mt-4 fc-animate-in fc-delay-2" role="list" aria-label="SportBridge vs other platforms">
+                      {[
+                        { vs: 'Instagram', vsText: 'Highlights only', sbText: 'Verified CV + Full Match + Availability', icon: 'bi-camera-video' },
+                        { vs: 'LinkedIn',  vsText: 'Corporate jobs',   sbText: 'Football jobs by Position / Age / Region', icon: 'bi-briefcase' },
+                        { vs: 'WhatsApp',  vsText: 'Scams & leaks',    sbText: 'NIN Verified + Video Hash + No Leaked Numbers', icon: 'bi-shield-lock' },
+                      ].map(({ vs, vsText, sbText, icon }) => (
+                        <div
+                          key={vs}
+                          role="listitem"
+                          className="d-flex align-items-start gap-2 rounded-3 px-3 py-2"
+                          style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.13)', maxWidth: 340, fontSize: 12 }}
+                        >
+                          <i className={`bi ${icon} mt-1 flex-shrink-0`} style={{ color: 'var(--fc-gold-400)', fontSize: 14 }} aria-hidden="true" />
+                          <div>
+                            <span style={{ color: 'rgba(247,249,248,.5)' }}>{vs} = {vsText}</span>
+                            <br />
+                            <span style={{ color: '#fff', fontWeight: 700 }}>SportBridge = {sbText}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
+
+                    {/* CTAs */}
+                    <div className="d-flex flex-wrap gap-2 mt-4 fc-animate-in fc-delay-3">
+                      <button type="button" className="btn btn-secondary btn-lg" onClick={() => openSignup('player')}>
+                        <i className="bi bi-person-plus me-2" aria-hidden="true" />
+                        Create Player Profile
+                      </button>
+                      <a href="#players" className="btn btn-outline-light btn-lg">
+                        <i className="bi bi-search me-2" aria-hidden="true" />
+                        Find Players
+                      </a>
+                    </div>
+
+                    {/* Stats */}
                     <div className="row g-4 mt-4 fc-animate-in fc-delay-3">
                       <div className="col-4"><div className="fc-stat-value fc-gradient-text">500+</div><div className="small" style={{ color: 'rgba(247,249,248,.65)' }}>Player profiles</div></div>
-                      <div className="col-4"><div className="fc-stat-value fc-gradient-text">120+</div><div className="small" style={{ color: 'rgba(247,249,248,.65)' }}>Academies & clubs</div></div>
+                      <div className="col-4"><div className="fc-stat-value fc-gradient-text">120+</div><div className="small" style={{ color: 'rgba(247,249,248,.65)' }}>Verified clubs</div></div>
                       <div className="col-4"><div className="fc-stat-value fc-gradient-text">40+</div><div className="small" style={{ color: 'rgba(247,249,248,.65)' }}>Countries reached</div></div>
                     </div>
                   </div>
+
+                  {/* Right: role cards */}
                   <div className="col-12 col-lg-5">
                     <div className="row row-cols-2 row-cols-lg-1 g-3 text-center text-lg-start">
                       {roleCards.map((role) => (
@@ -901,6 +923,49 @@ function App() {
                 </div>
               </div>
             </section>
+
+            {/* ── Problem / Solution bar (answers "why not WhatsApp/Instagram") ── */}
+            <div className="mb-5" style={{ background: 'var(--fc-navy-900)', borderBottom: '1px solid rgba(245,179,1,.15)' }}>
+              <div className="container">
+                <div className="row g-0">
+                  {[
+                    {
+                      problem: 'Fake agents collecting fees',
+                      solution: 'Verified Agent badge + fee warning on every post',
+                      problemIcon: 'bi-person-x',
+                      solutionIcon: 'bi-patch-check-fill',
+                    },
+                    {
+                      problem: 'Edited highlight clips',
+                      solution: 'Full-match video required + SHA-256 duplicate detector',
+                      problemIcon: 'bi-camera-video-off',
+                      solutionIcon: 'bi-film',
+                    },
+                    {
+                      problem: 'Phone numbers scraped from WhatsApp',
+                      solution: 'Contact unlock only after identity verification',
+                      problemIcon: 'bi-telephone-x',
+                      solutionIcon: 'bi-lock-fill',
+                    },
+                  ].map(({ problem, solution, problemIcon, solutionIcon }, i) => (
+                    <div key={i} className="col-12 col-md-4" style={{ borderRight: i < 2 ? '1px solid rgba(255,255,255,.07)' : undefined }}>
+                      <div className="px-4 py-4">
+                        {/* Problem */}
+                        <div className="d-flex align-items-center gap-2 mb-2">
+                          <i className={`bi ${problemIcon}`} style={{ color: '#dc3545', fontSize: 15 }} aria-hidden="true" />
+                          <span className="small" style={{ color: 'rgba(247,249,248,.45)', textDecoration: 'line-through' }}>{problem}</span>
+                        </div>
+                        {/* Solution */}
+                        <div className="d-flex align-items-center gap-2">
+                          <i className={`bi ${solutionIcon}`} style={{ color: 'var(--fc-gold-400)', fontSize: 15 }} aria-hidden="true" />
+                          <span className="small fw-semibold" style={{ color: '#fff' }}>{solution}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
 
             <div className="container">
               {/* ── Role cards ────────────────────────────────────────── */}
@@ -967,111 +1032,21 @@ function App() {
               </div>
             </div>
 
-            {/* ── Directory ─────────────────────────────────────────────── */}
+            {/* ── Directory — powered by PlayerSearch ──────────────────────── */}
             <section className="container py-5" id="players" aria-labelledby="directory-heading">
-              <div className="row align-items-end g-3 mb-4">
-                <div className="col-12 col-md-6">
-                  <span className="text-uppercase small fw-semibold text-muted">Explore SportBridge</span>
-                  <h2 className="h3 fw-bold mb-0" id="directory-heading" style={{ color: 'var(--fc-blue-700)' }}>
-                    {section === 'players' ? 'Player directory' : 'Open opportunities'}
-                  </h2>
-                </div>
-                <div className="col-12 col-md-6">
-                  <label className="visually-hidden" htmlFor="directory-search">Search listings</label>
-                  <input
-                    className="form-control"
-                    id="directory-search"
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder={section === 'players' ? 'Name, position, country…' : 'Role, club, keyword…'}
-                    type="search"
-                    value={search}
-                  />
-                </div>
+              <div className="mb-4">
+                <span className="text-uppercase small fw-semibold text-muted">Scout the next generation</span>
+                <h2 className="h3 fw-bold mb-1" id="directory-heading" style={{ color: 'var(--fc-blue-700)' }}>
+                  Player Directory
+                </h2>
+                <p className="text-muted mb-0">
+                  Search verified free players by position, age group, region and foot — find your next signing in seconds.
+                </p>
               </div>
-
-              <ul className="nav nav-tabs mb-4" id="opportunities" role="tablist" aria-label="Browse listings">
-                {sections.map((item) => (
-                  <li className="nav-item" key={item.id} role="presentation">
-                    <button
-                      aria-selected={section === item.id}
-                      className={`nav-link${section === item.id ? ' active' : ''}`}
-                      onClick={() => { setSection(item.id); setSearch(''); setRecords([]); setRecordError(''); setLoading(Boolean(supabase)) }}
-                      role="tab"
-                      type="button"
-                    >
-                      {item.label}
-                    </button>
-                  </li>
-                ))}
-                <li className="nav-item ms-auto d-flex align-items-center">
-                  <span className="small text-muted">
-                    <i
-                      className={`bi ${connection === 'ready' ? 'bi-check-circle-fill text-success' : connection === 'checking' ? 'bi-arrow-repeat' : 'bi-exclamation-circle text-warning'} me-1`}
-                      aria-hidden="true"
-                    />
-                    {connection === 'ready' ? 'Live listings' : connection === 'checking' ? 'Connecting…' : 'Listings unavailable'}
-                  </span>
-                </li>
-              </ul>
-
-              {recordError && (
-                <div className="alert alert-warning" role="status">Could not load listings: {recordError}</div>
-              )}
-
-              {loading ? (
-                <div className="py-5 text-center text-muted" role="status">
-                  <span className="spinner-border spinner-border-sm me-2" />
-                  Loading {section === 'players' ? 'players' : 'opportunities'}…
-                </div>
-              ) : visibleRecords.length ? (
-                <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                  {visibleRecords.map((record) => (
-                    <div className="col" key={record.id}>
-                      <article className="card h-100 p-4">
-                        <span className="small fw-semibold text-uppercase text-primary">
-                          {section === 'players' ? record.position || 'Player' : 'Open role'}
-                        </span>
-                        <h3 className="h5 mt-3">
-                          {section === 'players' ? record.display_name || 'Player profile' : record.title}
-                        </h3>
-                        <p className="small text-primary mb-2">
-                          {section === 'players'
-                            ? [record.country, record.age ? `${record.age} years` : null].filter(Boolean).join(' · ') || 'Profile available'
-                            : record.clubs?.name || 'Club opportunity'}
-                        </p>
-                        <p className="text-muted mb-0">
-                          {record.bio || record.description || 'More details will be shared by the profile owner.'}
-                        </p>
-                      </article>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="fc-empty-state">
-                  {connection === 'missing' || connection === 'error'
-                    ? <i className="bi bi-cloud-slash" aria-hidden="true" />
-                    : <i className="bi bi-person-lines-fill" aria-hidden="true" />}
-                  <h3 className="h5">
-                    {connection === 'missing'
-                      ? 'Connect the live directory'
-                      : recordError
-                        ? 'The directory needs attention'
-                        : 'The next opportunity starts here'}
-                  </h3>
-                  <p>
-                    {connection === 'missing'
-                      ? 'Add the Supabase project URL and public anon key to Netlify to load live SportBridge listings.'
-                      : recordError
-                        ? 'Check the Supabase project key, database schema and public read policies.'
-                        : 'No listings yet. Sign in to create your profile and make your next move.'}
-                  </p>
-                  {!user && (
-                    <button type="button" className="btn btn-primary" onClick={() => openSignup()}>
-                      Create your free account
-                    </button>
-                  )}
-                </div>
-              )}
+              <PlayerSearch
+                supabase={supabase}
+                onPlayerClick={(id) => { setSelectedPlayerId(id); setView('player'); window.scrollTo(0, 0) }}
+              />
             </section>
           </>
         )}

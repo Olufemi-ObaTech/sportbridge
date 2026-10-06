@@ -97,3 +97,10 @@ export function containsFraudKeywords(text) {
   const lower = text.toLowerCase()
   return FRAUD_KEYWORDS.some((kw) => lower.includes(kw))
 }
+
+// ─── Countries list (used by PlayerSearch and dashboard forms) ────────────────
+export const COUNTRIES = [
+  'Nigeria','Ghana','South Africa','Kenya','Egypt','Senegal',"Côte d'Ivoire",
+  'Cameroon','Morocco','England','France','Germany','Spain','Portugal','Italy',
+  'Brazil','Argentina','USA','Japan','South Korea','Saudi Arabia','Qatar','UAE','Other',
+]

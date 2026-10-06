@@ -189,6 +189,17 @@ export default function TryoutForm({ supabase, user, onSaved }) {
         </div>
       )}
 
+      {/* ── Permanent anti-scam guarantee ──────────────────────────────── */}
+      <div className="alert mb-3 d-flex gap-2" style={{ background: 'rgba(220,53,69,.08)', border: '1.5px solid rgba(220,53,69,.35)', borderRadius: 8 }} role="note">
+        <i className="bi bi-exclamation-triangle-fill text-danger flex-shrink-0 mt-1" aria-hidden="true" />
+        <div className="small">
+          <strong className="d-block mb-1">⚠️ SportBridge Anti-Scam Guarantee</strong>
+          SportBridge <strong>never collects tryout fees</strong>. Pay only at the venue with a receipt.
+          Report any agent who asks for &ldquo;guaranteed selection&rdquo; fees — this is a scam.
+          All fee-based tryouts are reviewed by our team before going live.
+        </div>
+      </div>
+
       {/* Live fraud keyword warning */}
       {hasFraud && (
         <div className="alert alert-warning mb-3" role="alert">
