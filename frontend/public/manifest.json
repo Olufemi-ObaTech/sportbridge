@@ -1,0 +1,21 @@
+{
+  "name": "SportBridge",
+  "short_name": "SportBridge",
+  "description": "Verified Football Players, Clubs, Agents & Coaches — One Bridge. Nigeria's #1 verified football network.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050B1F",
+  "theme_color": "#071a3d",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/img/logo-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["sports", "social", "business"],
+  "lang": "en"
+}

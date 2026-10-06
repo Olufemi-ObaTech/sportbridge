@@ -3,6 +3,8 @@ import './Auth.css'
 import Dashboard from './Dashboard.jsx'
 import PlayerProfile from './PlayerProfile.jsx'
 import PlayerSearch from './PlayerSearch.jsx'
+import JobsPage from './JobsPage.jsx'
+import TryoutsPage from './TryoutsPage.jsx'
 import ballImage from '../../public/img/fifa-world-cup-ball.avif'
 import footballImage from '../../public/img/football-stadium.jpg'
 import footballStandImage from '../../public/img/football-stadium1.jpg'
@@ -664,12 +666,16 @@ function App() {
                 <a className="nav-link" href="#players" onClick={() => setMenuOpen(false)}>Players</a>
               </li>
               <li className="nav-item">
-                <a className="nav-link" href="#opportunities" onClick={() => { setSection('jobs'); setMenuOpen(false) }}>Jobs</a>
+                <button className={`btn btn-link nav-link${view === 'jobs' ? ' active' : ''}`} type="button"
+                  onClick={() => { setView('jobs'); setMenuOpen(false); window.scrollTo(0,0) }}>Jobs</button>
+              </li>
+              <li className="nav-item">
+                <button className={`btn btn-link nav-link${view === 'tryouts' ? ' active' : ''}`} type="button"
+                  onClick={() => { setView('tryouts'); setMenuOpen(false); window.scrollTo(0,0) }}>Tryouts</button>
               </li>
               <li className="nav-item">
                 <a className="nav-link" href="#roles" onClick={() => setMenuOpen(false)}>Feed</a>
-              </li>
-            </ul>
+              </li>            </ul>
 
             <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-2">
               {/* Sport switcher / badge */}
@@ -823,6 +829,10 @@ function App() {
             onBack={() => { setSelectedPlayerId(null); setView('home') }}
             onSignup={(role) => openSignup(role)}
           />
+        ) : view === 'jobs' ? (
+          <JobsPage supabase={supabase} user={user} onSignup={openSignup} />
+        ) : view === 'tryouts' ? (
+          <TryoutsPage supabase={supabase} user={user} onSignup={openSignup} />
         ) : (
           <>
             {/* spacer */}

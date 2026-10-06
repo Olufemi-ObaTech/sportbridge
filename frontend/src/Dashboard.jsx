@@ -821,6 +821,8 @@ function AdminDashboard({ supabase, user }) {
   const [activeTab,    setActiveTab]   = useState('users') // 'users' | 'duplicates' | 'flagged'
   const [duplicates,   setDuplicates]  = useState([])
   const [flagged,      setFlagged]     = useState([])
+  const [verifQueue,   setVerifQueue]  = useState([])
+  const [verifNote,    setVerifNote]   = useState({})   // { [id]: note text }
 
   useEffect(() => {
     let alive = true
@@ -845,7 +847,15 @@ function AdminDashboard({ supabase, user }) {
       supabase.from('opportunities').select('id, title, region, fee_amount, fee_breakdown, description, status, is_fee_flagged, created_at').eq('is_fee_flagged', true).order('created_at', { ascending: false }).limit(100)
         .then(({ data }) => setFlagged(data ?? []))
     }
-  }, [activeTab, supabase, duplicates.length, flagged.length])
+    if (activeTab === 'verification' && verifQueue.length === 0) {
+      supabase.from('verification_requests')
+        .select('id, user_id, role, nin_number, status, submitted_at, reviewer_notes, profiles!inner(email, full_name)')
+        .eq('status', 'pending')
+        .order('submitted_at', { ascending: true })
+        .limit(100)
+        .then(({ data }) => setVerifQueue(data ?? []))
+    }
+  }, [activeTab, supabase, duplicates.length, flagged.length, verifQueue.length])
 
   const approveOpp = async (id) => {
     await supabase.from('opportunities').update({ status: 'open', is_fee_flagged: false }).eq('id', id)
@@ -857,6 +867,26 @@ function AdminDashboard({ supabase, user }) {
     await supabase.from('opportunities').update({ status: 'rejected' }).eq('id', id)
     setFlagged((f) => f.filter((o) => o.id !== id))
     setNotice('Tryout rejected.')
+  }
+
+  const approveVerif = async (req) => {
+    setSaving(true); setError(''); setNotice('')
+    const note = verifNote[req.id] ?? ''
+    await supabase.from('verification_requests').update({ status: 'approved', reviewer_id: user.id, reviewer_notes: note, reviewed_at: new Date().toISOString() }).eq('id', req.id)
+    await supabase.from('profiles').update({ verification_status: 'verified' }).eq('id', req.user_id)
+    setVerifQueue((q) => q.filter((r) => r.id !== req.id))
+    setSaving(false)
+    setNotice(`✅ ${req.profiles?.email} verified.`)
+  }
+
+  const rejectVerif = async (req) => {
+    setSaving(true); setError(''); setNotice('')
+    const note = verifNote[req.id] ?? 'Verification rejected by admin.'
+    await supabase.from('verification_requests').update({ status: 'rejected', reviewer_id: user.id, reviewer_notes: note, reviewed_at: new Date().toISOString() }).eq('id', req.id)
+    await supabase.from('profiles').update({ verification_status: 'rejected' }).eq('id', req.user_id)
+    setVerifQueue((q) => q.filter((r) => r.id !== req.id))
+    setSaving(false)
+    setNotice(`❌ ${req.profiles?.email} rejected.`)
   }
 
   const saveRole = async (uid) => {
@@ -872,9 +902,10 @@ function AdminDashboard({ supabase, user }) {
   const filtered   = users.filter((u) => !search || [u.full_name, u.email, u.role].some((f) => f?.toLowerCase().includes(search.toLowerCase())))
 
   const TABS = [
-    ['users',      'bi-people',        'Users'],
-    ['duplicates', 'bi-files',         'Duplicate Files'],
-    ['flagged',    'bi-flag-fill',     'Fee-Flagged Tryouts'],
+    ['users',         'bi-people',        'Users'],
+    ['verification',  'bi-patch-check',   'Verification Queue'],
+    ['duplicates',    'bi-files',         'Duplicate Files'],
+    ['flagged',       'bi-flag-fill',     'Fee-Flagged Tryouts'],
   ]
 
   return (
@@ -931,6 +962,51 @@ function AdminDashboard({ supabase, user }) {
               {filtered.length === 0 && <p className="text-center text-muted py-4 mb-0">No users match your search.</p>}
             </div>
           )}
+        </section>
+      )}
+
+      {/* Verification queue */}
+      {activeTab === 'verification' && (
+        <section className="card p-4">
+          <h2 className="h5 fw-bold mb-4" style={{ color: 'var(--fc-blue-700)' }}>
+            Verification Queue
+            {verifQueue.length > 0 && <span className="badge text-bg-warning ms-2">{verifQueue.length} pending</span>}
+          </h2>
+          {verifQueue.length === 0 ? (
+            <p className="text-muted">No pending verification requests. 🎉</p>
+          ) : verifQueue.map((req) => (
+            <div key={req.id} className="card p-3 mb-3" style={{ borderLeft: '4px solid var(--fc-blue-500)' }}>
+              <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                <div>
+                  <div className="fw-bold">{req.profiles?.full_name || req.profiles?.email}</div>
+                  <div className="small text-muted">{req.profiles?.email} · <span className="text-capitalize">{req.role}</span></div>
+                  <div className="small text-muted">Submitted: {new Date(req.submitted_at).toLocaleDateString()}</div>
+                  {req.nin_number && <div className="small text-muted">NIN: {req.nin_number.slice(0,4)}*******</div>}
+                </div>
+                <span className="badge text-bg-warning">Pending</span>
+              </div>
+              <div className="mb-2">
+                <label className="form-label small fw-semibold mb-1" htmlFor={`note-${req.id}`}>Admin note (optional)</label>
+                <input
+                  id={`note-${req.id}`}
+                  className="form-control form-control-sm"
+                  placeholder="Reason for approval or rejection…"
+                  value={verifNote[req.id] ?? ''}
+                  onChange={(e) => setVerifNote((n) => ({ ...n, [req.id]: e.target.value }))}
+                />
+              </div>
+              <div className="d-flex gap-2">
+                <button className="btn btn-sm btn-success d-flex align-items-center gap-1" type="button"
+                  disabled={saving} onClick={() => approveVerif(req)}>
+                  <i className="bi bi-patch-check-fill" />Approve — Mark Verified
+                </button>
+                <button className="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" type="button"
+                  disabled={saving} onClick={() => rejectVerif(req)}>
+                  <i className="bi bi-x-circle" />Reject
+                </button>
+              </div>
+            </div>
+          ))}
         </section>
       )}
 
