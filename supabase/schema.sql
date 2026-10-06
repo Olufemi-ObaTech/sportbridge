@@ -1419,3 +1419,165 @@ begin
   end if;
 end;
 $$;
+
+
+-- =============================================================================
+-- SPORTBRIDGE REFACTOR — Friday Demo Schema Additions
+-- All statements are idempotent (IF NOT EXISTS / ADD COLUMN IF NOT EXISTS).
+-- Run in Supabase SQL Editor: Dashboard → SQL Editor → New query → Run.
+-- =============================================================================
+
+-- ─── 1. profiles: verification_status ────────────────────────────────────────
+-- Used by VerificationBadge component and AdminDashboard verification queue.
+alter table public.profiles
+  add column if not exists verification_status text
+    not null default 'unverified'
+    check (verification_status in ('unverified','pending','verified','rejected'));
+
+-- ─── 2. jobs: unified Player Needed / Staff Needed columns ───────────────────
+-- JobPostForm posts to this table with job_type, player_position, staff_role.
+alter table public.jobs
+  add column if not exists job_type text
+    not null default 'player_needed'
+    check (job_type in ('player_needed','staff_needed')),
+  add column if not exists player_position text,
+  add column if not exists staff_role text,
+  add column if not exists age_group text,
+  add column if not exists region text,
+  add column if not exists budget integer,
+  add column if not exists salary integer,
+  add column if not exists free_agent_only boolean not null default false,
+  add column if not exists license_required boolean not null default false,
+  add column if not exists facility_pictures jsonb not null default '[]'::jsonb,
+  add column if not exists club_cv_url text,
+  add column if not exists is_verified boolean not null default false,
+  add column if not exists posted_by uuid references public.profiles(id) on delete set null;
+
+-- Backfill posted_by for existing job rows that already have a club_id
+update public.jobs j
+set posted_by = c.owner_id
+from public.clubs c
+where j.club_id = c.id and j.posted_by is null;
+
+-- ─── 3. opportunities table (Tryouts / Player Search) ────────────────────────
+-- TryoutForm inserts here. AdminDashboard queries this for fee-flagged items.
+create table if not exists public.opportunities (
+  id               uuid primary key default gen_random_uuid(),
+  posted_by        uuid not null references public.profiles(id) on delete cascade,
+  type             text not null default 'tryout'
+                     check (type in ('tryout','player_search')),
+  sport            text not null default 'football'
+                     check (sport in ('football','basketball')),
+  title            text not null,
+  position         text,
+  age_group        text,
+  region           text,
+  venue            text,
+  tryout_date      date,
+  gender           text check (gender in ('male','female','mixed')),
+  description      text,
+  fee_amount       integer not null default 0 check (fee_amount >= 0),
+  fee_breakdown    text,
+  flyer_pictures   jsonb not null default '[]'::jsonb,
+  venue_pictures   jsonb not null default '[]'::jsonb,
+  status           text not null default 'open'
+                     check (status in ('open','pending_approval','closed','rejected')),
+  is_fee_flagged   boolean not null default false,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+
+alter table public.opportunities enable row level security;
+
+-- Public read: anyone can see open, non-flagged tryouts
+drop policy if exists "opportunities public read" on public.opportunities;
+create policy "opportunities public read" on public.opportunities
+  for select to anon, authenticated
+  using (status = 'open' and not is_fee_flagged);
+
+-- Owner can read all their own (including pending/rejected)
+drop policy if exists "opportunities owner read" on public.opportunities;
+create policy "opportunities owner read" on public.opportunities
+  for select to authenticated
+  using (posted_by = (select auth.uid()) or public.current_user_is_admin());
+
+-- Any active authenticated user can insert
+drop policy if exists "opportunities authenticated insert" on public.opportunities;
+create policy "opportunities authenticated insert" on public.opportunities
+  for insert to authenticated
+  with check (posted_by = (select auth.uid()) and public.profile_is_active((select auth.uid())));
+
+-- Owner can update their own; admin can update any
+drop policy if exists "opportunities owner update" on public.opportunities;
+create policy "opportunities owner update" on public.opportunities
+  for update to authenticated
+  using (posted_by = (select auth.uid()) or public.current_user_is_admin())
+  with check (posted_by = (select auth.uid()) or public.current_user_is_admin());
+
+-- ─── 4. uploads table (hash deduplication) ───────────────────────────────────
+-- guardedUpload() inserts here after every successful upload.
+-- Admin Duplicate Detector queries uploads where is_duplicate = true.
+create table if not exists public.uploads (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references public.profiles(id) on delete cascade,
+  file_hash    text not null,          -- SHA-256 hex
+  file_type    text not null,          -- MIME type
+  url          text not null,
+  is_duplicate boolean not null default false,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists uploads_hash_idx      on public.uploads (file_hash);
+create index if not exists uploads_user_idx      on public.uploads (user_id);
+create index if not exists uploads_duplicate_idx on public.uploads (is_duplicate) where is_duplicate = true;
+
+alter table public.uploads enable row level security;
+
+-- Users can read and insert their own uploads
+drop policy if exists "uploads owner access" on public.uploads;
+create policy "uploads owner access" on public.uploads
+  for all to authenticated
+  using  (user_id = (select auth.uid()) or public.current_user_is_admin())
+  with check (user_id = (select auth.uid()) or public.current_user_is_admin());
+
+-- Hash lookup: any authenticated user can SELECT by hash (for duplicate check)
+drop policy if exists "uploads hash lookup" on public.uploads;
+create policy "uploads hash lookup" on public.uploads
+  for select to authenticated
+  using (true);   -- RLS permits the read; row contains no PII beyond user_id
+
+-- ─── 5. Indexes for new columns ──────────────────────────────────────────────
+create index if not exists jobs_job_type_idx       on public.jobs (job_type, status);
+create index if not exists jobs_region_idx         on public.jobs (region, status);
+create index if not exists jobs_posted_by_idx      on public.jobs (posted_by, created_at desc);
+create index if not exists opportunities_region_idx on public.opportunities (region, status, tryout_date);
+create index if not exists opportunities_flagged_idx on public.opportunities (is_fee_flagged, status) where is_fee_flagged = true;
+create index if not exists profiles_verification_idx on public.profiles (verification_status);
+
+-- ─── 6. Updated_at trigger for opportunities ─────────────────────────────────
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists opportunities_updated_at on public.opportunities;
+create trigger opportunities_updated_at
+  before update on public.opportunities
+  for each row execute procedure public.set_updated_at();
+
+-- ─── 7. Grants ───────────────────────────────────────────────────────────────
+-- Ensure anon/authenticated can use the new tables via the schema grants
+-- already established earlier in this file.
+grant select             on public.opportunities to anon;
+grant select, insert, update on public.opportunities to authenticated;
+grant select, insert     on public.uploads       to authenticated;
+
+-- =============================================================================
+-- END OF DEMO ADDITIONS
+-- =============================================================================

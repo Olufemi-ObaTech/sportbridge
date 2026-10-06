@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import './Auth.css'
 import Dashboard from './Dashboard.jsx'
-import basketballImage from '../../public/img/basketball.jpg'
-import basketballCourtImage from '../../public/img/basketball-court.jpg'
-import basketballJournalImage from '../../public/img/basketball-journal.jpg'
 import ballImage from '../../public/img/fifa-world-cup-ball.avif'
 import footballImage from '../../public/img/football-stadium.jpg'
 import footballStandImage from '../../public/img/football-stadium1.jpg'
 import logoMark from '../../public/img/logo-mark.svg'
 import worldCupBallImage from '../../public/img/world-cup-ball.avif'
 import { supabase, hasSupabaseConfig } from './lib/supabase'
+import { BASKETBALL_ENABLED, containsContactInfo } from './lib/features'
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -25,10 +23,14 @@ const ROLES = [
   { value: 'coach',   label: 'Coach / Manager',  icon: 'bi-clipboard2-pulse' },
 ]
 
-const SPORTS = [
-  { value: 'football',    label: 'Football',    icon: 'bi-dribbble'  },
-  { value: 'basketball',  label: 'Basketball',  icon: 'bi-circle'    },
-]
+const SPORTS = BASKETBALL_ENABLED
+  ? [
+      { value: 'football',   label: 'Football',   icon: 'bi-dribbble' },
+      { value: 'basketball', label: 'Basketball', icon: 'bi-circle'   },
+    ]
+  : [
+      { value: 'football', label: 'Football', icon: 'bi-dribbble' },
+    ]
 
 const roleCards = [
   { accountRole: 'player',  cardIcon: 'bi-person-arms-up',   heroIcon: 'bi-person-arms-up',   title: 'For Players',                  heroTitle: 'Players',   heroCopy: 'Free profile. Get discovered.',          copy: 'Create a free profile with photos, highlight videos and your CV. Go public and get discovered — no academy required.',                              action: 'Create your player profile' },
@@ -144,6 +146,12 @@ function AuthModal({ onClose, initialMode, initialRole }) {
     if (pw.length < 8) {
       setBusy(false)
       showMsg('Password must be at least 8 characters.')
+      return
+    }
+
+    if (containsContactInfo(fullName)) {
+      setBusy(false)
+      showMsg('Please don\'t include phone numbers or email addresses in your name.')
       return
     }
 
@@ -403,25 +411,36 @@ function AuthModal({ onClose, initialMode, initialRole }) {
             </div>
           </div>
 
-          {/* Sport picker */}
+          {/* Sport picker — basketball hidden until flag is enabled */}
           <div>
             <p className="auth-label" style={{ marginBottom: 8 }}>
               <span>Primary sport</span>
             </p>
-            <div className="auth-sport-pills">
-              {SPORTS.map((s) => (
-                <button
-                  key={s.value}
-                  type="button"
-                  className={`auth-sport-pill${sport === s.value ? ' selected' : ''}`}
-                  onClick={() => setSport(s.value)}
-                  aria-pressed={sport === s.value}
-                >
-                  <i className={`bi ${s.icon}`} aria-hidden="true" />
-                  {s.label}
+            {BASKETBALL_ENABLED ? (
+              <div className="auth-sport-pills">
+                {SPORTS.map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    className={`auth-sport-pill${sport === s.value ? ' selected' : ''}`}
+                    onClick={() => setSport(s.value)}
+                    aria-pressed={sport === s.value}
+                  >
+                    <i className={`bi ${s.icon}`} aria-hidden="true" />
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="auth-sport-pills">
+                <button type="button" className="auth-sport-pill selected" disabled>
+                  <i className="bi bi-dribbble" aria-hidden="true" /> Football
                 </button>
-              ))}
-            </div>
+                <button type="button" className="auth-sport-pill" disabled style={{ opacity: .45, cursor: 'not-allowed' }} title="Basketball coming soon">
+                  <i className="bi bi-circle" aria-hidden="true" /> Basketball <span style={{ fontSize: 10 }}>(Coming Soon)</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Email */}
@@ -692,33 +711,46 @@ function App() {
             </ul>
 
             <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-2">
-              {/* Sport switcher */}
-              <li className="nav-item dropdown">
-                <button
-                  className="btn btn-sm btn-outline-light dropdown-toggle d-inline-flex align-items-center gap-1"
-                  type="button"
-                  aria-expanded={sportMenuOpen}
-                  aria-label="Switch sport"
-                  onClick={() => setSportMenuOpen(!sportMenuOpen)}
-                >
-                  <i className={`bi ${sport === 'football' ? 'bi-dribbble' : 'bi-circle'}`} aria-hidden="true" />
-                  <span>{sport === 'football' ? 'Football' : 'Basketball'}</span>
-                </button>
-                <ul className={`dropdown-menu dropdown-menu-end${sportMenuOpen ? ' show' : ''}`}>
-                  {['football', 'basketball'].map((s) => (
-                    <li key={s}>
-                      <button
-                        className={`dropdown-item d-flex align-items-center justify-content-between${sport === s ? ' active' : ''}`}
-                        type="button"
-                        onClick={() => { setSport(s); setSportMenuOpen(false) }}
-                      >
-                        {s === 'football' ? 'Football' : 'Basketball'}
-                        {sport === s && <i className="bi bi-check-lg" aria-hidden="true" />}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </li>
+              {/* Sport switcher / badge */}
+              {BASKETBALL_ENABLED ? (
+                <li className="nav-item dropdown">
+                  <button
+                    className="btn btn-sm btn-outline-light dropdown-toggle d-inline-flex align-items-center gap-1"
+                    type="button"
+                    aria-expanded={sportMenuOpen}
+                    aria-label="Switch sport"
+                    onClick={() => setSportMenuOpen(!sportMenuOpen)}
+                  >
+                    <i className={`bi ${sport === 'football' ? 'bi-dribbble' : 'bi-circle'}`} aria-hidden="true" />
+                    <span>{sport === 'football' ? 'Football' : 'Basketball'}</span>
+                  </button>
+                  <ul className={`dropdown-menu dropdown-menu-end${sportMenuOpen ? ' show' : ''}`}>
+                    {['football', 'basketball'].map((s) => (
+                      <li key={s}>
+                        <button
+                          className={`dropdown-item d-flex align-items-center justify-content-between${sport === s ? ' active' : ''}`}
+                          type="button"
+                          onClick={() => { setSport(s); setSportMenuOpen(false) }}
+                        >
+                          {s === 'football' ? 'Football' : 'Basketball'}
+                          {sport === s && <i className="bi bi-check-lg" aria-hidden="true" />}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ) : (
+                <li className="nav-item">
+                  <span
+                    className="badge d-inline-flex align-items-center gap-1 px-3 py-2"
+                    style={{ background: 'var(--fc-gradient-gold)', color: 'var(--fc-navy-900)', fontSize: 11, fontWeight: 700, letterSpacing: '.04em', borderRadius: 'var(--fc-radius-pill)', cursor: 'default' }}
+                    title="Basketball coming soon"
+                  >
+                    <i className="bi bi-dribbble" aria-hidden="true" />
+                    FOOTBALL <span style={{ opacity: .65, fontWeight: 400 }}>• Basketball Coming Soon</span>
+                  </span>
+                </li>
+              )}
 
               {/* Language switcher */}
               <li className="nav-item dropdown">
@@ -822,16 +854,16 @@ function App() {
                 <div className="row align-items-center g-5">
                   <div className="col-12 col-lg-7">
                     <span className="fc-hero-badge fc-animate-in">
-                      <i className="bi bi-globe-americas" aria-hidden="true" />
-                      Trusted by clubs, academies and agencies worldwide
+                      <i className="bi bi-shield-check me-1" aria-hidden="true" />
+                      Verified Football Players, Clubs, Agents &amp; Coaches — One Bridge
                     </span>
                     <h1 id="home-heading" className="display-4 fw-bold mt-3 mb-3 fc-animate-in fc-delay-1">
-                      Connecting Sports talent with the people who build careers.
+                      The verified football network for players, clubs and agents.
                     </h1>
                     <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.78)' }}>
-                      Players build a free profile. Academies and clubs showcase squads and post jobs.
-                      Agents and scouts discover talent. Coaches find their next move. Every stakeholder
-                      in the game, connected.
+                      Free verified profiles for players. Clubs post jobs and manage squads.
+                      Agents discover talent. Coaches find their next role. Every stakeholder
+                      in football, connected on one bridge.
                     </p>
                     <div className="d-flex flex-wrap gap-2 mt-4 fc-animate-in fc-delay-3">
                       <button type="button" className="btn btn-secondary btn-lg" onClick={() => openSignup()}>
@@ -914,11 +946,13 @@ function App() {
                   <figure><img src={footballStandImage} alt="Football stadium from the stands"  loading="lazy" /><figcaption>Make your move</figcaption></figure>
                   <figure><img src={ballImage}        alt="FIFA World Cup football"             loading="lazy" /><figcaption>Every level. Every ambition.</figcaption></figure>
                 </div>
-                <div className="fc-sport-strip">
-                  <img src={basketballImage}      alt="Basketball on court"  loading="lazy" />
-                  <img src={basketballCourtImage} alt="Basketball court"     loading="lazy" />
-                  <img src={basketballJournalImage} alt="Basketball journal" loading="lazy" />
-                </div>
+                {BASKETBALL_ENABLED && (
+                  <div className="fc-sport-strip">
+                    <img src="/img/basketball.jpg"         alt="Basketball on court"  loading="lazy" />
+                    <img src="/img/basketball-court.jpg"   alt="Basketball court"     loading="lazy" />
+                    <img src="/img/basketball-journal.jpg" alt="Basketball journal"   loading="lazy" />
+                  </div>
+                )}
               </section>
 
               {/* ── CTA band ──────────────────────────────────────────── */}
