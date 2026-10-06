@@ -1,20 +1,19 @@
 # Netlify hosts the public static experience and compiled Vite assets.
-# Server-side application services are being migrated to Supabase.
+# Server-side application services are handled by Supabase.
 [build]
   command = "cd frontend && npm ci && npm run build"
   publish = "frontend/dist"
 
 # ---------------------------------------------------------------------------
-# Required environment variables
-# Set these in Netlify: Site configuration → Environment variables
-# Use the PUBLIC anon/publishable key from Supabase → Project Settings → API.
-# NEVER use the service_role key here — it would be exposed in the browser bundle.
+# Required environment variables — set these in Netlify UI:
+#   Site configuration → Environment variables
+#   VITE_SUPABASE_URL    = https://pzfohowzaeunywaqukwe.supabase.co
+#   VITE_SUPABASE_ANON_KEY = <your anon/public key from Supabase dashboard>
+# NEVER paste the service_role key here — it would be exposed in the bundle.
 # ---------------------------------------------------------------------------
 [build.environment]
-  VITE_SUPABASE_URL    = "https://pzfohowzaeunywaqukwe.supabase.co"
-  # VITE_SUPABASE_ANON_KEY must be set as a secret in the Netlify UI —
-  # do not hardcode it here because this file is committed to the repository.
-  NODE_VERSION         = "22"
+  VITE_SUPABASE_URL = "https://pzfohowzaeunywaqukwe.supabase.co"
+  NODE_VERSION      = "22"
 
 [functions]
   directory = "netlify/functions"
@@ -29,21 +28,34 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# ---------------------------------------------------------------------------
+# Domain redirects — primary domain: www.sportbridge.com.ng
+# New Netlify site: sportbridge-ng-com.netlify.app
+# ---------------------------------------------------------------------------
+
+# HTTP → HTTPS for primary custom domain
 [[redirects]]
-  from = "http://sportbridge.com.ng/*"
-  to   = "https://www.sportbridge.com.ng/:splat"
+  from   = "http://sportbridge.com.ng/*"
+  to     = "https://www.sportbridge.com.ng/:splat"
   status = 301
   force  = true
 
 [[redirects]]
-  from = "https://sportbridge.com.ng/*"
-  to   = "https://www.sportbridge.com.ng/:splat"
+  from   = "https://sportbridge.com.ng/*"
+  to     = "https://www.sportbridge.com.ng/:splat"
   status = 301
   force  = true
 
 [[redirects]]
-  from = "http://www.sportbridge.com.ng/*"
-  to   = "https://www.sportbridge.com.ng/:splat"
+  from   = "http://www.sportbridge.com.ng/*"
+  to     = "https://www.sportbridge.com.ng/:splat"
+  status = 301
+  force  = true
+
+# Old Netlify site → new Netlify site (catches any lingering links)
+[[redirects]]
+  from   = "https://sportbridgeng.netlify.app/*"
+  to     = "https://sportbridge-ng-com.netlify.app/:splat"
   status = 301
   force  = true
 
