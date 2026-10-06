@@ -595,7 +595,7 @@ on conflict do nothing;
 
 -- ── Done ──────────────────────────────────────────────────────────────────────
 select
-  (select count(*) from public.profiles where id like '1100%' or id like '2200%') as demo_profiles,
+  (select count(*) from public.profiles where id::text like '1100%' or id::text like '2200%') as demo_profiles,
   (select count(*) from public.players  where is_public = true) as public_players,
   (select count(*) from public.jobs     where status = 'open') as open_jobs,
   (select count(*) from public.opportunities where status = 'open') as open_tryouts;
