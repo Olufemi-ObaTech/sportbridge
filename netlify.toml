@@ -1,17 +1,14 @@
-# Netlify hosts the public static experience and compiled Vite assets.
-# Server-side application services are handled by Supabase.
+# Netlify configuration for SportBridge
+# Keys must be set in Netlify UI: Site configuration → Environment variables
+# Do NOT put secret or API keys in this file — Netlify scans commits for secrets.
+
 [build]
   command = "cd frontend && npm ci && npm run build"
   publish = "frontend/dist"
 
-# ---------------------------------------------------------------------------
-# Public Supabase config — anon key is safe to commit (it is the public
-# browser-facing key, NOT the service_role key).
-# ---------------------------------------------------------------------------
 [build.environment]
-  VITE_SUPABASE_URL      = "https://pzfohowzaeunywaqukwe.supabase.co"
-  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6Zm9ob3d6YWV1bnl3YXF1a3dlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxNzQ0NTksImV4cCI6MjEwNTc1MDQ1OX0.kTcQgqGgB9Fgs9q_13PeQgzNxpuxH_foK8we5JrFZik"
-  NODE_VERSION           = "22"
+  VITE_SUPABASE_URL = "https://pzfohowzaeunywaqukwe.supabase.co"
+  NODE_VERSION      = "22"
 
 [functions]
   directory = "netlify/functions"
@@ -26,12 +23,6 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# ---------------------------------------------------------------------------
-# Domain redirects — primary domain: www.sportbridge.com.ng
-# New Netlify site: sportbridge-ng-com.netlify.app
-# ---------------------------------------------------------------------------
-
-# HTTP → HTTPS for primary custom domain
 [[redirects]]
   from   = "http://sportbridge.com.ng/*"
   to     = "https://www.sportbridge.com.ng/:splat"
@@ -50,7 +41,6 @@
   status = 301
   force  = true
 
-# Old Netlify site → new Netlify site (catches any lingering links)
 [[redirects]]
   from   = "https://sportbridgeng.netlify.app/*"
   to     = "https://sportbridge-ng-com.netlify.app/:splat"

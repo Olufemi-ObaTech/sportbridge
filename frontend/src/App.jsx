@@ -320,7 +320,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
                 {message}
               </p>
             )}
-            <button className="auth-submit" type="submit" disabled={busy || !hasSupabaseConfig}>
+            <button className="auth-submit" type="submit" disabled={busy}>
               {busy ? <><span className="spinner-border spinner-border-sm me-2" />Sending…</> : 'Send reset link'}
             </button>
           </form>
@@ -391,7 +391,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
             <button
               className="auth-submit"
               type="submit"
-              disabled={busy || !hasSupabaseConfig}
+              disabled={busy}
             >
               {busy
                 ? <><span className="spinner-border spinner-border-sm me-2" />Signing in…</>
@@ -549,7 +549,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
           <button
             className="auth-submit"
             type="submit"
-            disabled={busy || !hasSupabaseConfig}
+            disabled={busy}
           >
             {busy
               ? <><span className="spinner-border spinner-border-sm me-2" />Creating account…</>
