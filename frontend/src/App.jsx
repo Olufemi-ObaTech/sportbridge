@@ -155,15 +155,19 @@ function AuthModal({ onClose, initialMode, initialRole }) {
 
     if (error) {
       if (error.message.toLowerCase().includes('email not confirmed')) {
-        showMsg('Please confirm your email first. Check your inbox (and spam folder).', 'info')
-      } else if (error.message.toLowerCase().includes('invalid login')) {
-        showMsg('Incorrect email or password. Please try again.')
+        showMsg('Your email is not confirmed yet. Check your inbox for the confirmation link — also check your spam folder.', 'info')
+      } else if (error.message.toLowerCase().includes('invalid login credentials') || error.message.toLowerCase().includes('invalid login')) {
+        showMsg('Incorrect email or password. Please check your details and try again.')
+      } else if (error.message.toLowerCase().includes('user not found')) {
+        showMsg('No account found with this email. Create a free account below.', 'info')
       } else {
         showMsg(error.message)
       }
+      return
     }
-    // success: onAuthStateChange in App will close modal via setView('dashboard')
-    // — we also close here just in case
+
+    // Success — onAuthStateChange fires SIGNED_IN and closes modal automatically
+    // The parent App's onAuthStateChange handler calls setAuthOpen(false)
   }
 
   // ── sign up ──────────────────────────────────────────────────────────────────
@@ -212,11 +216,11 @@ function AuthModal({ onClose, initialMode, initialRole }) {
     }
 
     if (!data.session) {
-      // Email confirmation required
+      // Email confirmation required — show the check inbox screen
       setConfirmedEmail(email)
       setMode('confirmed')
     }
-    // If auto-confirm is on, session exists → onAuthStateChange handles the rest
+    // session exists → auto-confirmed, onAuthStateChange fires SIGNED_IN → dashboard
   }
 
   // ── forgot password ───────────────────────────────────────────────────────────
@@ -472,7 +476,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
                 </button>
                 <button type="button" className="auth-sport-pill" disabled style={{ opacity: .45, cursor: 'not-allowed' }} title="Basketball coming soon">
                   <i className="bi bi-circle" aria-hidden="true" /> Basketball <span style={{ fontSize: 10 }}>(Coming Soon)</span>
-                </button> 
+                </button>
               </div>
             )}
           </div>
@@ -821,25 +825,25 @@ function App() {
                       Log in
                     </button>
                   </li>
-                  {/* Task 6 — role-specific navbar CTAs for guests */}
-                  {/* <li className="nav-item d-none d-lg-flex gap-2 align-items-center ms-lg-1">
+                  {/* Desktop: Create Player Profile + Find Players */}
+                  <li className="nav-item d-none d-lg-flex gap-2 align-items-center ms-lg-1">
                     <button
                       className="btn btn-secondary btn-sm"
                       type="button"
                       onClick={() => openSignup('player')}
                     >
                       <i className="bi bi-person-plus me-1" aria-hidden="true" />
-                      Create Player Profile
+                      Create Account
                     </button>
                     <button
                       className="btn btn-outline-light btn-sm"
                       type="button"
-                      onClick={() => { setSection('players'); document.getElementById('players')?.scrollIntoView({ behavior: 'smooth' }) }}
+                      onClick={() => document.getElementById('players')?.scrollIntoView({ behavior: 'smooth' })}
                     >
                       <i className="bi bi-search me-1" aria-hidden="true" />
                       Find Players
                     </button>
-                  </li> */}
+                  </li>
                   {/* Mobile: single join button */}
                   <li className="nav-item d-lg-none">
                     <button className="btn btn-secondary btn-sm" type="button" onClick={() => openSignup()}>
@@ -884,10 +888,10 @@ function App() {
                     {/* Badge */}
                     <span className="fc-hero-badge fc-animate-in">
                       <i className="bi bi-shield-check me-1" aria-hidden="true" />
-                      &apos;sThe World #1 Verified Football Network
+                      The World&apos;s #1 Verified Football Network
                     </span>
 
-                    {/* Headline — answers "why not Instagram?" in 3 words */}
+                    {/* Headline */}
                     <h1 id="home-heading" className="display-4 fw-bold mt-3 mb-3 fc-animate-in fc-delay-1">
                       Stop Chasing Fake Agents.{' '}
                       <span className="fc-gradient-text">Get Verified.</span>
@@ -896,8 +900,8 @@ function App() {
                     {/* Sub-headline */}
                     <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '56ch' }}>
                       SportBridge connects <strong style={{ color: '#fff' }}>Verified Free Players</strong> with{' '}
-                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong> in Nigeria and The World.
-                      Full CV + Full-Match Video + highlights + Stats + Secure Unlock —{' '}
+                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong> in Nigeria and across the world.
+                      Full CV + Full-Match Video + Stats + Secure Unlock —{' '}
                       <em>not just highlights.</em>
                     </p>
 
@@ -1119,7 +1123,8 @@ function App() {
               <h2 className="h6 text-uppercase text-white-50">Explore</h2>
               <ul className="list-unstyled small">
                 <li><a className="link-light link-underline-opacity-0" href="#players">Players</a></li>
-                <li><a className="link-light link-underline-opacity-0" href="#opportunities" onClick={() => setSection('jobs')}>Jobs</a></li>
+                <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('jobs'); window.scrollTo(0,0) }}>Jobs</button></li>
+                <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('tryouts'); window.scrollTo(0,0) }}>Tryouts</button></li>
                 <li><a className="link-light link-underline-opacity-0" href="#roles">Feed</a></li>
               </ul>
             </div>
