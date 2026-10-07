@@ -5,15 +5,13 @@
   publish = "frontend/dist"
 
 # ---------------------------------------------------------------------------
-# Required environment variables — set these in Netlify UI:
-#   Site configuration → Environment variables
-#   VITE_SUPABASE_URL    = https://pzfohowzaeunywaqukwe.supabase.co
-#   VITE_SUPABASE_ANON_KEY = <your anon/public key from Supabase dashboard>
-# NEVER paste the service_role key here — it would be exposed in the bundle.
+# Public Supabase config — anon key is safe to commit (it is the public
+# browser-facing key, NOT the service_role key).
 # ---------------------------------------------------------------------------
 [build.environment]
-  VITE_SUPABASE_URL = "https://pzfohowzaeunywaqukwe.supabase.co"
-  NODE_VERSION      = "22"
+  VITE_SUPABASE_URL      = "https://pzfohowzaeunywaqukwe.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6Zm9ob3d6YWV1bnl3YXF1a3dlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxNzQ0NTksImV4cCI6MjEwNTc1MDQ1OX0.kTcQgqGgB9Fgs9q_13PeQgzNxpuxH_foK8we5JrFZik"
+  NODE_VERSION           = "22"
 
 [functions]
   directory = "netlify/functions"
