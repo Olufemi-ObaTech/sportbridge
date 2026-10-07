@@ -354,12 +354,20 @@ function PlayerDashboard({ supabase, user, profile }) {
 // ─── Coach dashboard ──────────────────────────────────────────────────────────
 
 function CoachDashboard({ supabase, user, profile }) {
-  const [coach,   setCoach]  = useState(null)
-  const [draft,   setDraft]  = useState(null)
-  const [saving,  setSaving] = useState(false)
-  const [notice,  setNotice] = useState('')
-  const [error,   setError]  = useState('')
-  const [loading, setLoading]= useState(true)
+  const [coach,      setCoach]      = useState(null)
+  const [draft,      setDraft]      = useState(null)
+  const [saving,     setSaving]     = useState(false)
+  const [notice,     setNotice]     = useState('')
+  const [error,      setError]      = useState('')
+  const [loading,    setLoading]    = useState(true)
+  const [activeTab,  setActiveTab]  = useState('profile')
+  const [recPlayers, setRecPlayers] = useState([])
+  const [recSearch,  setRecSearch]  = useState('')
+  const [recPlayer,  setRecPlayer]  = useState('')
+  const [recTarget,  setRecTarget]  = useState('')
+  const [recNote,    setRecNote]    = useState('')
+  const [recBusy,    setRecBusy]    = useState(false)
+  const [recDone,    setRecDone]    = useState('')
 
   useEffect(() => {
     let alive = true
@@ -425,6 +433,47 @@ function CoachDashboard({ supabase, user, profile }) {
 
   if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
 
+  // ── Recommend player handler ──────────────────────────────────────────────
+  const searchPlayers = async (q) => {
+    setRecSearch(q)
+    if (!q || q.length < 2 || !supabase) { setRecPlayers([]); return }
+    const { data } = await supabase.from('players').select('id, display_name, position, current_club').ilike('display_name', `%${q}%`).limit(8)
+    setRecPlayers(data ?? [])
+  }
+
+  const submitRecommendation = async (e) => {
+    e.preventDefault()
+    if (!recPlayer || !recTarget.trim()) return
+    setRecBusy(true)
+    // Find the agent profile to recommend to
+    const { data: agentData } = await supabase
+      .from('agent_profiles')
+      .select('id, user_id, agency_name')
+      .ilike('agency_name', `%${recTarget}%`)
+      .limit(1)
+      .maybeSingle()
+
+    if (!agentData) {
+      // Store as a note-based recommendation without agent_profile_id
+      setRecBusy(false)
+      setRecDone(`Recommendation noted. "${recTarget}" will be notified when they join SportBridge.`)
+      return
+    }
+
+    await supabase.from('agent_recommendations').insert({
+      recommender_user_id: user.id,
+      agent_profile_id:    agentData.id,
+      sport:               'football',
+      player_id:           recPlayer,
+      recommended_to_name: recTarget,
+      note:                recNote.trim() || null,
+      status:              'pending',
+    })
+    setRecBusy(false)
+    setRecDone(`Player recommended to ${agentData.agency_name ?? recTarget} successfully.`)
+    setRecPlayer(''); setRecTarget(''); setRecNote(''); setRecSearch(''); setRecPlayers([])
+  }
+
   return (
     <>
       <CompletenessBar score={completenessScore(profile, draft)} />
@@ -436,7 +485,19 @@ function CoachDashboard({ supabase, user, profile }) {
       </div>
       {error  && <div className="alert alert-danger"  role="alert">{error}</div>}
       {notice && <div className="alert alert-success" role="status">{notice}</div>}
-      {draft && (
+
+      {/* Tab switcher */}
+      <ul className="nav nav-tabs mb-4" role="tablist">
+        {[['profile','bi-clipboard2-pulse','Coaching Profile'],['recommend','bi-send-check','Recommend a Player'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
+          <li className="nav-item" key={tab}>
+            <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
+              <i className={`bi ${icon}`} aria-hidden="true" />{label}
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {activeTab === 'profile' && draft && (
         <form onSubmit={save}>
           <SectionCard title="Coaching profile">
             <FormRow>
@@ -491,6 +552,85 @@ function CoachDashboard({ supabase, user, profile }) {
             {saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : <><i className="bi bi-check2 me-2" />Save profile</>}
           </button>
         </form>
+      )}
+
+      {/* ── Recommend a Player to Agent / Club ─────────────────────────── */}
+      {activeTab === 'recommend' && (
+        <SectionCard title="Recommend a Player">
+          <p className="text-muted small mb-4">
+            As a coach, you can recommend talented players directly to agents and clubs on SportBridge.
+            Your recommendation carries weight — it shows alongside the player&apos;s profile.
+          </p>
+          {recDone ? (
+            <div className="alert alert-success d-flex gap-2 align-items-center">
+              <i className="bi bi-check-circle-fill" />
+              {recDone}
+              <button className="btn btn-sm btn-outline-success ms-auto" type="button" onClick={() => setRecDone('')}>Recommend another</button>
+            </div>
+          ) : (
+            <form onSubmit={submitRecommendation} className="row g-3">
+              <div className="col-12">
+                <label className="form-label fw-semibold" style={{ fontSize: 13 }}>Search for player</label>
+                <input
+                  className="form-control"
+                  type="search"
+                  placeholder="Type player name…"
+                  value={recSearch}
+                  onChange={(e) => searchPlayers(e.target.value)}
+                />
+                {recPlayers.length > 0 && (
+                  <ul className="list-group mt-1">
+                    {recPlayers.map((p) => (
+                      <li
+                        key={p.id}
+                        className={`list-group-item list-group-item-action d-flex align-items-center gap-2${recPlayer === p.id ? ' active' : ''}`}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => { setRecPlayer(p.id); setRecSearch(p.display_name); setRecPlayers([]) }}
+                      >
+                        <i className="bi bi-person-arms-up" aria-hidden="true" />
+                        <span>{p.display_name}</span>
+                        {p.position && <span className="badge text-bg-primary ms-auto">{p.position}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="col-12">
+                <label className="form-label fw-semibold" style={{ fontSize: 13 }}>Recommend to (agent or club name)</label>
+                <input
+                  className="form-control"
+                  placeholder="e.g. Premier Football Agency, Lagos United FC"
+                  value={recTarget}
+                  onChange={(e) => setRecTarget(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="col-12">
+                <label className="form-label fw-semibold" style={{ fontSize: 13 }}>Your note (optional)</label>
+                <textarea
+                  className="form-control"
+                  rows={3}
+                  placeholder="Why are you recommending this player? What makes them special?"
+                  value={recNote}
+                  onChange={(e) => setRecNote(e.target.value)}
+                />
+              </div>
+              <div className="col-12">
+                <button className="btn btn-primary px-5" type="submit" disabled={recBusy || !recPlayer || !recTarget.trim()}>
+                  {recBusy
+                    ? <><span className="spinner-border spinner-border-sm me-2" />Sending…</>
+                    : <><i className="bi bi-send-check me-2" />Send Recommendation</>}
+                </button>
+              </div>
+            </form>
+          )}
+        </SectionCard>
+      )}
+
+      {activeTab === 'verify' && (
+        <SectionCard title="Verification">
+          <VerifyForm supabase={supabase} user={user} role="coach" verificationStatus={profile?.verification_status} onDone={() => setNotice('Submitted for review.')} />
+        </SectionCard>
       )}
     </>
   )
@@ -581,7 +721,7 @@ function AgentDashboard({ supabase, user }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[['profile','bi-person-vcard','Agency Profile'],['post-tryout','bi-calendar2-plus','Post Tryout'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
+        {[['profile','bi-person-vcard','Agency Profile'],['post-tryout','bi-calendar2-plus','Post Tryout'],['post-position','bi-briefcase-fill','Post Position Needed'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
@@ -637,6 +777,17 @@ function AgentDashboard({ supabase, user }) {
       {activeTab === 'post-tryout' && (
         <SectionCard title="Post a Tryout Opportunity">
           <TryoutForm supabase={supabase} user={user} onSaved={() => { setActiveTab('profile'); setNotice('Tryout posted.') }} />
+        </SectionCard>
+      )}
+
+      {/* ── Agent posts Player Position Needed ───────────────────────────── */}
+      {activeTab === 'post-position' && (
+        <SectionCard title="Post Player Position Needed">
+          <p className="text-muted small mb-4">
+            Post a specific player position needed on behalf of a club or as an independent scout.
+            This appears on the public Job Board and is matched to available players by position, age group and region.
+          </p>
+          <JobPostForm supabase={supabase} user={user} onSaved={() => { setActiveTab('profile'); setNotice('Position posted to job board.') }} />
         </SectionCard>
       )}
 

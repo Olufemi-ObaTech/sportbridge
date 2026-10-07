@@ -31,10 +31,46 @@ const SPORTS = BASKETBALL_ENABLED
     ]
 
 const roleCards = [
-  { accountRole: 'player',  cardIcon: 'bi-person-arms-up',   heroIcon: 'bi-person-arms-up',   title: 'For Players',                  heroTitle: 'Players',   heroCopy: 'Free profile. Get discovered.',          copy: 'Create a free profile with photos, highlight videos and your CV. Go public and get discovered — no academy required.',                              action: 'Create your player profile' },
-  { accountRole: 'academy', cardIcon: 'bi-person-badge',     heroIcon: 'bi-building',         title: 'For Clubs & Academies',        heroTitle: 'Clubs',     heroCopy: 'Showcase your squad to the world.',      copy: 'Build player profiles, manage teams, and post coaching or scouting vacancies to reach the right people.',                                          action: 'Register your academy'       },
-  { accountRole: 'agent',   cardIcon: 'bi-search',           heroIcon: 'bi-binoculars',       title: 'For Agents & Scouts',          heroTitle: 'Agents',    heroCopy: 'Scout the next generation.',             copy: 'Search players by position, age, and nationality, build a watchlist, and request access to full profiles.',                                         action: 'Register as an agent'        },
-  { accountRole: 'coach',   cardIcon: 'bi-briefcase',        heroIcon: 'bi-clipboard2-pulse', title: 'For Coaches & Sporting Directors', heroTitle: 'Coaches', heroCopy: 'Land your next role.',                copy: 'Browse open roles across academies and clubs, and apply directly with your CV and badges.',                                                           action: 'Register as a coach'         },
+  {
+    accountRole: 'player',
+    cardIcon: 'bi-person-arms-up',
+    heroIcon: 'bi-person-arms-up',
+    title: 'For Players',
+    heroTitle: 'Players',
+    heroCopy: 'Free profile. Get discovered.',
+    copy: 'Create a free profile with photos, full-match videos and your CV. Go public and get discovered by verified clubs, academies and agents — no middleman required.',
+    action: 'Create your player profile',
+  },
+  {
+    accountRole: 'academy',
+    cardIcon: 'bi-person-badge',
+    heroIcon: 'bi-building',
+    title: 'For Clubs & Academies',
+    heroTitle: 'Clubs ✓ Verified',
+    heroCopy: 'Showcase your squad to the world.',
+    copy: 'Create players, build your squad roster, post Player Needed & Staff Needed jobs, and showcase your verified club to scouts and agents worldwide.',
+    action: 'Register your club / academy',
+  },
+  {
+    accountRole: 'agent',
+    cardIcon: 'bi-search',
+    heroIcon: 'bi-binoculars',
+    title: 'For Agents & Scouts',
+    heroTitle: 'Agents',
+    heroCopy: 'Scout the next generation.',
+    copy: 'Search verified players by position, age and region. Build a watchlist, post Player Positions Needed on behalf of clubs, and run verified tryout opportunities.',
+    action: 'Register as an agent / scout',
+  },
+  {
+    accountRole: 'coach',
+    cardIcon: 'bi-briefcase',
+    heroIcon: 'bi-clipboard2-pulse',
+    title: 'For Coaches & Sporting Directors',
+    heroTitle: 'Coaches',
+    heroCopy: 'Land your next role.',
+    copy: 'Browse coaching and management roles, apply with your verified profile, and recommend talented players directly to agents and clubs from your dashboard.',
+    action: 'Register as a coach / manager',
+  },
 ]
 
 const worldClocks = [
@@ -436,7 +472,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
                 </button>
                 <button type="button" className="auth-sport-pill" disabled style={{ opacity: .45, cursor: 'not-allowed' }} title="Basketball coming soon">
                   <i className="bi bi-circle" aria-hidden="true" /> Basketball <span style={{ fontSize: 10 }}>(Coming Soon)</span>
-                </button>
+                </button> 
               </div>
             )}
           </div>
@@ -714,7 +750,7 @@ function App() {
                     title="Basketball coming soon"
                   >
                     <i className="bi bi-dribbble" aria-hidden="true" />
-                    FOOTBALL <span style={{ opacity: .65, fontWeight: 400 }}>• Basketball Coming Soon</span>
+                    FOOTBALL <span style={{ opacity: .65, fontWeight: 400 }}></span>
                   </span>
                 </li>
               )}
@@ -786,7 +822,7 @@ function App() {
                     </button>
                   </li>
                   {/* Task 6 — role-specific navbar CTAs for guests */}
-                  <li className="nav-item d-none d-lg-flex gap-2 align-items-center ms-lg-1">
+                  {/* <li className="nav-item d-none d-lg-flex gap-2 align-items-center ms-lg-1">
                     <button
                       className="btn btn-secondary btn-sm"
                       type="button"
@@ -803,7 +839,7 @@ function App() {
                       <i className="bi bi-search me-1" aria-hidden="true" />
                       Find Players
                     </button>
-                  </li>
+                  </li> */}
                   {/* Mobile: single join button */}
                   <li className="nav-item d-lg-none">
                     <button className="btn btn-secondary btn-sm" type="button" onClick={() => openSignup()}>
@@ -848,7 +884,7 @@ function App() {
                     {/* Badge */}
                     <span className="fc-hero-badge fc-animate-in">
                       <i className="bi bi-shield-check me-1" aria-hidden="true" />
-                      Nigeria&apos;s #1 Verified Football Network
+                      &apos;sThe World #1 Verified Football Network
                     </span>
 
                     {/* Headline — answers "why not Instagram?" in 3 words */}
@@ -860,15 +896,15 @@ function App() {
                     {/* Sub-headline */}
                     <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '56ch' }}>
                       SportBridge connects <strong style={{ color: '#fff' }}>Verified Free Players</strong> with{' '}
-                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong> in Nigeria.
-                      Full CV + Full-Match Video + Stats + Secure Unlock —{' '}
+                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong> in Nigeria and The World.
+                      Full CV + Full-Match Video + highlights + Stats + Secure Unlock —{' '}
                       <em>not just highlights.</em>
                     </p>
 
                     {/* Comparison pills */}
                     <div className="d-flex flex-wrap gap-2 mt-4 fc-animate-in fc-delay-2" role="list" aria-label="SportBridge vs other platforms">
                       {[
-                        { vs: 'Instagram', vsText: 'Highlights only', sbText: 'Verified CV + Full Match + Availability', icon: 'bi-camera-video' },
+                        { vs: 'Instagram', vsText: 'Highlights only',  sbText: 'Verified CV + Full Match + Availability', icon: 'bi-camera-video' },
                         { vs: 'LinkedIn',  vsText: 'Corporate jobs',   sbText: 'Football jobs by Position / Age / Region', icon: 'bi-briefcase' },
                         { vs: 'WhatsApp',  vsText: 'Scams & leaks',    sbText: 'NIN Verified + Video Hash + No Leaked Numbers', icon: 'bi-shield-lock' },
                       ].map(({ vs, vsText, sbText, icon }) => (
