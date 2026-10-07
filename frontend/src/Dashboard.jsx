@@ -146,7 +146,7 @@ function PlayerDashboard({ supabase, user, profile }) {
   useEffect(() => {
     let alive = true
     supabase.from('players')
-      .select('id, display_name, position, secondary_position, age, country, nationality, bio, is_public, sport, gender, foot, dominant_hand, height_cm, weight_kg, current_club, achievements, linkedin, views_count')
+      .select('id, display_name, position, secondary_position, age, country, nationality, bio, is_public, sport, gender, foot, dominant_hand, height_cm, weight_kg, current_club, achievements, linkedin, views_count, region')
       .eq('profile_id', user.id)
       .maybeSingle()
       .then(({ data, error: err }) => {
@@ -172,6 +172,7 @@ function PlayerDashboard({ supabase, user, profile }) {
           current_club:       p.current_club       ?? '',
           achievements:       p.achievements       ?? '',
           linkedin:           p.linkedin           ?? '',
+          region:             p.region             ?? '',
         })
         setLoading(false)
       })
@@ -204,6 +205,7 @@ function PlayerDashboard({ supabase, user, profile }) {
       current_club:       draft.current_club.trim() || null,
       achievements:       draft.achievements.trim() || null,
       linkedin:           draft.linkedin.trim() || null,
+      region:             draft.region?.trim() || null,
       updated_at:         new Date().toISOString(),
     }
     const q = player
@@ -638,9 +640,7 @@ function CoachDashboard({ supabase, user, profile }) {
 
 // ─── Agent dashboard ──────────────────────────────────────────────────────────
 
-function AgentDashboard({ supabase, user }) {
-  const [agent,          setAgent]        = useState(null)
-  const [draft,          setDraft]        = useState(null)
+function AgentDashboard({ supabase, user, profile }) {
   const [saving,         setSaving]       = useState(false)
   const [notice,         setNotice]       = useState('')
   const [error,          setError]        = useState('')
@@ -793,7 +793,7 @@ function AgentDashboard({ supabase, user }) {
 
       {activeTab === 'verify' && (
         <SectionCard title="Verification">
-          <VerifyForm supabase={supabase} user={user} role="agent" verificationStatus={null} onDone={() => setNotice('Submitted for review.')} />
+          <VerifyForm supabase={supabase} user={user} role="agent" verificationStatus={profile?.verification_status} onDone={() => setNotice('Submitted for review.')} />
         </SectionCard>
       )}
     </>
@@ -1287,7 +1287,7 @@ function Dashboard({ supabase, user, onBack }) {
     if (role === 'super_admin') return <AdminDashboard   supabase={supabase} user={user} />
     if (role === 'player')      return <PlayerDashboard  supabase={supabase} user={user} profile={profile} />
     if (role === 'coach')       return <CoachDashboard   supabase={supabase} user={user} profile={profile} />
-    if (role === 'agent')       return <AgentDashboard   supabase={supabase} user={user} />
+    if (role === 'agent')       return <AgentDashboard  supabase={supabase} user={user} profile={profile} />
     if (role === 'academy')     return <AcademyDashboard supabase={supabase} user={user} profile={profile} />
     return <div className="alert alert-warning">Unknown account role <strong>{role}</strong>. Please contact support.</div>
   }

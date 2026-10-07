@@ -273,9 +273,7 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
           >
             <i className="bi bi-sliders" aria-hidden="true" />
             Filters
-            {Object.values(filters).some((v) => v && v !== '' && v !== true ? v : v === true && v !== BLANK_FILTERS.verifiedOnly) && (
-              <span className="badge text-bg-primary ms-1" style={{ fontSize: 10 }}>•</span>
-            )}
+            {activeCount > 0 && <span className="badge text-bg-primary ms-1" style={{ fontSize: 10 }}>{activeCount}</span>}
           </button>
           <select className="form-select form-select-sm flex-shrink-0" style={{ width: 'auto' }}
             value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort players">

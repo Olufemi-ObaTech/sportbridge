@@ -12,8 +12,7 @@
  */
 
 import { useState } from 'react'
-import { blockContactInfo } from './lib/uploadGuards'
-import { validateCV, validateImage, validateVideo, guardedUpload } from './lib/uploadGuards'
+import { blockContactInfo, validateCV, validateImage, validateVideo, guardedUpload } from './lib/uploadGuards'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function Field({ label, col = 'col-12', hint, children }) {

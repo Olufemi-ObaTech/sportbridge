@@ -825,7 +825,7 @@ function App() {
                       Log in
                     </button>
                   </li>
-                  {/* Desktop: Create Player Profile + Find Players */}
+                  {/* Desktop: Create Account Profile + Find Players */}
                   <li className="nav-item d-none d-lg-flex gap-2 align-items-center ms-lg-1">
                     <button
                       className="btn btn-secondary btn-sm"
