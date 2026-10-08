@@ -50,6 +50,14 @@ jobs:
       - name: Build Laravel Vite assets
         run: npm run build
 
+      - name: Verify Vite manifest exists
+        run: |
+          if [ ! -f public/build/manifest.json ]; then
+            echo "ERROR: public/build/manifest.json not found — npm run build may have failed"
+            exit 1
+          fi
+          echo "Vite manifest OK"
+
       - name: Run Pint (code style)
         run: ./vendor/bin/pint --test
 

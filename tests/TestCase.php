@@ -14,4 +14,16 @@ abstract class TestCase extends BaseTestCase
      * created in one test would leak into the next.
      */
     protected $connectionsToTransact = [null, 'mysql_basketball', 'mysql_admin'];
+
+    /**
+     * Disable Vite manifest resolution in all tests. The manifest is only
+     * available after `npm run build`; rather than requiring a full Vite build
+     * on every CI run, we suppress it here so tests focus on PHP behaviour.
+     * The Vite build step in ci.yml still runs to verify the JS compiles cleanly.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutVite();
+    }
 }
