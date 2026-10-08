@@ -1,6 +1,13 @@
 # Netlify configuration for SportBridge
-# Keys must be set in Netlify UI: Site configuration → Environment variables
-# Do NOT put secret or API keys in this file — Netlify scans commits for secrets.
+# Live URL: https://sportbridge-com-ng.netlify.app
+# Custom domain: sportbridge.com.ng (add back when DNS is ready)
+#
+# Required env vars — set in Netlify UI (Site configuration → Environment variables):
+#   VITE_SUPABASE_URL      = https://pzfohowzaeunywaqukwe.supabase.co
+#   VITE_SUPABASE_ANON_KEY = eyJ...  (anon/public key from Supabase dashboard)
+#   SUPABASE_URL           = https://pzfohowzaeunywaqukwe.supabase.co
+#   SUPABASE_ANON_KEY      = eyJ...  (same anon key, used by health function)
+# Do NOT put the actual key value in this file — it is committed to GitHub.
 
 [build]
   command = "cd frontend && npm ci && npm run build"
@@ -23,31 +30,7 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-[[redirects]]
-  from   = "http://sportbridge.com.ng/*"
-  to     = "https://www.sportbridge.com.ng/:splat"
-  status = 301
-  force  = true
-
-[[redirects]]
-  from   = "https://sportbridge.com.ng/*"
-  to     = "https://www.sportbridge.com.ng/:splat"
-  status = 301
-  force  = true
-
-[[redirects]]
-  from   = "http://www.sportbridge.com.ng/*"
-  to     = "https://www.sportbridge.com.ng/:splat"
-  status = 301
-  force  = true
-
-[[redirects]]
-  from   = "https://sportbridgeng.netlify.app/*"
-  to     = "https://sportbridge-ng-com.netlify.app/:splat"
-  status = 301
-  force  = true
-
-# SPA fallback — all paths serve index.html so React Router can handle them
+# SPA fallback — every path serves index.html so React state-based routing works
 [[redirects]]
   from   = "/*"
   to     = "/index.html"

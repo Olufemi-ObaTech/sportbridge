@@ -957,6 +957,7 @@ drop policy if exists "clubs are created by owner" on public.clubs;
 drop policy if exists "clubs are updated by owner" on public.clubs;
 drop policy if exists "clubs are deleted by owner" on public.clubs;
 drop policy if exists "clubs public read" on public.clubs;
+drop policy if exists "clubs authenticated read" on public.clubs;
 drop policy if exists "clubs owner insert" on public.clubs;
 drop policy if exists "clubs owner update" on public.clubs;
 drop policy if exists "clubs owner delete" on public.clubs;
@@ -1063,7 +1064,9 @@ create policy "academy profile owner access" on public.academy_profiles for all 
   using (user_id = (select auth.uid()) or public.current_user_is_admin())
   with check (user_id = (select auth.uid()) or public.current_user_is_admin());
 drop policy if exists "agent profiles public read" on public.agent_profiles;
+drop policy if exists "agent profile authenticated read" on public.agent_profiles;
 drop policy if exists "agent profile owner access" on public.agent_profiles;
+drop policy if exists "agent profile owner write" on public.agent_profiles;
 create policy "agent profiles public read" on public.agent_profiles for select to anon
   using (is_public and public.profile_is_active(user_id));
 create policy "agent profile authenticated read" on public.agent_profiles for select to authenticated
@@ -1072,7 +1075,9 @@ create policy "agent profile owner write" on public.agent_profiles for all to au
   using (user_id = (select auth.uid()) or public.current_user_is_admin())
   with check (user_id = (select auth.uid()) or public.current_user_is_admin());
 drop policy if exists "coach profiles public read" on public.coach_profiles;
+drop policy if exists "coach profiles authenticated read" on public.coach_profiles;
 drop policy if exists "coach profile owner access" on public.coach_profiles;
+drop policy if exists "coach profile owner write" on public.coach_profiles;
 create policy "coach profiles public read" on public.coach_profiles for select to anon
   using (is_public and open_to_work and public.profile_is_active(user_id));
 create policy "coach profiles authenticated read" on public.coach_profiles for select to authenticated
