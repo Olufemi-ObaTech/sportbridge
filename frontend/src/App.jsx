@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import './Auth.css'
 import Dashboard from './Dashboard.jsx'
+import FeedPage from './FeedPage.jsx'
 import PlayerProfile from './PlayerProfile.jsx'
 import PlayerSearch from './PlayerSearch.jsx'
 import JobsPage from './JobsPage.jsx'
@@ -717,7 +718,8 @@ function App() {
                   onClick={() => { setView('tryouts'); setMenuOpen(false); window.scrollTo(0,0) }}>Tryouts</button>
               </li>
               <li className="nav-item">
-                <a className="nav-link" href="#roles" onClick={() => setMenuOpen(false)}>Feed</a>
+                <button className={`btn btn-link nav-link${view === 'feed' ? ' active' : ''}`} type="button"
+                  onClick={() => { setView('feed'); setMenuOpen(false); window.scrollTo(0,0) }}>Feed</button>
               </li>            </ul>
 
             <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-2">
@@ -876,6 +878,8 @@ function App() {
           <JobsPage supabase={supabase} user={user} onSignup={openSignup} />
         ) : view === 'tryouts' ? (
           <TryoutsPage supabase={supabase} user={user} onSignup={openSignup} />
+        ) : view === 'feed' ? (
+          <FeedPage supabase={supabase} user={user} onSignup={openSignup} />
         ) : (
           <>
             {/* spacer */}
@@ -904,28 +908,28 @@ function App() {
                     <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '56ch' }}>
                       SportBridge connects <strong style={{ color: '#fff' }}>Verified Free Players</strong> with{' '}
                       <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong> in Nigeria and across the world.
-                      Full CV + Full-Match Video + Stats + Secure Unlock —{' '}
+                      Full CV + Full-Match Video + Stats + Secure Unlock {' '}
                       <em>not just highlights.</em>
                     </p>
 
                     {/* Comparison pills */}
                     <div className="d-flex flex-wrap gap-2 mt-4 fc-animate-in fc-delay-2" role="list" aria-label="SportBridge vs other platforms">
                       {[
-                        { vs: 'Instagram', vsText: 'Highlights only',  sbText: 'Verified CV + Full Match + Availability', icon: 'bi-camera-video' },
-                        { vs: 'LinkedIn',  vsText: 'Corporate jobs',   sbText: 'Football jobs by Position / Age / Region', icon: 'bi-briefcase' },
-                        { vs: 'WhatsApp',  vsText: 'Scams & leaks',    sbText: 'NIN Verified + Video Hash + No Leaked Numbers', icon: 'bi-shield-lock' },
+                        { vs: 'Instagram / YouTube', vsText: 'Edited highlights only',          sbText: 'Verified CV + Full Match Video + Availability', icon: 'bi-camera-video' },
+                        { vs: 'LinkedIn / Job sites',  vsText: 'Corporate jobs only',            sbText: 'Football jobs by Position · Age Group · Region',  icon: 'bi-briefcase' },
+                        { vs: 'WhatsApp groups',        vsText: 'Scams & phone number leaks',    sbText: 'NIN Verified · Video Hash · No Leaked Contacts',   icon: 'bi-shield-lock' },
                       ].map(({ vs, vsText, sbText, icon }) => (
                         <div
                           key={vs}
                           role="listitem"
                           className="d-flex align-items-start gap-2 rounded-3 px-3 py-2"
-                          style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.13)', maxWidth: 340, fontSize: 12 }}
+                          style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.13)', maxWidth: 360, fontSize: 12 }}
                         >
                           <i className={`bi ${icon} mt-1 flex-shrink-0`} style={{ color: 'var(--fc-gold-400)', fontSize: 14 }} aria-hidden="true" />
                           <div>
-                            <span style={{ color: 'rgba(247,249,248,.5)' }}>{vs} = {vsText}</span>
+                            <span style={{ color: 'rgba(247,249,248,.5)' }}>{vs}: <span style={{ textDecoration: 'line-through' }}>{vsText}</span></span>
                             <br />
-                            <span style={{ color: '#fff', fontWeight: 700 }}>SportBridge = {sbText}</span>
+                            <span style={{ color: '#fff', fontWeight: 700 }}>SportBridge: {sbText}</span>
                           </div>
                         </div>
                       ))}
@@ -953,23 +957,36 @@ function App() {
 
                   {/* Right: role cards */}
                   <div className="col-12 col-lg-5">
-                    <div className="row row-cols-2 row-cols-lg-1 g-3 text-center text-lg-start">
+                    <div className="d-flex flex-column gap-3">
                       {roleCards.map((role) => (
-                        <div className="col" key={role.accountRole}>
+                        <button
+                          key={role.accountRole}
+                          type="button"
+                          className="btn text-start p-0 border-0"
+                          onClick={() => openSignup(role.accountRole)}
+                          style={{ background: 'none' }}
+                        >
                           <div
-                            className="card h-100 p-3 p-md-4 d-flex flex-row align-items-center gap-3 justify-content-center justify-content-lg-start"
-                            style={{ border: 'none' }}
+                            className="d-flex align-items-center gap-3 rounded-3 px-3 py-3"
+                            style={{
+                              background: 'rgba(255,255,255,.06)',
+                              border: '1px solid rgba(255,255,255,.12)',
+                              transition: 'background .2s',
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,.12)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,.06)'}
                           >
-                            <span className={`fc-icon-badge flex-shrink-0${role.accountRole === 'player' ? ' fc-icon-badge-gold' : ''}`}>
+                            <span className={`fc-icon-badge flex-shrink-0${role.accountRole === 'player' ? ' fc-icon-badge-gold' : ''}`}
+                              style={{ width: 44, height: 44, fontSize: '1.1rem' }}>
                               <i className={`bi ${role.heroIcon}`} aria-hidden="true" />
                             </span>
-                            <div className="d-none d-lg-block">
-                              <h2 className="h6 mb-1">{role.heroTitle}</h2>
-                              <p className="small text-muted mb-0">{role.heroCopy}</p>
+                            <div>
+                              <div className="fw-bold text-white" style={{ fontSize: 14 }}>{role.heroTitle}</div>
+                              <div style={{ fontSize: 12, color: 'rgba(247,249,248,.65)' }}>{role.heroCopy}</div>
                             </div>
-                            <h2 className="h6 mb-0 d-lg-none">{role.heroTitle}</h2>
+                            <i className="bi bi-arrow-right ms-auto text-white opacity-50" aria-hidden="true" />
                           </div>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -1077,7 +1094,7 @@ function App() {
               <div className="rounded-4 p-5 mb-5 text-center fc-band-photo">
                 <h2 className="h3 fw-bold text-white mb-2">Ready to make your next move?</h2>
                 <p className="mb-4" style={{ color: 'rgba(255,255,255,.85)' }}>
-                  Join SportBridge today — free for players. Takes one minute.
+                  Join SportBridge today, free for players. Takes one minute.
                 </p>
                 <button type="button" className="btn btn-secondary btn-lg" onClick={() => openSignup()}>
                   Create your free account
@@ -1128,7 +1145,7 @@ function App() {
                 <li><a className="link-light link-underline-opacity-0" href="#players">Players</a></li>
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('jobs'); window.scrollTo(0,0) }}>Jobs</button></li>
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('tryouts'); window.scrollTo(0,0) }}>Tryouts</button></li>
-                <li><a className="link-light link-underline-opacity-0" href="#roles">Feed</a></li>
+                <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('feed'); window.scrollTo(0,0) }}>Feed</button></li>
               </ul>
             </div>
             <div className="col-6 col-sm-6 col-lg-3">

@@ -1653,18 +1653,32 @@ create table if not exists public.verification_requests (
   id                   uuid primary key default gen_random_uuid(),
   user_id              uuid not null references public.profiles(id) on delete cascade,
   role                 text not null,
-  -- Player docs
+  -- Player docs (Nigerian: NIN; International: passport)
+  id_type              text check (id_type in ('nin','passport')),
   nin_number           text,
+  passport_number      text,
   nin_selfie_path      text,
+  id_document_path     text,    -- passport scan or NIN slip
   release_letter_path  text,
+  player_contracts     jsonb not null default '[]'::jsonb,  -- club player contract scans
   -- Club/Academy docs
   cac_document_path    text,
+  company_reg_number   text,
   official_email       text,
   facility_pictures    jsonb not null default '[]'::jsonb,
   -- Agent docs
+  fifa_agent_id        text,
+  fa_verification_body text,    -- e.g. "NFF", "CAF", "FIFA"
+  agent_passport_path  text,
   license_path         text,
   reference_club_1     text,
   reference_club_2     text,
+  -- Coach docs
+  coach_passport_path  text,
+  coach_fa_body        text,    -- e.g. "NFF", "CAF", "UEFA"
+  coach_licence_path   text,
+  -- CV (any role)
+  cv_path              text,
   -- Meta
   status               text not null default 'pending'
     check (status in ('pending','approved','rejected')),
@@ -1675,6 +1689,21 @@ create table if not exists public.verification_requests (
 );
 
 alter table public.verification_requests enable row level security;
+
+-- Idempotent additions for existing Supabase deployments
+alter table public.verification_requests
+  add column if not exists id_type             text check (id_type in ('nin','passport')),
+  add column if not exists passport_number     text,
+  add column if not exists id_document_path    text,
+  add column if not exists player_contracts    jsonb not null default '[]'::jsonb,
+  add column if not exists company_reg_number  text,
+  add column if not exists fifa_agent_id       text,
+  add column if not exists fa_verification_body text,
+  add column if not exists agent_passport_path text,
+  add column if not exists coach_passport_path text,
+  add column if not exists coach_fa_body       text,
+  add column if not exists coach_licence_path  text,
+  add column if not exists cv_path             text;
 
 drop policy if exists "verif owner read" on public.verification_requests;
 create policy "verif owner read" on public.verification_requests

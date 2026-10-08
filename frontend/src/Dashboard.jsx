@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import JobPostForm from './JobPostForm.jsx'
 import PlayerUploadForm from './PlayerUploadForm.jsx'
 import TryoutForm from './TryoutForm.jsx'
-import VerifyForm from './VerifyForm.jsx'
+import VerifyForm, { CvOnlyForm } from './VerifyForm.jsx'
 import { blockContactInfo } from './lib/uploadGuards'
 import { FOOTBALL_POSITIONS, REGIONS, STAFF_ROLES } from './lib/features'
 
@@ -491,7 +491,7 @@ function CoachDashboard({ supabase, user, profile }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[['profile','bi-clipboard2-pulse','Coaching Profile'],['recommend','bi-send-check','Recommend a Player'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
+        {[['profile','bi-clipboard2-pulse','Coaching Profile'],['recommend','bi-send-check','Recommend a Player'],['cv','bi-file-earmark-person','Upload CV'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
@@ -630,6 +630,13 @@ function CoachDashboard({ supabase, user, profile }) {
         </SectionCard>
       )}
 
+      {activeTab === 'cv' && (
+        <SectionCard title="Upload CV / Résumé">
+          <p className="text-muted small mb-3">Your CV is stored privately and only shared with clubs, academies and agents you directly apply to or approve.</p>
+          <CvOnlyForm supabase={supabase} user={user} onDone={() => setNotice('CV uploaded successfully.')} />
+        </SectionCard>
+      )}
+
       {activeTab === 'verify' && (
         <SectionCard title="Verification">
           <VerifyForm supabase={supabase} user={user} role="coach" verificationStatus={profile?.verification_status} onDone={() => setNotice('Submitted for review.')} />
@@ -722,7 +729,7 @@ function AgentDashboard({ supabase, user, profile }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[['profile','bi-person-vcard','Agency Profile'],['post-tryout','bi-calendar2-plus','Post Tryout'],['post-position','bi-briefcase-fill','Post Position Needed'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
+        {[['profile','bi-person-vcard','Agency Profile'],['post-tryout','bi-calendar2-plus','Post Tryout'],['post-position','bi-briefcase-fill','Post Position Needed'],['cv','bi-file-earmark-person','Upload CV'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
@@ -789,6 +796,13 @@ function AgentDashboard({ supabase, user, profile }) {
             This appears on the public Job Board and is matched to available players by position, age group and region.
           </p>
           <JobPostForm supabase={supabase} user={user} onSaved={() => { setActiveTab('profile'); setNotice('Position posted to job board.') }} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'cv' && (
+        <SectionCard title="Upload CV / Résumé">
+          <p className="text-muted small mb-3">Your CV is stored privately and only shared with parties you directly engage with through SportBridge.</p>
+          <CvOnlyForm supabase={supabase} user={user} onDone={() => setNotice('CV uploaded successfully.')} />
         </SectionCard>
       )}
 
@@ -892,7 +906,7 @@ function AcademyDashboard({ supabase, user, profile }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[['profile','bi-building','Club Profile'],['post-job','bi-briefcase-fill','Post a Job'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
+        {[['profile','bi-building','Club Profile'],['post-job','bi-briefcase-fill','Post a Job'],['cv','bi-file-earmark-person','Upload CV'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
@@ -947,6 +961,13 @@ function AcademyDashboard({ supabase, user, profile }) {
       {activeTab === 'post-job' && (
         <SectionCard title="Post a Job">
           <JobPostForm supabase={supabase} user={user} onSaved={() => { setActiveTab('profile'); setStats((s) => ({ ...s, jobs: (s.jobs ?? 0) + 1 })); setNotice('Job posted.') }} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'cv' && (
+        <SectionCard title="Upload CV / Résumé">
+          <p className="text-muted small mb-3">Upload your club&apos;s representative CV, portfolio, or company profile document. Stored privately.</p>
+          <CvOnlyForm supabase={supabase} user={user} onDone={() => setNotice('CV uploaded successfully.')} />
         </SectionCard>
       )}
 
