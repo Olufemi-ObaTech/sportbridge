@@ -6,6 +6,7 @@ on:
   pull_request:
 
 jobs:
+  # ── 1. PHP tests + Pint ────────────────────────────────────────────────────
   test:
     runs-on: ubuntu-latest
 
@@ -34,8 +35,8 @@ jobs:
       - name: Generate app key
         run: php artisan key:generate
 
-      # Build the Laravel Vite assets so public/build/manifest.json exists
-      # when the test suite renders Blade views that call @vite().
+      # Build Laravel Vite assets so public/build/manifest.json exists
+      # when PHPUnit renders Blade views that call @vite()
       - name: Setup Node for Laravel assets
         uses: actions/setup-node@v4
         with:
@@ -54,11 +55,13 @@ jobs:
 
       - name: Run test suite
         run: vendor/bin/phpunit
-        # phpunit.xml already points every connection at in-memory SQLite,
-        # so no MySQL service container is needed here.
 
-  build-frontend:
+  # ── 2. React build + Netlify deploy ───────────────────────────────────────
+  deploy:
     runs-on: ubuntu-latest
+    # Only deploy on pushes to main (not on PRs)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    needs: test   # don't deploy if PHP tests fail
 
     steps:
       - uses: actions/checkout@v4
@@ -80,13 +83,21 @@ jobs:
 
       - name: Build frontend
         working-directory: frontend
-        # VITE_SUPABASE_URL is non-secret so it can live in netlify.toml and here.
-        # VITE_SUPABASE_ANON_KEY is a publishable/anon key (safe for the browser)
-        # but still kept as a GitHub secret so it isn't hardcoded in source.
-        # Secret name: VITE_SUPABASE_ANON_KEY (set in repo Settings → Secrets)
         env:
           VITE_SUPABASE_URL: https://pzfohowzaeunywaqukwe.supabase.co
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          SUPABASE_URL: https://pzfohowzaeunywaqukwe.supabase.co
-          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: frontend/dist
+          production-branch: main
+          production-deploy: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions — ${{ github.sha }}"
+          enable-pull-request-comment: false
+          enable-commit-comment: false
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: 599b1ac1-10e6-4a98-8981-a3bc038b8f68
