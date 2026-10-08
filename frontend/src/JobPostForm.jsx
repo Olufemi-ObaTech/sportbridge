@@ -151,6 +151,7 @@ export default function JobPostForm({ supabase, user, onSaved }) {
       // Insert job
       const payload = {
         posted_by:           user.id,
+        posted_by_user_id:   user.id,
         sport:               'football',
         job_type:            form.jobType,
         player_position:     form.jobType === 'player_needed' ? form.position     : null,
@@ -164,7 +165,7 @@ export default function JobPostForm({ supabase, user, onSaved }) {
         description:         form.description.trim(),
         facility_pictures:   imageUrls,
         club_cv_url:         clubCvUrl,
-        status:              'active',
+        status:              'open',
         is_verified:         false,
         created_at:          new Date().toISOString(),
       }

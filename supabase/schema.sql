@@ -1023,7 +1023,7 @@ drop policy if exists "jobs admin manage" on public.jobs;
 create policy "jobs public read" on public.jobs for select to anon
   using (status = 'open' and published_at <= now());
 create policy "jobs authenticated read" on public.jobs for select to authenticated
-  using (status = 'open' and published_at <= now()
+  using ((status = 'open' and published_at <= now())
     or posted_by_user_id = (select auth.uid())
     or exists (select 1 from public.clubs where clubs.id = jobs.club_id and clubs.owner_id = (select auth.uid()))
     or public.current_user_is_admin());
@@ -1280,7 +1280,7 @@ create policy "trials participant update" on public.trials for update to authent
 drop policy if exists "try outs public read" on public.try_outs;
 drop policy if exists "try outs owner manage" on public.try_outs;
 create policy "try outs public read" on public.try_outs for select to anon, authenticated
-  using (status = 'open' and public.profile_is_active(posted_by_user_id) or posted_by_user_id = (select auth.uid()) or public.current_user_is_admin());
+  using ((status = 'open' and public.profile_is_active(posted_by_user_id)) or posted_by_user_id = (select auth.uid()) or public.current_user_is_admin());
 create policy "try outs owner manage" on public.try_outs for all to authenticated
   using (posted_by_user_id = (select auth.uid()) or public.current_user_is_admin())
   with check (posted_by_user_id = (select auth.uid()) or public.current_user_is_admin());
@@ -1304,11 +1304,13 @@ revoke update on public.profiles from authenticated;
 grant select on public.profiles to authenticated;
 grant update (full_name, username, avatar_path, phone, updated_at, role, status) on public.profiles to authenticated;
 revoke select on public.players from anon;
-grant select (id, display_name, position, age, country, nationality, gender, bio, sport, primary_photo_path, is_public, status, created_at) on public.players to anon;
+grant select (id, display_name, position, age, country, nationality, gender, bio, sport, primary_photo_path, is_public, status, region, preferred_foot, foot, age_group, availability, stats, achievements_data, views_count, current_club, created_at) on public.players to anon;
+-- Allow any authenticated user to increment the view counter
+grant update (views_count) on public.players to authenticated;
 revoke select on public.clubs from anon;
 grant select (id, name, slug, sports, country, state, about, website, logo_path, cover_image_path, status, verified_badge, created_at) on public.clubs to anon;
 revoke select on public.jobs from anon;
-grant select (id, club_id, academy_id, title, description, role_type, requirements, location, salary_min, salary_max, currency, contract_type, application_deadline, sport, status, created_at) on public.jobs to anon;
+grant select (id, club_id, academy_id, posted_by_user_id, posted_by, title, description, job_type, player_position, staff_role, role_type, requirements, location, salary_min, salary_max, salary, currency, contract_type, application_deadline, age_group, region, budget, free_agent_only, license_required, facility_pictures, is_verified, sport, status, created_at) on public.jobs to anon;
 grant select, insert, update, delete on public.academy_profiles, public.agent_profiles, public.coach_profiles, public.teams, public.player_private, public.coach_private, public.academy_verifications, public.agent_verifications, public.media_assets, public.feed_posts, public.post_comments, public.post_likes, public.watchlists, public.access_requests, public.conversations, public.messages, public.agent_ratings, public.agent_recommendations, public.agent_documents, public.reports, public.admin_logs, public.saved_searches, public.trials, public.try_outs, public.try_out_interests, public.push_subscriptions to authenticated;
 grant select (id, user_id, club_id, sports, year_founded, leagues, languages, linkedin, created_at, updated_at) on public.academy_profiles to authenticated;
 grant select (id, user_id, agency_name, sport, nationality, gender, experience_years, regions, about, achievements, photo_path, cover_image_path, linkedin, is_public, verified_badge, created_at, updated_at) on public.agent_profiles to anon, authenticated;
@@ -1598,7 +1600,11 @@ alter table public.players
   add column if not exists achievements_data jsonb not null default '[]'::jsonb,
   add column if not exists region text,
   add column if not exists age_group text
-    check (age_group in ('U13','U15','U17','U20','U23','Senior'));
+    check (age_group in ('U13','U15','U17','U20','U23','Senior')),
+  -- view counter: incremented by PlayerProfile on each page load
+  add column if not exists views_count integer not null default 0;
+
+create index if not exists players_views_idx on public.players (views_count desc) where is_public = true and status = 'active';
 
 -- ─── 2. Extended profile columns ─────────────────────────────────────────────
 alter table public.profiles

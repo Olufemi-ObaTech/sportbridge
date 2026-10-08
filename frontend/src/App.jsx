@@ -10,7 +10,7 @@ import footballImage from '../../public/img/football-stadium.jpg'
 import footballStandImage from '../../public/img/football-stadium1.jpg'
 import logoMark from '../../public/img/logo-mark.svg'
 import worldCupBallImage from '../../public/img/world-cup-ball.avif'
-import { supabase, hasSupabaseConfig } from './lib/supabase'
+import { supabase } from './lib/supabase'
 import { BASKETBALL_ENABLED, containsContactInfo } from './lib/features'
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -143,7 +143,10 @@ function AuthModal({ onClose, initialMode, initialRole }) {
   // ── sign in ──────────────────────────────────────────────────────────────────
   const handleSignIn = async (e) => {
     e.preventDefault()
-    if (!supabase) return
+    if (!supabase) {
+      showMsg('Connection error. Please try refreshing the page.', 'info')
+      return
+    }
     setBusy(true)
     clearMsg()
     const fd    = new FormData(e.currentTarget)

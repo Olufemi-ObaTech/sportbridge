@@ -199,6 +199,7 @@ function PlayerDashboard({ supabase, user, profile }) {
       sport:              draft.sport,
       gender:             draft.gender || null,
       foot:               draft.foot || null,
+      preferred_foot:     draft.foot || null,
       dominant_hand:      draft.dominant_hand || null,
       height_cm:          draft.height_cm ? Number(draft.height_cm) : null,
       weight_kg:          draft.weight_kg ? Number(draft.weight_kg) : null,

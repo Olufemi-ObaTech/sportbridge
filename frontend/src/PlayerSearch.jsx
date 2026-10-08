@@ -162,6 +162,13 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
   const removeFilter = (key) => setFilters((f) => ({ ...f, [key]: key === 'verifiedOnly' ? false : '' }))
   const resetAll = () => setFilters(BLANK_FILTERS)
 
+  // Count active (non-default) filters for the badge on the mobile Filters button
+  const activeCount = Object.entries(filters).filter(([k, v]) => {
+    if (k === 'verifiedOnly') return v === true  // default is true so it counts
+    if (k === 'q') return Boolean(v)
+    return Boolean(v)
+  }).length
+
   const filterPanel = (
     <div className="row g-3">
       {/* Text search */}
