@@ -7,7 +7,10 @@
 #   VITE_SUPABASE_ANON_KEY = eyJ...  (anon/public key from Supabase dashboard)
 #   SUPABASE_URL           = https://pzfohowzaeunywaqukwe.supabase.co
 #   SUPABASE_ANON_KEY      = eyJ...  (same anon key, used by health function)
-# Do NOT put the actual key value in this file — it is committed to GitHub.
+#   BREVO_API_KEY          = xkeysib-...  (Brevo API key — NOT the SMTP key)
+#   MAIL_FROM_EMAIL        = noreply@sportbridge.com.ng
+#   MAIL_FROM_NAME         = SportBridge
+# Do NOT put the actual key values in this file — it is committed to GitHub.
 
 [build]
   command = "cd frontend && npm ci && npm run build"

@@ -177,7 +177,10 @@ function AuthModal({ onClose, initialMode, initialRole }) {
   // ── sign up ──────────────────────────────────────────────────────────────────
   const handleSignUp = async (e) => {
     e.preventDefault()
-    if (!supabase) return
+    if (!supabase) {
+      showMsg('Connection error. Please try refreshing the page.', 'info')
+      return
+    }
     setBusy(true)
     clearMsg()
     const fd       = new FormData(e.currentTarget)
@@ -264,16 +267,37 @@ function AuthModal({ onClose, initialMode, initialRole }) {
             We sent a confirmation link to <strong>{confirmedEmail}</strong>.
             Click the link in that email to activate your account, then come back here to sign in.
           </p>
-          <p style={{ fontSize: 12, marginBottom: 0, color: 'var(--fc-muted)' }}>
-            Can't find it? Check your spam folder.
+          <p style={{ fontSize: 12, color: 'var(--fc-muted)' }}>
+            Can&apos;t find it? Check your spam / junk folder.
           </p>
           <button
-            className="auth-submit mt-3"
+            className="auth-submit mt-2"
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              if (!supabase) return
+              setBusy(true)
+              await supabase.auth.resend({ type: 'signup', email: confirmedEmail })
+              setBusy(false)
+              showMsg('Confirmation email resent. Check your inbox and spam folder.', 'info')
+            }}
+            style={{ background: 'var(--fc-gradient-gold)', color: 'var(--fc-navy-900)' }}
+          >
+            {busy ? <><span className="spinner-border spinner-border-sm me-2" />Sending…</> : 'Resend confirmation email'}
+          </button>
+          <button
+            className="auth-submit mt-2"
             type="button"
             onClick={() => switchMode('signin')}
+            style={{ background: 'transparent', border: '1.5px solid var(--bs-border-color)', color: 'var(--bs-body-color)' }}
           >
             Back to sign in
           </button>
+          {message && (
+            <p className={`auth-message mt-2 ${msgType === 'error' ? 'is-error' : 'is-info'}`} role="status">
+              {message}
+            </p>
+          )}
         </div>
       )
     }
@@ -907,17 +931,17 @@ function App() {
                     {/* Sub-headline */}
                     <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '56ch' }}>
                       SportBridge connects <strong style={{ color: '#fff' }}>Verified Free Players</strong> with{' '}
-                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong> in Nigeria and across the world.
-                      Full CV + Full-Match Video + Stats + Secure Unlock {' '}
+                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong> in Nigeria and across The World.
+                      Full CV + Full-Match Video + highlights + Stats + Secure Unlock {' '}
                       <em>not just highlights.</em>
                     </p>
 
                     {/* Comparison pills */}
                     <div className="d-flex flex-wrap gap-2 mt-4 fc-animate-in fc-delay-2" role="list" aria-label="SportBridge vs other platforms">
                       {[
-                        { vs: 'Instagram / YouTube', vsText: 'Edited highlights only',          sbText: 'Verified CV + Full Match Video + Availability', icon: 'bi-camera-video' },
-                        { vs: 'LinkedIn / Job sites',  vsText: 'Corporate jobs only',            sbText: 'Football jobs by Position · Age Group · Region',  icon: 'bi-briefcase' },
-                        { vs: 'WhatsApp groups',        vsText: 'Scams & phone number leaks',    sbText: 'NIN Verified · Video Hash · No Leaked Contacts',   icon: 'bi-shield-lock' },
+                        { vs: 'Social Media', vsText: 'Edited highlights only',          sbText: 'Verified CV + Full Match Video + Availability', icon: 'bi-camera-video' },
+                        { vs: 'Job sites',  vsText: 'Corporate jobs only',            sbText: 'Football jobs by Position · Age Group · Region',  icon: 'bi-briefcase' },
+                        { vs: 'groups',        vsText: 'Scams & phone number leaks',    sbText: 'NIN Verified · Video Hash · No Leaked Contacts',   icon: 'bi-shield-lock' },
                       ].map(({ vs, vsText, sbText, icon }) => (
                         <div
                           key={vs}

@@ -7,12 +7,12 @@
 -- Step 1: Set role to super_admin
 update public.profiles
 set role = 'super_admin'
-where email = 'your@email.com';
+where email = 'sportbridge.com.ng@gmail.com';
 
 -- Step 2: Confirm it worked
 select id, email, full_name, role, verification_status
 from public.profiles
-where email = 'your@email.com';
+where email = 'sportbridge.com.ng@gmail.com';
 
 -- =============================================================================
 -- DEMO ADMIN accounts (from seed.sql — password is Demo@1234! for all)
