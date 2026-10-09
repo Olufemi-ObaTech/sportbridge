@@ -128,7 +128,10 @@ insert into auth.users (
   '{"full_name":"Kelechi Obiora","role":"player","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
 )
-on conflict (id) do nothing;
+on conflict (id) do update
+  set encrypted_password = crypt('Demo@1234!', gen_salt('bf')),
+      email_confirmed_at = coalesce(auth.users.email_confirmed_at, now()),
+      updated_at         = now();
 
 -- ── 2. Set verification_status = verified for all demo accounts ───────────────
 update public.profiles
