@@ -1309,9 +1309,8 @@ revoke update on public.profiles from authenticated;
 grant select on public.profiles to authenticated;
 grant update (full_name, username, avatar_path, phone, updated_at, role, status) on public.profiles to authenticated;
 revoke select on public.players from anon;
-grant select (id, display_name, position, age, country, nationality, gender, bio, sport, primary_photo_path, is_public, status, region, preferred_foot, foot, age_group, availability, stats, achievements_data, views_count, current_club, created_at) on public.players to anon;
--- Allow any authenticated user to increment the view counter
-grant update (views_count) on public.players to authenticated;
+grant select (id, display_name, position, age, country, nationality, gender, bio, sport, primary_photo_path, is_public, status, region, preferred_foot, foot, age_group, availability, stats, achievements_data, current_club, created_at) on public.players to anon;
+-- views_count is added by ALTER TABLE further below — granted again after that ALTER
 revoke select on public.clubs from anon;
 grant select (id, name, slug, sports, country, state, about, website, logo_path, cover_image_path, status, verified_badge, created_at) on public.clubs to anon;
 revoke select on public.jobs from anon;
@@ -1608,6 +1607,16 @@ alter table public.players
     check (age_group in ('U13','U15','U17','U20','U23','Senior')),
   -- view counter: incremented by PlayerProfile on each page load
   add column if not exists views_count integer not null default 0;
+
+-- Now views_count exists — regrant players to anon with all Sprint 2 columns
+revoke select on public.players from anon;
+grant select (
+  id, display_name, position, age, country, nationality, gender, bio, sport,
+  primary_photo_path, is_public, status, region, preferred_foot, foot,
+  age_group, availability, stats, achievements_data, views_count,
+  current_club, created_at
+) on public.players to anon;
+grant update (views_count) on public.players to authenticated;
 
 create index if not exists players_views_idx on public.players (views_count desc) where is_public = true and status = 'active';
 

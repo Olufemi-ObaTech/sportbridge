@@ -1,29 +1,40 @@
 -- =============================================================================
 -- SportBridge — Make your account Super Admin
 -- Run this in Supabase SQL Editor AFTER you have registered on the live site.
--- Replace 'your@email.com' with the email you signed up with.
 -- =============================================================================
 
--- Step 1: Set role to super_admin
+-- Step 1: Confirm email + set super_admin
+update auth.users
+set email_confirmed_at = coalesce(email_confirmed_at, now()),
+    updated_at         = now()
+where email = 'sportbridge.com.ng@gmail.com';
+
 update public.profiles
-set role = 'super_admin'
+set role                = 'super_admin',
+    verification_status = 'verified',
+    status              = 'active',
+    full_name           = 'SportBridge Admin',
+    updated_at          = now()
 where email = 'sportbridge.com.ng@gmail.com';
 
 -- Step 2: Confirm it worked
-select id, email, full_name, role, verification_status
+select id, email, full_name, role, status, verification_status
 from public.profiles
 where email = 'sportbridge.com.ng@gmail.com';
 
 -- =============================================================================
--- DEMO ADMIN accounts (from seed.sql — password is Demo@1234! for all)
+-- DEMO ACCOUNTS (run seed.sql first — all use password: Demo@1234!)
 -- =============================================================================
--- Academy 1:  admin@lagosunitedfc.ng        / Demo@1234!
--- Academy 2:  info@ekosportsacademy.ng      / Demo@1234!
--- Agent:      scouting@premierfootballagency.ng / Demo@1234!
--- Players:    chukwuemeka.okafor@sportbridge.ng / Demo@1234!
---             adewale.ibrahim@sportbridge.ng    / Demo@1234!
---             emeka.nwosu@sportbridge.ng        / Demo@1234!
---             (and 7 more @sportbridge.ng — all password Demo@1234!)
-
--- To make the seed agent account a super_admin for demo purposes:
--- update public.profiles set role = 'super_admin' where email = 'scouting@premierfootballagency.ng';
+-- Academy:  admin@lagosunitedfc.ng
+-- Academy:  info@ekosportsacademy.ng
+-- Agent:    scouting@premierfootballagency.ng
+-- Players:  chukwuemeka.okafor@sportbridge.ng
+--           adewale.ibrahim@sportbridge.ng
+--           emeka.nwosu@sportbridge.ng
+--           babatunde.adeleke@sportbridge.ng
+--           david.eze@sportbridge.ng
+--           samuel.okonkwo@sportbridge.ng
+--           ibrahim.musa@sportbridge.ng
+--           chisom.agu@sportbridge.ng
+--           tunde.salami@sportbridge.ng
+--           kelechi.obiora@sportbridge.ng
