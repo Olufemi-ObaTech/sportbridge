@@ -934,7 +934,7 @@ function App() {
                     {/* Sub-headline */}
                     <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '56ch' }}>
                       SportBridge connects <strong style={{ color: '#fff' }}>Verified Free Players</strong> with{' '}
-                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong> in Nigeria and across The World.
+                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong> in Africa and across The World.
                       Full CV + Full-Match Video + highlights + Stats + Secure Unlock {' '}
                       <em>not just highlights.</em>
                     </p>
@@ -944,7 +944,7 @@ function App() {
                       {[
                         { vs: 'Social Media', vsText: 'Edited highlights only',          sbText: 'Verified CV + Full Match Video + Availability', icon: 'bi-camera-video' },
                         { vs: 'Job sites',  vsText: 'Corporate jobs only',            sbText: 'Football jobs by Position · Age Group · Region',  icon: 'bi-briefcase' },
-                        { vs: 'groups',        vsText: 'Scams & phone number leaks',    sbText: 'NIN Verified · Video Hash · No Leaked Contacts',   icon: 'bi-shield-lock' },
+                        { vs: 'Groups',        vsText: 'Scams & phone number leaks',    sbText: 'NIN Verified · Video Hash · No Leaked Contacts',   icon: 'bi-shield-lock' },
                       ].map(({ vs, vsText, sbText, icon }) => (
                         <div
                           key={vs}
@@ -1104,9 +1104,9 @@ function App() {
                   <p className="text-muted mb-0">From the pitch to the next opportunity.</p>
                 </div>
                 <div className="fc-visual-showcase mb-3">
-                  <figure><img src={footballImage}   alt="Football stadium ready for a match"  loading="lazy" /><figcaption>Find your next stage</figcaption></figure>
-                  <figure><img src={footballStandImage} alt="Football stadium from the stands"  loading="lazy" /><figcaption>Make your move</figcaption></figure>
-                  <figure><img src={ballImage}        alt="FIFA World Cup football"             loading="lazy" /><figcaption>Every level. Every ambition.</figcaption></figure>
+                  <figure><img src={footballImage}      alt="Football stadium ready for a match" /><figcaption>Find your next stage</figcaption></figure>
+                  <figure><img src={footballStandImage} alt="Football stadium from the stands"   loading="lazy" /><figcaption>Make your move</figcaption></figure>
+                  <figure><img src={ballImage}          alt="FIFA World Cup football"            loading="lazy" /><figcaption>Every level. Every ambition.</figcaption></figure>
                 </div>
                 {BASKETBALL_ENABLED && (
                   <div className="fc-sport-strip">

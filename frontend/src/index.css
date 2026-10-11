@@ -419,7 +419,7 @@ button:focus-visible {
     margin: 0;
     overflow: hidden;
     border-radius: var(--fc-radius);
-    background: var(--fc-navy-900);
+    background: linear-gradient(135deg, var(--fc-navy-800), var(--fc-blue-900));
 }
 
 .fc-visual-showcase figure:first-child {
@@ -870,13 +870,17 @@ button:focus-visible {
   }
 }
 
-/* Lazy load fade-in */
+/* Lazy load fade-in — images start visible, transition removes flash */
 img[loading="lazy"] {
-  opacity: 0;
-  transition: opacity .3s;
-}
-img[loading="lazy"].loaded {
   opacity: 1;
+}
+
+/* fc-visual-showcase images: explicit dimensions prevent layout shift */
+.fc-visual-showcase img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* Comparison pills in hero */

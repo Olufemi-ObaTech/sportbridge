@@ -130,7 +130,7 @@ const PLANS = [
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function PaymentPage({ user, onSignup, onBack }) {
   // Filter plans relevant to the user's role (show all if not logged in)
-  const userRole = null // will come from profile when payments enabled
+  // const _userRole = null // will come from profile when payments enabled
 
   if (!PAYMENTS_ENABLED) {
     return (
