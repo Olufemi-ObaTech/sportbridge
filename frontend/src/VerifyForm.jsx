@@ -204,8 +204,9 @@ function AcademyVerifyForm({ supabase, user, onDone }) {
   const [cac,        setCac]      = useState(null)
   const [regNumber,  setRegNumber]= useState('')
   const [email,      setEmail]    = useState('')
+  const [fifaTmsId,  setFifaTmsId]= useState('')   // FIFA TMS Connect ID
   const [pics,       setPics]     = useState([])
-  const [contracts,  setContracts]= useState([])   // player contract PDFs (optional)
+  const [contracts,  setContracts]= useState([])
   const [cv,         setCv]       = useState(null)
   const [saving,     setSaving]   = useState(false)
   const [error,      setError]    = useState('')
@@ -280,6 +281,7 @@ function AcademyVerifyForm({ supabase, user, onDone }) {
       official_email:     email.trim() || null,
       facility_pictures:  picUrls,
       player_contracts:   contractUrls,
+      fa_verification_body: fifaTmsId.trim() ? `FIFA TMS: ${fifaTmsId.trim()}` : null,
       cv_path:            cvUrl,
       status:             'pending',
     })
@@ -312,6 +314,18 @@ function AcademyVerifyForm({ supabase, user, onDone }) {
         <Field label="Official club email (optional)" hint="Club domain email helps expedite verification. Not required for amateur clubs." col="col-12 col-md-6">
           <input className="form-control" type="email" value={email}
             onChange={(e) => setEmail(e.target.value)} placeholder="admin@yourclub.org" />
+        </Field>
+
+        <Field label="FIFA TMS Connect ID (optional)"
+          hint="Your FIFA Transfer Matching System club ID. Providing this fast-tracks your Verified Club badge."
+          col="col-12 col-md-6">
+          <input className="form-control" type="text" value={fifaTmsId}
+            onChange={(e) => setFifaTmsId(e.target.value)} placeholder="e.g. FIFA-TMS-12345" />
+          {fifaTmsId.trim() && (
+            <div className="form-text text-success">
+              <i className="bi bi-check-circle me-1" />FIFA TMS ID will be verified against the TMS database by our team.
+            </div>
+          )}
         </Field>
 
         <Field label="Facility pictures (min 3)" required
@@ -671,13 +685,19 @@ export { CvOnlyForm }
 
 export default function VerifyForm({ supabase, user, role, verificationStatus, onDone }) {
   if (verificationStatus === 'verified') {
+    // Role-specific verified badge labels
+    const badgeLabels = {
+      player:  'NIN / Passport Verified ✓',
+      academy: 'CAC Registered & Verified ✓',
+      agent:   'FIFA Agent Verified ✓',
+      coach:   'FA / Passport Verified ✓',
+    }
     return (
-      <div className="alert alert-success d-flex gap-3 align-items-center">
-        <i className="bi bi-patch-check-fill fs-4 flex-shrink-0" aria-hidden="true" />
-        <div>
-          <div className="fw-bold">Your account is verified ✓</div>
-          <div className="small">Your verified badge is visible on your public profile.</div>
-          <hr className="my-2" />
+      <div className="alert alert-success d-flex gap-3 align-items-start">
+        <i className="bi bi-patch-check-fill fs-4 flex-shrink-0 mt-1" aria-hidden="true" />
+        <div className="w-100">
+          <div className="fw-bold">{badgeLabels[role] ?? 'Account Verified ✓'}</div>
+          <div className="small mb-3">Your verified badge is visible on your public profile.</div>
           <div className="fw-semibold small mb-2">Upload / update your CV:</div>
           <CvOnlyForm supabase={supabase} user={user} />
         </div>
@@ -718,7 +738,14 @@ export default function VerifyForm({ supabase, user, role, verificationStatus, o
       <div className="card p-3 mb-4" style={{ background: 'rgba(18,63,174,.04)', border: '1px solid rgba(18,63,174,.12)' }}>
         <p className="fw-semibold small mb-2">Documents required for {role === 'academy' ? 'Club / Academy' : role} verification:</p>
         {role === 'player'  && <ul className="small mb-0 ps-3"><li>Nigerian NIN <em>or</em> International Passport</li><li>Selfie / passport data page scan</li><li>Last club release letter (PDF)</li><li>CV (optional)</li></ul>}
-        {role === 'academy' && <ul className="small mb-0 ps-3"><li>CAC / company registration document (PDF)</li><li>Company registration number</li><li>3 facility photos (pitch, changing room, training ground)</li><li>Player contracts (optional, speeds up verification)</li><li>CV (optional)</li></ul>}
+        {role === 'academy' && <ul className="small mb-0 ps-3">
+          <li>CAC / company registration document (PDF)</li>
+          <li>Company registration number</li>
+          <li>3 facility photos (pitch, changing room, training ground)</li>
+          <li>FIFA TMS Connect ID (optional — auto-verifies badge)</li>
+          <li>Player contracts (optional, speeds up verification)</li>
+          <li>CV (optional)</li>
+        </ul>}
         {role === 'agent'   && <ul className="small mb-0 ps-3"><li><strong>Option A:</strong> FIFA Agents ID + International Passport scan</li><li><strong>Option B:</strong> FA / Federation verification letter</li><li>CV (optional)</li></ul>}
         {role === 'coach'   && <ul className="small mb-0 ps-3"><li><strong>Option A:</strong> International Passport scan</li><li><strong>Option B:</strong> FA / Federation verification letter</li><li>CV (optional)</li></ul>}
       </div>

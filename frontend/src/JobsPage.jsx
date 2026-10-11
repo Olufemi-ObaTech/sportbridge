@@ -50,7 +50,24 @@ export default function JobsPage({ supabase, user, onSignup }) {
   const [filters,     setFilters]     = useState(BLANK)
   const [sort,        setSort]        = useState('newest')
   const [drawerOpen,  setDrawerOpen]  = useState(false)
+  const [applying,    setApplying]    = useState(null)   // job id currently being applied to
+  const [applied,     setApplied]     = useState(new Set()) // job ids already applied
   const drawerRef = useRef(null)
+
+  const handleApply = async (job) => {
+    if (!user) { onSignup?.('player'); return }
+    if (applied.has(job.id)) return
+    if (!supabase) return
+    setApplying(job.id)
+    const { error } = await supabase.from('applications').insert({
+      job_id:           job.id,
+      applicant_user_id: user.id,
+      status:           'pending',
+      applied_at:       new Date().toISOString(),
+    })
+    setApplying(null)
+    if (!error) setApplied((prev) => new Set([...prev, job.id]))
+  }
 
   // close drawer on outside click / Escape
   useEffect(() => {
@@ -77,16 +94,23 @@ export default function JobsPage({ supabase, user, onSignup }) {
       if (filters.staffRole) q = q.eq('staff_role', filters.staffRole)
       if (filters.ageGroup)  q = q.eq('age_group', filters.ageGroup)
       if (filters.region)    q = q.ilike('region', `%${filters.region}%`)
-      if (filters.verifiedOnly) q = q.eq('clubs.verified_badge', true)
       if (filters.q)         q = q.or(`title.ilike.%${filters.q}%,description.ilike.%${filters.q}%`)
 
       if (sort === 'newest')   q = q.order('created_at', { ascending: false })
-      else if (sort === 'salary') q = q.order('salary', { ascending: false, nullsFirst: false })
+      else if (sort === 'salary')   q = q.order('salary', { ascending: false, nullsFirst: false })
+      else if (sort === 'verified') q = q.order('is_verified', { ascending: false }).order('created_at', { ascending: false })
 
       q = q.limit(60)
       const { data, count, error } = await q
       if (!alive) return
-      if (!error) { setJobs(data ?? []); setTotal(count ?? data?.length ?? 0) }
+      if (!error) {
+        // Apply verifiedOnly filter client-side (PostgREST join filter is unreliable)
+        const results = filters.verifiedOnly
+          ? (data ?? []).filter((j) => j.clubs?.verified_badge === true)
+          : (data ?? [])
+        setJobs(results)
+        setTotal(filters.verifiedOnly ? results.length : (count ?? data?.length ?? 0))
+      }
       setLoading(false)
     }
     run()
@@ -279,14 +303,22 @@ export default function JobsPage({ supabase, user, onSignup }) {
                   </p>
 
                   <div className="mt-auto">
-                    <button
-                      className="btn btn-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
-                      type="button"
-                      onClick={() => user ? null : onSignup?.('player')}
-                    >
-                      <i className="bi bi-send-check-fill" aria-hidden="true" />
-                      {user ? 'Apply with my profile' : 'Sign in to apply'}
-                    </button>
+                    {applied.has(job.id) ? (
+                      <div className="btn btn-success btn-sm w-100 d-flex align-items-center justify-content-center gap-2" style={{ cursor: 'default' }}>
+                        <i className="bi bi-check-circle-fill" aria-hidden="true" />Applied
+                      </div>
+                    ) : (
+                      <button
+                        className="btn btn-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
+                        type="button"
+                        disabled={applying === job.id}
+                        onClick={() => handleApply(job)}
+                      >
+                        {applying === job.id
+                          ? <><span className="spinner-border spinner-border-sm" />Applying…</>
+                          : <><i className="bi bi-send-check-fill" aria-hidden="true" />{user ? 'Apply with my profile' : 'Sign in to apply'}</>}
+                      </button>
+                    )}
                   </div>
                 </article>
               </div>

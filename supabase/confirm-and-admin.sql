@@ -5,10 +5,10 @@
 -- =============================================================================
 
 -- Step 1: Confirm the email address (bypasses email confirmation requirement)
+-- NOTE: confirmed_at is a generated column — only update email_confirmed_at
 update auth.users
 set
   email_confirmed_at = coalesce(email_confirmed_at, now()),
-  confirmed_at       = coalesce(confirmed_at, now()),
   updated_at         = now()
 where email = 'sportbridge.com.ng@gmail.com';
 
@@ -21,7 +21,7 @@ set
   updated_at          = now()
 where email = 'sportbridge.com.ng@gmail.com';
 
--- Step 3: Verify it worked
+-- Step 3: Verify it worked (should return 1 row with role = super_admin)
 select
   au.email,
   au.email_confirmed_at,

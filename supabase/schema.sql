@@ -1307,7 +1307,7 @@ grant usage on schema public to anon, authenticated;
 revoke all on public.profiles from anon;
 revoke update on public.profiles from authenticated;
 grant select on public.profiles to authenticated;
-grant update (full_name, username, avatar_path, phone, updated_at, role, status) on public.profiles to authenticated;
+grant update (full_name, username, avatar_path, phone, updated_at, role, status, verification_status) on public.profiles to authenticated;
 revoke select on public.players from anon;
 grant select (id, display_name, position, age, country, nationality, gender, bio, sport, primary_photo_path, is_public, status, region, preferred_foot, foot, age_group, availability, stats, achievements_data, current_club, created_at) on public.players to anon;
 -- views_count is added by ALTER TABLE further below — granted again after that ALTER

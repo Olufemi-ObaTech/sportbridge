@@ -9,7 +9,7 @@
  * - All files hashed + duplicate-checked before upload
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   FOOTBALL_POSITIONS,
   AGE_GROUPS,
@@ -52,11 +52,19 @@ const BLANK = {
 
 export default function JobPostForm({ supabase, user, onSaved }) {
   const [form,      setForm]      = useState(BLANK)
-  const [images,    setImages]    = useState([])  // { file, preview, error }
-  const [clubCv,    setClubCv]    = useState(null) // { file, name, error }
+  const [images,    setImages]    = useState([])
+  const [clubCv,    setClubCv]    = useState(null)
+  const [clubId,    setClubId]    = useState(null)  // resolved on mount
   const [saving,    setSaving]    = useState(false)
   const [error,     setError]     = useState('')
   const [notice,    setNotice]    = useState('')
+
+  // Resolve the club_id for this user (academy owners have a linked club)
+  useEffect(() => {
+    if (!supabase || !user) return
+    supabase.from('clubs').select('id').eq('owner_id', user.id).maybeSingle()
+      .then(({ data }) => { if (data) setClubId(data.id) })
+  }, [supabase, user])
 
   const upd = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
@@ -152,6 +160,7 @@ export default function JobPostForm({ supabase, user, onSaved }) {
       const payload = {
         posted_by:           user.id,
         posted_by_user_id:   user.id,
+        club_id:             clubId || null,
         sport:               'football',
         job_type:            form.jobType,
         player_position:     form.jobType === 'player_needed' ? form.position     : null,

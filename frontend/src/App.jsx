@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import './Auth.css'
 import Dashboard from './Dashboard.jsx'
 import FeedPage from './FeedPage.jsx'
+import PaymentPage from './PaymentPage.jsx'
 import PlayerProfile from './PlayerProfile.jsx'
 import PlayerSearch from './PlayerSearch.jsx'
 import JobsPage from './JobsPage.jsx'
@@ -904,6 +905,8 @@ function App() {
           <TryoutsPage supabase={supabase} user={user} onSignup={openSignup} />
         ) : view === 'feed' ? (
           <FeedPage supabase={supabase} user={user} onSignup={openSignup} />
+        ) : view === 'pricing' ? (
+          <PaymentPage user={user} onSignup={openSignup} onBack={() => setView('home')} />
         ) : (
           <>
             {/* spacer */}
@@ -1170,6 +1173,7 @@ function App() {
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('jobs'); window.scrollTo(0,0) }}>Jobs</button></li>
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('tryouts'); window.scrollTo(0,0) }}>Tryouts</button></li>
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('feed'); window.scrollTo(0,0) }}>Feed</button></li>
+                <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('pricing'); window.scrollTo(0,0) }}>Pricing</button></li>
               </ul>
             </div>
             <div className="col-6 col-sm-6 col-lg-3">

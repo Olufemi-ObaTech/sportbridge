@@ -649,6 +649,8 @@ function CoachDashboard({ supabase, user, profile }) {
 // ─── Agent dashboard ──────────────────────────────────────────────────────────
 
 function AgentDashboard({ supabase, user, profile }) {
+  const [agent,          setAgent]        = useState(null)
+  const [draft,          setDraft]        = useState(null)
   const [saving,         setSaving]       = useState(false)
   const [notice,         setNotice]       = useState('')
   const [error,          setError]        = useState('')
@@ -841,7 +843,7 @@ function AcademyDashboard({ supabase, user, profile }) {
           const [{ data: cl }, { count: pc }, { count: jc }] = await Promise.all([
             supabase.from('clubs').select('id, name, country, about, website, sports, status').eq('id', ac.club_id).single(),
             supabase.from('players').select('id', { count: 'exact', head: true }).eq('academy_id', ac.id),
-            supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('posted_by', user.id).eq('status', 'active'),
+            supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('posted_by', user.id).eq('status', 'open'),
           ])
           clubData = cl; playerCount = pc ?? 0; jobCount = jc ?? 0
         }
@@ -1047,9 +1049,21 @@ function AdminDashboard({ supabase, user }) {
     const note = verifNote[req.id] ?? ''
     await supabase.from('verification_requests').update({ status: 'approved', reviewer_id: user.id, reviewer_notes: note, reviewed_at: new Date().toISOString() }).eq('id', req.id)
     await supabase.from('profiles').update({ verification_status: 'verified' }).eq('id', req.user_id)
+
+    // Also set verified_badge on the role-specific profile table
+    if (req.role === 'agent') {
+      const { data: ap } = await supabase.from('agent_profiles').select('id').eq('user_id', req.user_id).maybeSingle()
+      if (ap) await supabase.from('agent_profiles').update({ verified_badge: true }).eq('id', ap.id)
+    }
+    if (req.role === 'academy') {
+      const { data: cl } = await supabase.from('clubs').select('id').eq('owner_id', req.user_id).maybeSingle()
+      if (cl) await supabase.from('clubs').update({ verified_badge: true }).eq('id', cl.id)
+    }
+
     setVerifQueue((q) => q.filter((r) => r.id !== req.id))
+    setUsers((u) => u.map((row) => row.id === req.user_id ? { ...row, verification_status: 'verified' } : row))
     setSaving(false)
-    setNotice(`✅ ${req.profiles?.email} verified.`)
+    setNotice(`✅ ${req.profiles?.email} verified — badge applied.`)
   }
 
   const rejectVerif = async (req) => {

@@ -147,4 +147,9 @@ grant select (
   is_verified, sport, status, created_at
 ) on public.jobs to anon;
 
+-- profiles — add verification_status to the update grant so VerifyForm can set it
+revoke update on public.profiles from authenticated;
+grant update (full_name, username, avatar_path, phone, updated_at, role, status, verification_status) on public.profiles to authenticated;
+
+
 select 'Patch applied successfully.' as result;
