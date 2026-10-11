@@ -21,7 +21,7 @@ insert into auth.users (
 (
   '11000000-0000-0000-0000-000000000001',
   'admin@lagosunitedfc.ng',
-  crypt('Demo@1234!', gen_salt('bf')),
+  extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   now(),
   '{"full_name":"Lagos United FC","role":"academy","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
@@ -31,7 +31,7 @@ insert into auth.users (
 (
   '11000000-0000-0000-0000-000000000002',
   'info@ekosportsacademy.ng',
-  crypt('Demo@1234!', gen_salt('bf')),
+  extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   now(),
   '{"full_name":"Eko Sports Academy","role":"academy","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
@@ -41,7 +41,7 @@ insert into auth.users (
 (
   '11000000-0000-0000-0000-000000000003',
   'scouting@premierfootballagency.ng',
-  crypt('Demo@1234!', gen_salt('bf')),
+  extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   now(),
   '{"full_name":"Premier Football Agency","role":"agent","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
@@ -51,7 +51,7 @@ insert into auth.users (
 (
   '22000000-0000-0000-0000-000000000001',
   'chukwuemeka.okafor@sportbridge.ng',
-  crypt('Demo@1234!', gen_salt('bf')),
+  extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   now(),
   '{"full_name":"Chukwuemeka Okafor","role":"player","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
@@ -59,7 +59,7 @@ insert into auth.users (
 (
   '22000000-0000-0000-0000-000000000002',
   'adewale.ibrahim@sportbridge.ng',
-  crypt('Demo@1234!', gen_salt('bf')),
+  extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   now(),
   '{"full_name":"Adewale Ibrahim","role":"player","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
@@ -67,7 +67,7 @@ insert into auth.users (
 (
   '22000000-0000-0000-0000-000000000003',
   'emeka.nwosu@sportbridge.ng',
-  crypt('Demo@1234!', gen_salt('bf')),
+  extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   now(),
   '{"full_name":"Emeka Nwosu","role":"player","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
@@ -75,7 +75,7 @@ insert into auth.users (
 (
   '22000000-0000-0000-0000-000000000004',
   'babatunde.adeleke@sportbridge.ng',
-  crypt('Demo@1234!', gen_salt('bf')),
+  extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   now(),
   '{"full_name":"Babatunde Adeleke","role":"player","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
@@ -83,7 +83,7 @@ insert into auth.users (
 (
   '22000000-0000-0000-0000-000000000005',
   'david.eze@sportbridge.ng',
-  crypt('Demo@1234!', gen_salt('bf')),
+  extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   now(),
   '{"full_name":"David Eze","role":"player","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
@@ -91,7 +91,7 @@ insert into auth.users (
 (
   '22000000-0000-0000-0000-000000000006',
   'samuel.okonkwo@sportbridge.ng',
-  crypt('Demo@1234!', gen_salt('bf')),
+  extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   now(),
   '{"full_name":"Samuel Okonkwo","role":"player","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
@@ -99,7 +99,7 @@ insert into auth.users (
 (
   '22000000-0000-0000-0000-000000000007',
   'ibrahim.musa@sportbridge.ng',
-  crypt('Demo@1234!', gen_salt('bf')),
+  extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   now(),
   '{"full_name":"Ibrahim Musa","role":"player","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
@@ -107,7 +107,7 @@ insert into auth.users (
 (
   '22000000-0000-0000-0000-000000000008',
   'chisom.agu@sportbridge.ng',
-  crypt('Demo@1234!', gen_salt('bf')),
+  extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   now(),
   '{"full_name":"Chisom Agu","role":"player","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
@@ -115,7 +115,7 @@ insert into auth.users (
 (
   '22000000-0000-0000-0000-000000000009',
   'tunde.salami@sportbridge.ng',
-  crypt('Demo@1234!', gen_salt('bf')),
+  extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   now(),
   '{"full_name":"Tunde Salami","role":"player","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
@@ -123,13 +123,13 @@ insert into auth.users (
 (
   '22000000-0000-0000-0000-000000000010',
   'kelechi.obiora@sportbridge.ng',
-  crypt('Demo@1234!', gen_salt('bf')),
+  extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   now(),
   '{"full_name":"Kelechi Obiora","role":"player","sport":"football"}'::jsonb,
   now(), now(), 'authenticated', 'authenticated', '', '', '', ''
 )
 on conflict (id) do update
-  set encrypted_password = crypt('Demo@1234!', gen_salt('bf')),
+  set encrypted_password = extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
       email_confirmed_at = coalesce(auth.users.email_confirmed_at, now()),
       updated_at         = now();
 

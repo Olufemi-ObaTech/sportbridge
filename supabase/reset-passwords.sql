@@ -1,16 +1,15 @@
 -- =============================================================================
 -- SportBridge — Reset all demo + admin passwords
 -- Run this in Supabase SQL Editor.
--- 
--- This uses Supabase's built-in auth.users password update via the
--- extensions.pgcrypto bcrypt function which IS compatible with GoTrue.
--- Supabase Auth uses bcrypt for encrypted_password in auth.users.
+--
+-- Uses extensions.crypt() (pgcrypto via the extensions schema) which
+-- produces bcrypt hashes compatible with Supabase GoTrue authentication.
 -- =============================================================================
 
 -- Reset YOUR admin password
 update auth.users
 set
-  encrypted_password = crypt('SportBridge2026!', gen_salt('bf')),
+  encrypted_password = extensions.crypt('SportBridge2026!', extensions.gen_salt('bf', 10)),
   email_confirmed_at = coalesce(email_confirmed_at, now()),
   updated_at         = now()
 where email = 'sportbridge.com.ng@gmail.com';
@@ -18,7 +17,7 @@ where email = 'sportbridge.com.ng@gmail.com';
 -- Reset all demo account passwords
 update auth.users
 set
-  encrypted_password = crypt('Demo@1234!', gen_salt('bf')),
+  encrypted_password = extensions.crypt('Demo@1234!', extensions.gen_salt('bf', 10)),
   email_confirmed_at = coalesce(email_confirmed_at, now()),
   updated_at         = now()
 where email in (
