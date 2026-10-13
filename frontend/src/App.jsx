@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import './Auth.css'
 import Dashboard from './Dashboard.jsx'
 import FeedPage from './FeedPage.jsx'
@@ -16,7 +16,7 @@ import worldCupBallImage from '../../public/img/world-cup-ball.avif'
 import { supabase } from './lib/supabase'
 import { BASKETBALL_ENABLED, containsContactInfo } from './lib/features'
 
-// ─── constants ────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ constants ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const ROLES = [
   { value: 'player',  label: 'Player',          icon: 'bi-person-arms-up'   },
   { value: 'academy', label: 'Academy / Club',   icon: 'bi-building'         },
@@ -41,7 +41,7 @@ const roleCards = [
     title: 'For Players',
     heroTitle: 'Players',
     heroCopy: 'Free profile. Get discovered.',
-    copy: 'Register free and build a public profile with photos, video, and stats — visible to anyone searching for talent. No academy required.',
+    copy: 'Create a free profile with photos, full-match videos and your CV. Go public and get discovered by verified clubs, academies and agents ΓÇö no middleman required.',
     action: 'Create your player profile',
   },
   {
@@ -49,9 +49,9 @@ const roleCards = [
     cardIcon: 'bi-person-badge',
     heroIcon: 'bi-building',
     title: 'For Clubs & Academies',
-    heroTitle: 'Clubs ✓ Verified',
-    heroCopy: 'Showcase your roster to the world.',
-    copy: 'Showcase your squad, manage recruitment, post Player Needed and Staff Needed jobs — replacing spreadsheets with a structured, searchable pipeline.',
+    heroTitle: 'Clubs Γ£ô Verified',
+    heroCopy: 'Showcase your squad to the world.',
+    copy: 'Create players, build your squad roster, post Player Needed & Staff Needed jobs, and showcase your verified club to scouts and agents worldwide.',
     action: 'Register your club / academy',
   },
   {
@@ -60,8 +60,8 @@ const roleCards = [
     heroIcon: 'bi-binoculars',
     title: 'For Agents & Scouts',
     heroTitle: 'Agents',
-    heroCopy: 'Find verified talent. Build trust.',
-    copy: 'Search verified player profiles, build watchlists, and carry your licence number, verifying body, and a public trust score built from player ratings.',
+    heroCopy: 'Scout the next generation.',
+    copy: 'Search verified players by position, age and region. Build a watchlist, post Player Positions Needed on behalf of clubs, and run verified tryout opportunities.',
     action: 'Register as an agent / scout',
   },
   {
@@ -70,8 +70,8 @@ const roleCards = [
     heroIcon: 'bi-clipboard2-pulse',
     title: 'For Coaches & Sporting Directors',
     heroTitle: 'Coaches',
-    heroCopy: 'Browse roles. Apply directly.',
-    copy: 'Browse coaching and management roles posted by verified clubs and academies, apply with your verified profile and CV.',
+    heroCopy: 'Land your next role.',
+    copy: 'Browse coaching and management roles, apply with your verified profile, and recommend talented players directly to agents and clubs from your dashboard.',
     action: 'Register as a coach / manager',
   },
 ]
@@ -84,7 +84,7 @@ const worldClocks = [
   ['Qatar',    'Asia/Qatar'      ],
 ]
 
-// ─── password strength ────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ password strength ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function passwordStrength(pw) {
   if (!pw) return 0
@@ -100,7 +100,7 @@ function passwordStrength(pw) {
 const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong']
 const strengthClass = ['', 'weak', 'fair', 'good', 'strong']
 
-// ─── AuthModal ────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ AuthModal ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function AuthModal({ onClose, initialMode, initialRole }) {
   const [mode, setMode]               = useState(initialMode)   // 'signin' | 'signup' | 'forgot' | 'confirmed' | 'reset-sent'
@@ -143,7 +143,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
     setMode(next)
   }
 
-  // ── sign in ──────────────────────────────────────────────────────────────────
+  // ΓöÇΓöÇ sign in ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const handleSignIn = async (e) => {
     e.preventDefault()
     if (!supabase) {
@@ -161,7 +161,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
 
     if (error) {
       if (error.message.toLowerCase().includes('email not confirmed')) {
-        showMsg('Your email is not confirmed yet. Check your inbox for the confirmation link — also check your spam folder.', 'info')
+        showMsg('Your email is not confirmed yet. Check your inbox for the confirmation link ΓÇö also check your spam folder.', 'info')
       } else if (error.message.toLowerCase().includes('invalid login credentials') || error.message.toLowerCase().includes('invalid login')) {
         showMsg('Incorrect email or password. Please check your details and try again.')
       } else if (error.message.toLowerCase().includes('user not found')) {
@@ -172,11 +172,11 @@ function AuthModal({ onClose, initialMode, initialRole }) {
       return
     }
 
-    // Success — onAuthStateChange fires SIGNED_IN and closes modal automatically
+    // Success ΓÇö onAuthStateChange fires SIGNED_IN and closes modal automatically
     // The parent App's onAuthStateChange handler calls setAuthOpen(false)
   }
 
-  // ── sign up ──────────────────────────────────────────────────────────────────
+  // ΓöÇΓöÇ sign up ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const handleSignUp = async (e) => {
     e.preventDefault()
     if (!supabase) {
@@ -225,14 +225,14 @@ function AuthModal({ onClose, initialMode, initialRole }) {
     }
 
     if (!data.session) {
-      // Email confirmation required — show the check inbox screen
+      // Email confirmation required ΓÇö show the check inbox screen
       setConfirmedEmail(email)
       setMode('confirmed')
     }
-    // session exists → auto-confirmed, onAuthStateChange fires SIGNED_IN → dashboard
+    // session exists ΓåÆ auto-confirmed, onAuthStateChange fires SIGNED_IN ΓåÆ dashboard
   }
 
-  // ── forgot password ───────────────────────────────────────────────────────────
+  // ΓöÇΓöÇ forgot password ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const handleForgot = async (e) => {
     e.preventDefault()
     if (!supabase) return
@@ -253,11 +253,11 @@ function AuthModal({ onClose, initialMode, initialRole }) {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
   const panelContent = () => {
 
-    // ── email confirmed screen ───────────────────────────────────────────────
+    // ΓöÇΓöÇ email confirmed screen ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     if (mode === 'confirmed') {
       return (
         <div className="auth-confirm">
@@ -285,7 +285,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
             }}
             style={{ background: 'var(--fc-gradient-gold)', color: 'var(--fc-navy-900)' }}
           >
-            {busy ? <><span className="spinner-border spinner-border-sm me-2" />Sending…</> : 'Resend confirmation email'}
+            {busy ? <><span className="spinner-border spinner-border-sm me-2" />SendingΓÇª</> : 'Resend confirmation email'}
           </button>
           <button
             className="auth-submit mt-2"
@@ -304,7 +304,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
       )
     }
 
-    // ── password reset sent ──────────────────────────────────────────────────
+    // ΓöÇΓöÇ password reset sent ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     if (mode === 'reset-sent') {
       return (
         <div className="auth-confirm">
@@ -326,7 +326,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
       )
     }
 
-    // ── forgot password form ─────────────────────────────────────────────────
+    // ΓöÇΓöÇ forgot password form ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     if (mode === 'forgot') {
       return (
         <>
@@ -351,7 +351,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
               </p>
             )}
             <button className="auth-submit" type="submit" disabled={busy}>
-              {busy ? <><span className="spinner-border spinner-border-sm me-2" />Sending…</> : 'Send reset link'}
+              {busy ? <><span className="spinner-border spinner-border-sm me-2" />SendingΓÇª</> : 'Send reset link'}
             </button>
           </form>
           <p className="auth-switch">
@@ -362,7 +362,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
       )
     }
 
-    // ── sign in form ─────────────────────────────────────────────────────────
+    // ΓöÇΓöÇ sign in form ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     if (mode === 'signin') {
       return (
         <>
@@ -424,7 +424,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
               disabled={busy}
             >
               {busy
-                ? <><span className="spinner-border spinner-border-sm me-2" />Signing in…</>
+                ? <><span className="spinner-border spinner-border-sm me-2" />Signing inΓÇª</>
                 : <><i className="bi bi-box-arrow-in-right me-2" aria-hidden="true" />Sign in</>}
             </button>
           </form>
@@ -437,7 +437,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
       )
     }
 
-    // ── sign up form ─────────────────────────────────────────────────────────
+    // ΓöÇΓöÇ sign up form ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     return (
       <>
         <p className="eyebrow">Join the network</p>
@@ -461,7 +461,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
           {/* Role picker */}
           <div>
             <p className="auth-label mb-2" style={{ marginBottom: 8 }}>
-              <span>I am a…</span>
+              <span>I am aΓÇª</span>
             </p>
             <div className="auth-role-grid">
               {ROLES.map((r) => (
@@ -479,7 +479,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
             </div>
           </div>
 
-          {/* Sport picker — basketball hidden until flag is enabled */}
+          {/* Sport picker ΓÇö basketball hidden until flag is enabled */}
           <div>
             <p className="auth-label" style={{ marginBottom: 8 }}>
               <span>Primary sport</span>
@@ -582,7 +582,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
             disabled={busy}
           >
             {busy
-              ? <><span className="spinner-border spinner-border-sm me-2" />Creating account…</>
+              ? <><span className="spinner-border spinner-border-sm me-2" />Creating accountΓÇª</>
               : <><i className="bi bi-person-plus me-2" aria-hidden="true" />Create account</>}
           </button>
 
@@ -628,7 +628,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
   )
 }
 
-// ─── App ──────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ App ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function App() {
   const [view,            setView]            = useState('home')
@@ -668,7 +668,7 @@ function App() {
     return () => window.clearInterval(t)
   }, [])
 
-  // Auth state — restore session on mount and subscribe to future changes.
+  // Auth state ΓÇö restore session on mount and subscribe to future changes.
   // eslint-disable-next-line react/set-state-in-effect -- getSession is async external I/O; setState here is correct.
   useEffect(() => {
     if (!supabase) return
@@ -693,7 +693,7 @@ function App() {
         Skip to main content
       </a>
 
-      {/* ── Navbar ─────────────────────────────────────────────────────────── */}
+      {/* ΓöÇΓöÇ Navbar ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
       <nav className="navbar navbar-expand-lg sticky-top shadow-sm" data-bs-theme="dark" id="home">
         <div className="container">
           <a className="navbar-brand" href="#home" aria-label="SportBridge home">
@@ -735,26 +735,30 @@ function App() {
               <li className="nav-item">
                 <a className="nav-link" href="#players" onClick={() => setMenuOpen(false)}>Players</a>
               </li>
-              <li className="nav-item">
-                <button className={`btn btn-link nav-link${view === 'jobs' ? ' active' : ''}`} type="button"
-                  onClick={() => { setView('jobs'); setMenuOpen(false); window.scrollTo(0,0) }}>Jobs</button>
+              {/* Explore dropdown — reduces navbar clutter on all devices */}
+              <li className="nav-item dropdown">
+                <button
+                  className={`btn btn-link nav-link d-flex align-items-center gap-1${[view].includes('jobs') || [view].includes('tryouts') || [view].includes('feed') ? ' active' : ''}`}
+                  type="button"
+                  id="exploreDropdown"
+                  onClick={(e) => { const p = e.currentTarget.closest('li'); p.classList.toggle('show'); e.currentTarget.setAttribute('aria-expanded', String(p.classList.contains('show'))) }}
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                >
+                  Explore <i className="bi bi-chevron-down" style={{ fontSize: 11 }} aria-hidden="true" />
+                </button>
+                <ul className="dropdown-menu">
+                  <li><button className="dropdown-item d-flex align-items-center gap-2" type="button"
+                    onClick={() => { setView('jobs'); setMenuOpen(false); window.scrollTo(0,0) }}>
+                    <i className="bi bi-briefcase text-primary" />Jobs</button></li>
+                  <li><button className="dropdown-item d-flex align-items-center gap-2" type="button"
+                    onClick={() => { setView('tryouts'); setMenuOpen(false); window.scrollTo(0,0) }}>
+                    <i className="bi bi-calendar-event text-primary" />Tryouts</button></li>
+                  <li><button className="dropdown-item d-flex align-items-center gap-2" type="button"
+                    onClick={() => { setView('feed'); setMenuOpen(false); window.scrollTo(0,0) }}>
+                    <i className="bi bi-newspaper text-primary" />Community Feed</button></li>
+                </ul>
               </li>
-              <li className="nav-item">
-                <button className={`btn btn-link nav-link${view === 'tryouts' ? ' active' : ''}`} type="button"
-                  onClick={() => { setView('tryouts'); setMenuOpen(false); window.scrollTo(0,0) }}>Tryouts</button>
-              </li>
-              <li className="nav-item">
-                <button className={`btn btn-link nav-link${view === 'feed' ? ' active' : ''}`} type="button"
-                  onClick={() => { setView('feed'); setMenuOpen(false); window.scrollTo(0,0) }}>Feed</button>
-              </li>
-              {user && (
-                <li className="nav-item">
-                  <button className={`btn btn-link nav-link${view === 'inbox' ? ' active' : ''}`} type="button"
-                    onClick={() => { setView('inbox'); setMenuOpen(false); window.scrollTo(0,0) }}>
-                    <i className="bi bi-chat-dots me-1" aria-hidden="true" />Inbox
-                  </button>
-                </li>
-              )}
             </ul>
 
             <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-2">
@@ -812,7 +816,7 @@ function App() {
                   <span className="text-uppercase">{language}</span>
                 </button>
                 <ul className={`dropdown-menu dropdown-menu-end${languageMenuOpen ? ' show' : ''}`}>
-                  {[['en','English'],['fr','Français'],['pt','Português'],['ar','العربية'],['es','Español']].map(([code, label]) => (
+                  {[['en','English'],['fr','Fran├ºais'],['pt','Portugu├¬s'],['ar','╪º┘ä╪╣╪▒╪¿┘è╪⌐'],['es','Espa├▒ol']].map(([code, label]) => (
                     <li key={code}>
                       <button
                         className={`dropdown-item d-flex align-items-center justify-content-between${language === code ? ' active' : ''}`}
@@ -897,7 +901,7 @@ function App() {
         </div>
       </nav>
 
-      {/* ── Main content ───────────────────────────────────────────────────── */}
+      {/* ΓöÇΓöÇ Main content ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
       <main id="main-content" className="flex-grow-1">
         {view === 'dashboard' && user ? (
           <Dashboard supabase={supabase} user={user} onBack={() => setView('home')} />
@@ -924,7 +928,7 @@ function App() {
             {/* spacer */}
             <div className="container py-4" aria-hidden="true" />
 
-            {/* ── Hero ──────────────────────────────────────────────────── */}
+            {/* ΓöÇΓöÇ Hero ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
             <section className="fc-hero px-3 px-md-5 py-5 mb-0" aria-labelledby="home-heading">
               <img src={worldCupBallImage} alt="" className="fc-hero-ball d-none d-md-block" />
               <div className="container py-4">
@@ -934,44 +938,35 @@ function App() {
                     {/* Badge */}
                     <span className="fc-hero-badge fc-animate-in">
                       <i className="bi bi-shield-check me-1" aria-hidden="true" />
-                      Connecting the full sports talent pipeline — trust-first
+                      The World&apos;s #1 Verified Football Network
                     </span>
 
                     {/* Headline */}
                     <h1 id="home-heading" className="display-4 fw-bold mt-3 mb-3 fc-animate-in fc-delay-1">
-                      Your profile takes 5 minutes.{' '}
-                      <span className="fc-gradient-text">Your opportunity starts today.</span>
+                      Stop Chasing Fake Agents.{' '}
+                      <span className="fc-gradient-text">Get Verified.</span>
                     </h1>
 
-                    {/* Sub-headline — exact spec language */}
-                    <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '60ch' }}>
-                      SportBridge connects <strong style={{ color: '#fff' }}>players, academies, clubs, agents/scouts, and coaches</strong> across
-                      football in Africa and worldwide — replacing WhatsApp groups, scattered contacts, and unverified "agents"
-                      with a <strong style={{ color: '#fff' }}>structured, trust-first platform</strong>.
+                    {/* Sub-headline */}
+                    <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '56ch' }}>
+                      SportBridge connects <strong style={{ color: '#fff' }}>Verified Free Players</strong> with{' '}
+                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong> in Africa and across The World.
+                      Full CV + Full-Match Video + highlights + Stats + Secure Unlock {' '}
+                      <em>not just highlights.</em>
                     </p>
-
-                    {/* Anti-scam warning — prominent on hero */}
-                    <div className="d-flex align-items-start gap-2 rounded-3 px-3 py-2 mt-3 fc-animate-in fc-delay-2"
-                      style={{ background: 'rgba(220,53,69,.12)', border: '1.5px solid rgba(220,53,69,.35)', fontSize: 13, maxWidth: 480 }}>
-                      <i className="bi bi-exclamation-triangle-fill text-danger flex-shrink-0 mt-1" aria-hidden="true" />
-                      <span style={{ color: '#ffcdd2', fontWeight: 600 }}>
-                        ⚠️ Never pay an agent or scout to arrange a trial. Legitimate agents never charge players.
-                        SportBridge verifies agent licences — always check the badge.
-                      </span>
-                    </div>
 
                     {/* Comparison pills */}
                     <div className="d-flex flex-wrap gap-2 mt-4 fc-animate-in fc-delay-2" role="list" aria-label="SportBridge vs other platforms">
                       {[
-                        { vs: 'WhatsApp groups',  vsText: 'Scams, no verification',        sbText: 'Verified profiles · Licence badges · Trust scores', icon: 'bi-shield-lock' },
-                        { vs: 'Spreadsheets',     vsText: 'Manual, scattered recruitment', sbText: 'Structured talent pipeline for academies',           icon: 'bi-building' },
-                        { vs: 'Social media',     vsText: 'Highlights only, no stats',     sbText: 'Full CV + video + stats + secure contact unlock',    icon: 'bi-camera-video' },
+                        { vs: 'Social Media', vsText: 'Edited highlights only',          sbText: 'Verified CV + Full Match Video + Availability', icon: 'bi-camera-video' },
+                        { vs: 'Job sites',  vsText: 'Corporate jobs only',            sbText: 'Football jobs by Position ┬╖ Age Group ┬╖ Region',  icon: 'bi-briefcase' },
+                        { vs: 'Groups',        vsText: 'Scams & phone number leaks',    sbText: 'NIN Verified ┬╖ Video Hash ┬╖ No Leaked Contacts',   icon: 'bi-shield-lock' },
                       ].map(({ vs, vsText, sbText, icon }) => (
                         <div
                           key={vs}
                           role="listitem"
                           className="d-flex align-items-start gap-2 rounded-3 px-3 py-2"
-                          style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.13)', maxWidth: 380, fontSize: 12 }}
+                          style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.13)', maxWidth: 360, fontSize: 12 }}
                         >
                           <i className={`bi ${icon} mt-1 flex-shrink-0`} style={{ color: 'var(--fc-gold-400)', fontSize: 14 }} aria-hidden="true" />
                           <div>
@@ -987,7 +982,7 @@ function App() {
                     <div className="d-flex flex-wrap gap-2 mt-4 fc-animate-in fc-delay-3">
                       <button type="button" className="btn btn-secondary btn-lg" onClick={() => openSignup('player')}>
                         <i className="bi bi-person-plus me-2" aria-hidden="true" />
-                        Join Free — Build Your Profile
+                        Create Player Profile
                       </button>
                       <a href="#players" className="btn btn-outline-light btn-lg">
                         <i className="bi bi-search me-2" aria-hidden="true" />
@@ -1042,7 +1037,7 @@ function App() {
               </div>
             </section>
 
-            {/* ── Problem / Solution bar (answers "why not WhatsApp/Instagram") ── */}
+            {/* ΓöÇΓöÇ Problem / Solution bar (answers "why not WhatsApp/Instagram") ΓöÇΓöÇ */}
             <div className="mb-5" style={{ background: 'var(--fc-navy-900)', borderBottom: '1px solid rgba(245,179,1,.15)' }}>
               <div className="container">
                 <div className="row g-0">
@@ -1086,7 +1081,7 @@ function App() {
             </div>
 
             <div className="container">
-              {/* ── Role cards ────────────────────────────────────────── */}
+              {/* ΓöÇΓöÇ Role cards ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
               <div className="text-center mb-5" id="roles">
                 <h2 className="h3 fw-bold" style={{ color: 'var(--fc-blue-700)' }}>One platform, every side of the game</h2>
                 <p className="text-muted">Purpose-built tools for players, clubs, agents, scouts, coaches and sporting directors alike.</p>
@@ -1113,7 +1108,7 @@ function App() {
                 ))}
               </div>
 
-              {/* ── Visual showcase ───────────────────────────────────── */}
+              {/* ΓöÇΓöÇ Visual showcase ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
               <section className="mb-5" aria-labelledby="sportbridge-visuals-title">
                 <div className="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
                   <div>
@@ -1138,7 +1133,7 @@ function App() {
                 )}
               </section>
 
-              {/* ── CTA band ──────────────────────────────────────────── */}
+              {/* ΓöÇΓöÇ CTA band ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
               <div className="rounded-4 p-5 mb-5 text-center fc-band-photo">
                 <h2 className="h3 fw-bold text-white mb-2">Ready to make your next move?</h2>
                 <p className="mb-4" style={{ color: 'rgba(255,255,255,.85)' }}>
@@ -1150,7 +1145,7 @@ function App() {
               </div>
             </div>
 
-            {/* ── Directory — powered by PlayerSearch ──────────────────────── */}
+            {/* ΓöÇΓöÇ Directory ΓÇö powered by PlayerSearch ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
             <section className="container py-5" id="players" aria-labelledby="directory-heading">
               <div className="mb-4">
                 <span className="text-uppercase small fw-semibold text-muted">Scout the next generation</span>
@@ -1158,7 +1153,7 @@ function App() {
                   Player Directory
                 </h2>
                 <p className="text-muted mb-0">
-                  Search verified free players by position, age group, region and foot — find your next signing in seconds.
+                  Search verified free players by position, age group, region and foot ΓÇö find your next signing in seconds.
                 </p>
               </div>
               <PlayerSearch
@@ -1170,7 +1165,7 @@ function App() {
         )}
       </main>
 
-      {/* ── Footer ─────────────────────────────────────────────────────────── */}
+      {/* ΓöÇΓöÇ Footer ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
       <footer
         className="mt-auto py-5"
         style={{ background: 'linear-gradient(160deg, var(--fc-navy-800) 0%, var(--fc-blue-900) 100%)', color: 'rgba(247,249,248,.82)' }}
@@ -1194,7 +1189,6 @@ function App() {
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('jobs'); window.scrollTo(0,0) }}>Jobs</button></li>
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('tryouts'); window.scrollTo(0,0) }}>Tryouts</button></li>
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('feed'); window.scrollTo(0,0) }}>Feed</button></li>
-                {user && <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('inbox'); window.scrollTo(0,0) }}>Inbox</button></li>}
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('pricing'); window.scrollTo(0,0) }}>Pricing</button></li>
               </ul>
             </div>
@@ -1230,11 +1224,7 @@ function App() {
           </div>
           <hr className="border-light opacity-25" />
           <p className="small mb-2 fw-bold" style={{ maxWidth: '70ch' }}>
-            SportBridge connects players, academies, clubs, agents/scouts, and coaches across football —
-            replacing informal WhatsApp groups and scattered contacts with a structured, trust-first platform.
-            Credentials are self-reported unless marked with a Verified ✓ badge.
-            {' '}<span style={{ color: '#ffcdd2' }}>⚠️ Never pay an agent or scout to arrange a trial — legitimate agents never charge players.</span>
-            {' '}Always independently verify credentials before engaging.
+            SportBridge connects players, academies, agents, scouts and coaches, but is not a party to any agreement between them and does not process payments between users. Credentials shown on profiles are self-reported unless marked with a Verified badge. Always independently verify who you are dealing with, and never send money to arrange a trial or introduction.
           </p>
           <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
             <p className="small mb-0 text-white-50">&copy; {new Date().getFullYear()} SportBridge. All rights reserved.</p>
@@ -1245,7 +1235,7 @@ function App() {
         </div>
       </footer>
 
-      {/* ── Auth modal ─────────────────────────────────────────────────────── */}
+      {/* ΓöÇΓöÇ Auth modal ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
       {authOpen && (
         <AuthModal
           key={`${authInitMode}-${authInitRole}`}

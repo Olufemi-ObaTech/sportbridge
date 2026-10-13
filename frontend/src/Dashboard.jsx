@@ -1297,9 +1297,17 @@ function AccountDetails({ supabase, user, profile, onProfileSaved }) {
 // ─── Main Dashboard shell ─────────────────────────────────────────────────────
 
 function Dashboard({ supabase, user, onBack }) {
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState('')
+  const [profile,     setProfile]     = useState(null)
+  const [loading,     setLoading]     = useState(true)
+  const [error,       setError]       = useState('')
+  const [dashTab,     setDashTab]     = useState('main') // 'main' | 'notifications' | 'inbox'
+  const [notifs,      setNotifs]      = useState([])
+  const [notifLoad,   setNotifLoad]   = useState(false)
+  const [convs,       setConvs]       = useState([])
+  const [activeConv,  setActiveConv]  = useState(null)
+  const [messages,    setMessages]    = useState([])
+  const [newMsg,      setNewMsg]      = useState('')
+  const [sending,     setSending]     = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -1312,24 +1320,81 @@ function Dashboard({ supabase, user, onBack }) {
     return () => { alive = false }
   }, [supabase, user.id])
 
+  // Load notifications when that tab opens
+  useEffect(() => {
+    if (dashTab !== 'notifications' || !supabase) return
+    setNotifLoad(true)
+    supabase.from('notifications').select('id, notification_type, data, read_at, created_at')
+      .eq('user_id', user.id).order('created_at', { ascending: false }).limit(50)
+      .then(({ data }) => { setNotifs(data ?? []); setNotifLoad(false) })
+  }, [dashTab, supabase, user.id])
+
+  // Load conversations when inbox tab opens
+  useEffect(() => {
+    if (dashTab !== 'inbox' || !supabase) return
+    supabase.from('conversations')
+      .select(`id, subject, last_message_at, created_at,
+               initiator:profiles!initiator_id (id, full_name, role, verification_status),
+               recipient:profiles!recipient_id (id, full_name, role, verification_status)`)
+      .or(`initiator_id.eq.${user.id},recipient_id.eq.${user.id}`)
+      .order('last_message_at', { ascending: false, nullsFirst: false }).limit(50)
+      .then(({ data }) => setConvs(data ?? []))
+  }, [dashTab, supabase, user.id])
+
+  // Load messages for active conversation
+  useEffect(() => {
+    if (!activeConv || !supabase) return
+    supabase.from('messages').select('id, content, sender_id, created_at, is_read')
+      .eq('conversation_id', activeConv.id).order('created_at', { ascending: true })
+      .then(({ data }) => setMessages(data ?? []))
+    supabase.from('messages').update({ is_read: true, read_at: new Date().toISOString() })
+      .eq('conversation_id', activeConv.id).neq('sender_id', user.id).then(() => {})
+  }, [activeConv, supabase, user.id])
+
+  const sendMessage = async (e) => {
+    e.preventDefault()
+    const content = newMsg.trim()
+    if (!content || !activeConv) return
+    setSending(true)
+    const { data, error: err } = await supabase.from('messages').insert({ conversation_id: activeConv.id, sender_id: user.id, content }).select('id, content, sender_id, created_at').single()
+    setSending(false)
+    if (!err) { setMessages((prev) => [...prev, data]); setNewMsg(''); await supabase.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', activeConv.id) }
+  }
+
+  const markAllRead = async () => {
+    await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', user.id).is('read_at', null)
+    setNotifs((prev) => prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })))
+  }
+
+  const getOther = (conv) => conv.initiator?.id === user.id ? conv.recipient : conv.initiator
+
+  function timeAgo(iso) {
+    if (!iso) return ''
+    const s = Math.floor((Date.now() - new Date(iso)) / 1000)
+    if (s < 60) return 'just now'; if (s < 3600) return `${Math.floor(s/60)}m`
+    if (s < 86400) return `${Math.floor(s/3600)}h`
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  }
+
   if (loading) return <div className="container py-5 text-center text-muted" role="status"><span className="spinner-border me-2" />Loading your dashboard…</div>
-  if (error || !profile) return <div className="container py-5"><div className="alert alert-danger">{error || 'Could not load your profile. Please try refreshing.'}</div></div>
+  if (error || !profile) return <div className="container py-5"><div className="alert alert-danger">{error || 'Could not load your profile.'}</div></div>
 
   const role      = profile.role
   const roleLabel = ROLE_LABELS[role] ?? role
   const roleIcon  = ROLE_ICONS[role]  ?? 'bi-person'
+  const unreadCount = notifs.filter((n) => !n.read_at).length
 
   const roleContent = () => {
     if (role === 'super_admin') return <AdminDashboard   supabase={supabase} user={user} />
     if (role === 'player')      return <PlayerDashboard  supabase={supabase} user={user} profile={profile} />
     if (role === 'coach')       return <CoachDashboard   supabase={supabase} user={user} profile={profile} />
-    if (role === 'agent')       return <AgentDashboard  supabase={supabase} user={user} profile={profile} />
+    if (role === 'agent')       return <AgentDashboard   supabase={supabase} user={user} profile={profile} />
     if (role === 'academy')     return <AcademyDashboard supabase={supabase} user={user} profile={profile} />
-    return <div className="alert alert-warning">Unknown account role <strong>{role}</strong>. Please contact support.</div>
+    return <div className="alert alert-warning">Unknown role <strong>{role}</strong>.</div>
   }
 
   return (
-    <div className="container py-5">
+    <div className="container py-4">
       {/* Header */}
       <div className="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
         <div>
@@ -1345,37 +1410,179 @@ function Dashboard({ supabase, user, onBack }) {
             <VerificationBadge status={profile.verification_status} />
           </div>
         </div>
-        <button className="btn btn-outline-primary" onClick={onBack} type="button">
-          <i className="bi bi-arrow-left me-1" aria-hidden="true" />Back to home
+        <button className="btn btn-outline-primary btn-sm" onClick={onBack} type="button">
+          <i className="bi bi-arrow-left me-1" />Back to home
         </button>
       </div>
 
-      {/* Two-column layout */}
-      <div className="row g-4 align-items-start">
-        <div className="col-12 col-lg-8 col-xl-9">
-          {roleContent()}
-        </div>
-        <div className="col-12 col-lg-4 col-xl-3">
-          <AccountDetails supabase={supabase} user={user} profile={profile} onProfileSaved={(u) => setProfile((p) => ({ ...p, ...u }))} />
-          <div className="card p-4">
-            <h2 className="h6 fw-bold mb-3">Quick links</h2>
-            <ul className="list-unstyled small mb-0 d-grid gap-2">
-              {role !== 'super_admin' && (
-                <>
-                  <li><a href="#roles"         className="text-decoration-none"><i className="bi bi-newspaper me-2 text-primary"          />Community feed</a></li>
-                  <li><a href="#opportunities" className="text-decoration-none"><i className="bi bi-briefcase me-2 text-primary"           />Job board</a></li>
-                  <li><a href="#players"       className="text-decoration-none"><i className="bi bi-person-lines-fill me-2 text-primary"   />Player directory</a></li>
-                </>
-              )}
-              <li>
-                <button className="btn btn-link p-0 text-danger small" type="button" onClick={() => supabase.auth.signOut()}>
-                  <i className="bi bi-box-arrow-right me-2" />Sign out
-                </button>
-              </li>
-            </ul>
+      {/* Dashboard-level tabs: Main | Notifications | Inbox */}
+      <ul className="nav nav-pills mb-4 gap-1" role="tablist">
+        <li className="nav-item">
+          <button className={`nav-link d-flex align-items-center gap-1${dashTab === 'main' ? ' active' : ''}`}
+            type="button" onClick={() => setDashTab('main')}>
+            <i className="bi bi-grid" />Dashboard
+          </button>
+        </li>
+        <li className="nav-item">
+          <button className={`nav-link d-flex align-items-center gap-2${dashTab === 'notifications' ? ' active' : ''}`}
+            type="button" onClick={() => setDashTab('notifications')}>
+            <i className="bi bi-bell" />Notifications
+            {unreadCount > 0 && <span className="badge text-bg-danger">{unreadCount}</span>}
+          </button>
+        </li>
+        <li className="nav-item">
+          <button className={`nav-link d-flex align-items-center gap-1${dashTab === 'inbox' ? ' active' : ''}`}
+            type="button" onClick={() => { setDashTab('inbox'); setActiveConv(null) }}>
+            <i className="bi bi-chat-dots" />Inbox
+          </button>
+        </li>
+      </ul>
+
+      {/* ── Main role content ─────────────────────────────── */}
+      {dashTab === 'main' && (
+        <div className="row g-4 align-items-start">
+          <div className="col-12 col-lg-8 col-xl-9">{roleContent()}</div>
+          <div className="col-12 col-lg-4 col-xl-3">
+            <AccountDetails supabase={supabase} user={user} profile={profile} onProfileSaved={(u) => setProfile((p) => ({ ...p, ...u }))} />
+            <div className="card p-4">
+              <h2 className="h6 fw-bold mb-3">Quick links</h2>
+              <ul className="list-unstyled small mb-0 d-grid gap-2">
+                {role !== 'super_admin' && (<>
+                  <li><a href="#players" className="text-decoration-none"><i className="bi bi-person-lines-fill me-2 text-primary" />Player directory</a></li>
+                  <li><button className="btn btn-link p-0 small text-start" type="button" onClick={() => setDashTab('inbox')}><i className="bi bi-chat-dots me-2 text-primary" />Inbox</button></li>
+                </>)}
+                <li>
+                  <button className="btn btn-link p-0 text-danger small" type="button" onClick={() => supabase.auth.signOut()}>
+                    <i className="bi bi-box-arrow-right me-2" />Sign out
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* ── Notifications ─────────────────────────────────── */}
+      {dashTab === 'notifications' && (
+        <div className="row justify-content-center">
+          <div className="col-12 col-md-8 col-lg-6">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h2 className="h5 fw-bold mb-0" style={{ color: 'var(--fc-blue-700)' }}>Notifications</h2>
+              {notifs.some((n) => !n.read_at) && (
+                <button className="btn btn-link btn-sm p-0 text-muted" type="button" onClick={markAllRead}>
+                  Mark all as read
+                </button>
+              )}
+            </div>
+            {notifLoad ? (
+              <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
+            ) : notifs.length === 0 ? (
+              <div className="text-center py-5 text-muted">
+                <i className="bi bi-bell-slash fs-2 d-block mb-2" />
+                <p className="mb-0">No notifications yet.</p>
+                <p className="small">We'll notify you about access requests, new messages, and verifications.</p>
+              </div>
+            ) : notifs.map((n) => (
+              <div key={n.id} className={`card mb-2 p-3 d-flex flex-row align-items-start gap-3 ${!n.read_at ? 'border-primary' : ''}`}
+                style={{ borderLeft: !n.read_at ? '4px solid var(--fc-blue-500)' : undefined }}>
+                <span className="fc-icon-badge flex-shrink-0" style={{ width: 36, height: 36, fontSize: '1rem', background: 'var(--fc-gradient-primary)' }}>
+                  <i className="bi bi-bell-fill" />
+                </span>
+                <div className="flex-grow-1">
+                  <div className="small fw-semibold">{n.notification_type?.replace(/_/g, ' ')}</div>
+                  {n.data?.message && <div className="small text-muted">{n.data.message}</div>}
+                  <div className="small text-muted mt-1">{timeAgo(n.created_at)}</div>
+                </div>
+                {!n.read_at && <span className="badge text-bg-primary" style={{ fontSize: 9 }}>NEW</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Inbox ─────────────────────────────────────────── */}
+      {dashTab === 'inbox' && (
+        <div className="row g-0" style={{ minHeight: 500 }}>
+          {/* Conversation list */}
+          <div className={`col-12 col-md-4 border-end ${activeConv ? 'd-none d-md-flex' : 'd-flex'} flex-column`}>
+            <div className="px-3 py-2 border-bottom">
+              <h2 className="h6 fw-bold mb-0">Messages</h2>
+            </div>
+            {convs.length === 0 ? (
+              <div className="p-4 text-center text-muted">
+                <i className="bi bi-chat-square-dots fs-3 d-block mb-2" />
+                <p className="small mb-0">No conversations yet.<br />Visit a player or agent profile to start one.</p>
+              </div>
+            ) : convs.map((conv) => {
+              const other = getOther(conv)
+              return (
+                <button key={conv.id} type="button"
+                  className={`w-100 text-start border-0 border-bottom px-3 py-3 d-flex align-items-center gap-3 ${activeConv?.id === conv.id ? 'bg-primary bg-opacity-10' : 'bg-transparent'}`}
+                  onClick={() => setActiveConv(conv)}>
+                  <span className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                    style={{ width: 38, height: 38, background: 'var(--fc-gradient-primary)', color: '#fff', fontSize: 15 }}>
+                    <i className="bi bi-person" />
+                  </span>
+                  <div className="min-w-0 flex-grow-1">
+                    <div className="d-flex justify-content-between">
+                      <span className="fw-semibold text-truncate" style={{ fontSize: 13, color: 'var(--fc-blue-700)' }}>
+                        {other?.full_name || 'Member'}
+                        {other?.verification_status === 'verified' && <i className="bi bi-patch-check-fill text-primary ms-1" style={{ fontSize: 11 }} />}
+                      </span>
+                      <span className="text-muted flex-shrink-0 ms-1" style={{ fontSize: 11 }}>{timeAgo(conv.last_message_at)}</span>
+                    </div>
+                    <div className="text-muted text-truncate" style={{ fontSize: 12 }}>{conv.subject || 'Direct message'}</div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Thread */}
+          <div className={`col-12 col-md-8 d-flex flex-column ${!activeConv ? 'd-none d-md-flex' : 'd-flex'}`}>
+            {!activeConv ? (
+              <div className="flex-grow-1 d-flex align-items-center justify-content-center text-muted">
+                <div className="text-center"><i className="bi bi-chat-square-text fs-2 d-block mb-2" /><p className="small">Select a conversation</p></div>
+              </div>
+            ) : (
+              <>
+                <div className="px-3 py-2 border-bottom d-flex align-items-center gap-2">
+                  <button className="btn btn-link p-0 d-md-none me-1 text-muted" type="button" onClick={() => setActiveConv(null)}><i className="bi bi-arrow-left" /></button>
+                  <span className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                    style={{ width: 32, height: 32, background: 'var(--fc-gradient-primary)', color: '#fff', fontSize: 13 }}><i className="bi bi-person" /></span>
+                  <div>
+                    <div className="fw-bold small">{getOther(activeConv)?.full_name || 'Member'}</div>
+                    {activeConv.subject && <div className="text-muted" style={{ fontSize: 11 }}>{activeConv.subject}</div>}
+                  </div>
+                </div>
+                <div className="flex-grow-1 overflow-auto px-3 py-3 d-flex flex-column gap-2" style={{ maxHeight: 400 }}>
+                  {messages.map((msg) => {
+                    const mine = msg.sender_id === user.id
+                    return (
+                      <div key={msg.id} className={`d-flex ${mine ? 'justify-content-end' : 'justify-content-start'}`}>
+                        <div className="px-3 py-2 rounded-3" style={{ maxWidth: '75%', background: mine ? 'var(--fc-gradient-primary)' : 'var(--bs-secondary-bg)', color: mine ? '#fff' : 'inherit', fontSize: 14 }}>
+                          <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                          <div style={{ fontSize: 11, opacity: .65, textAlign: 'right', marginTop: 2 }}>{timeAgo(msg.created_at)}</div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="px-3 py-2 border-top">
+                  <form onSubmit={sendMessage} className="d-flex gap-2">
+                    <input className="form-control form-control-sm" type="text" value={newMsg}
+                      onChange={(e) => setNewMsg(e.target.value)} placeholder="Write a message…" maxLength={10000} required style={{ fontSize: 13 }} />
+                    <button className="btn btn-primary btn-sm" type="submit" disabled={sending || !newMsg.trim()}>
+                      {sending ? <span className="spinner-border spinner-border-sm" /> : <i className="bi bi-send-fill" />}
+                    </button>
+                  </form>
+                  <p className="form-text mb-0">Never share personal contact details publicly.</p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
