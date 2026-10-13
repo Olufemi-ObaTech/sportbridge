@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import './Auth.css'
 import Dashboard from './Dashboard.jsx'
 import FeedPage from './FeedPage.jsx'
+import InboxPage from './InboxPage.jsx'
 import PaymentPage from './PaymentPage.jsx'
 import PlayerProfile from './PlayerProfile.jsx'
 import PlayerSearch from './PlayerSearch.jsx'
@@ -40,7 +41,7 @@ const roleCards = [
     title: 'For Players',
     heroTitle: 'Players',
     heroCopy: 'Free profile. Get discovered.',
-    copy: 'Create a free profile with photos, full-match videos and your CV. Go public and get discovered by verified clubs, academies and agents — no middleman required.',
+    copy: 'Register free and build a public profile with photos, video, and stats — visible to anyone searching for talent. No academy required.',
     action: 'Create your player profile',
   },
   {
@@ -49,8 +50,8 @@ const roleCards = [
     heroIcon: 'bi-building',
     title: 'For Clubs & Academies',
     heroTitle: 'Clubs ✓ Verified',
-    heroCopy: 'Showcase your squad to the world.',
-    copy: 'Create players, build your squad roster, post Player Needed & Staff Needed jobs, and showcase your verified club to scouts and agents worldwide.',
+    heroCopy: 'Showcase your roster to the world.',
+    copy: 'Showcase your squad, manage recruitment, post Player Needed and Staff Needed jobs — replacing spreadsheets with a structured, searchable pipeline.',
     action: 'Register your club / academy',
   },
   {
@@ -59,8 +60,8 @@ const roleCards = [
     heroIcon: 'bi-binoculars',
     title: 'For Agents & Scouts',
     heroTitle: 'Agents',
-    heroCopy: 'Scout the next generation.',
-    copy: 'Search verified players by position, age and region. Build a watchlist, post Player Positions Needed on behalf of clubs, and run verified tryout opportunities.',
+    heroCopy: 'Find verified talent. Build trust.',
+    copy: 'Search verified player profiles, build watchlists, and carry your licence number, verifying body, and a public trust score built from player ratings.',
     action: 'Register as an agent / scout',
   },
   {
@@ -69,8 +70,8 @@ const roleCards = [
     heroIcon: 'bi-clipboard2-pulse',
     title: 'For Coaches & Sporting Directors',
     heroTitle: 'Coaches',
-    heroCopy: 'Land your next role.',
-    copy: 'Browse coaching and management roles, apply with your verified profile, and recommend talented players directly to agents and clubs from your dashboard.',
+    heroCopy: 'Browse roles. Apply directly.',
+    copy: 'Browse coaching and management roles posted by verified clubs and academies, apply with your verified profile and CV.',
     action: 'Register as a coach / manager',
   },
 ]
@@ -745,7 +746,16 @@ function App() {
               <li className="nav-item">
                 <button className={`btn btn-link nav-link${view === 'feed' ? ' active' : ''}`} type="button"
                   onClick={() => { setView('feed'); setMenuOpen(false); window.scrollTo(0,0) }}>Feed</button>
-              </li>            </ul>
+              </li>
+              {user && (
+                <li className="nav-item">
+                  <button className={`btn btn-link nav-link${view === 'inbox' ? ' active' : ''}`} type="button"
+                    onClick={() => { setView('inbox'); setMenuOpen(false); window.scrollTo(0,0) }}>
+                    <i className="bi bi-chat-dots me-1" aria-hidden="true" />Inbox
+                  </button>
+                </li>
+              )}
+            </ul>
 
             <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-2">
               {/* Sport switcher / badge */}
@@ -905,6 +915,8 @@ function App() {
           <TryoutsPage supabase={supabase} user={user} onSignup={openSignup} />
         ) : view === 'feed' ? (
           <FeedPage supabase={supabase} user={user} onSignup={openSignup} />
+        ) : view === 'inbox' ? (
+          <InboxPage supabase={supabase} user={user} onSignup={openSignup} />
         ) : view === 'pricing' ? (
           <PaymentPage user={user} onSignup={openSignup} onBack={() => setView('home')} />
         ) : (
@@ -922,35 +934,44 @@ function App() {
                     {/* Badge */}
                     <span className="fc-hero-badge fc-animate-in">
                       <i className="bi bi-shield-check me-1" aria-hidden="true" />
-                      The World&apos;s #1 Verified Football Network
+                      Connecting the full sports talent pipeline — trust-first
                     </span>
 
                     {/* Headline */}
                     <h1 id="home-heading" className="display-4 fw-bold mt-3 mb-3 fc-animate-in fc-delay-1">
-                      Stop Chasing Fake Agents.{' '}
-                      <span className="fc-gradient-text">Get Verified.</span>
+                      Your profile takes 5 minutes.{' '}
+                      <span className="fc-gradient-text">Your opportunity starts today.</span>
                     </h1>
 
-                    {/* Sub-headline */}
-                    <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '56ch' }}>
-                      SportBridge connects <strong style={{ color: '#fff' }}>Verified Free Players</strong> with{' '}
-                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong> in Africa and across The World.
-                      Full CV + Full-Match Video + highlights + Stats + Secure Unlock {' '}
-                      <em>not just highlights.</em>
+                    {/* Sub-headline — exact spec language */}
+                    <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '60ch' }}>
+                      SportBridge connects <strong style={{ color: '#fff' }}>players, academies, clubs, agents/scouts, and coaches</strong> across
+                      football in Africa and worldwide — replacing WhatsApp groups, scattered contacts, and unverified "agents"
+                      with a <strong style={{ color: '#fff' }}>structured, trust-first platform</strong>.
                     </p>
+
+                    {/* Anti-scam warning — prominent on hero */}
+                    <div className="d-flex align-items-start gap-2 rounded-3 px-3 py-2 mt-3 fc-animate-in fc-delay-2"
+                      style={{ background: 'rgba(220,53,69,.12)', border: '1.5px solid rgba(220,53,69,.35)', fontSize: 13, maxWidth: 480 }}>
+                      <i className="bi bi-exclamation-triangle-fill text-danger flex-shrink-0 mt-1" aria-hidden="true" />
+                      <span style={{ color: '#ffcdd2', fontWeight: 600 }}>
+                        ⚠️ Never pay an agent or scout to arrange a trial. Legitimate agents never charge players.
+                        SportBridge verifies agent licences — always check the badge.
+                      </span>
+                    </div>
 
                     {/* Comparison pills */}
                     <div className="d-flex flex-wrap gap-2 mt-4 fc-animate-in fc-delay-2" role="list" aria-label="SportBridge vs other platforms">
                       {[
-                        { vs: 'Social Media', vsText: 'Edited highlights only',          sbText: 'Verified CV + Full Match Video + Availability', icon: 'bi-camera-video' },
-                        { vs: 'Job sites',  vsText: 'Corporate jobs only',            sbText: 'Football jobs by Position · Age Group · Region',  icon: 'bi-briefcase' },
-                        { vs: 'Groups',        vsText: 'Scams & phone number leaks',    sbText: 'NIN Verified · Video Hash · No Leaked Contacts',   icon: 'bi-shield-lock' },
+                        { vs: 'WhatsApp groups',  vsText: 'Scams, no verification',        sbText: 'Verified profiles · Licence badges · Trust scores', icon: 'bi-shield-lock' },
+                        { vs: 'Spreadsheets',     vsText: 'Manual, scattered recruitment', sbText: 'Structured talent pipeline for academies',           icon: 'bi-building' },
+                        { vs: 'Social media',     vsText: 'Highlights only, no stats',     sbText: 'Full CV + video + stats + secure contact unlock',    icon: 'bi-camera-video' },
                       ].map(({ vs, vsText, sbText, icon }) => (
                         <div
                           key={vs}
                           role="listitem"
                           className="d-flex align-items-start gap-2 rounded-3 px-3 py-2"
-                          style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.13)', maxWidth: 360, fontSize: 12 }}
+                          style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.13)', maxWidth: 380, fontSize: 12 }}
                         >
                           <i className={`bi ${icon} mt-1 flex-shrink-0`} style={{ color: 'var(--fc-gold-400)', fontSize: 14 }} aria-hidden="true" />
                           <div>
@@ -966,7 +987,7 @@ function App() {
                     <div className="d-flex flex-wrap gap-2 mt-4 fc-animate-in fc-delay-3">
                       <button type="button" className="btn btn-secondary btn-lg" onClick={() => openSignup('player')}>
                         <i className="bi bi-person-plus me-2" aria-hidden="true" />
-                        Create Player Profile
+                        Join Free — Build Your Profile
                       </button>
                       <a href="#players" className="btn btn-outline-light btn-lg">
                         <i className="bi bi-search me-2" aria-hidden="true" />
@@ -1173,6 +1194,7 @@ function App() {
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('jobs'); window.scrollTo(0,0) }}>Jobs</button></li>
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('tryouts'); window.scrollTo(0,0) }}>Tryouts</button></li>
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('feed'); window.scrollTo(0,0) }}>Feed</button></li>
+                {user && <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('inbox'); window.scrollTo(0,0) }}>Inbox</button></li>}
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('pricing'); window.scrollTo(0,0) }}>Pricing</button></li>
               </ul>
             </div>
@@ -1208,7 +1230,11 @@ function App() {
           </div>
           <hr className="border-light opacity-25" />
           <p className="small mb-2 fw-bold" style={{ maxWidth: '70ch' }}>
-            SportBridge connects players, academies, agents, scouts and coaches, but is not a party to any agreement between them and does not process payments between users. Credentials shown on profiles are self-reported unless marked with a Verified badge. Always independently verify who you are dealing with, and never send money to arrange a trial or introduction.
+            SportBridge connects players, academies, clubs, agents/scouts, and coaches across football —
+            replacing informal WhatsApp groups and scattered contacts with a structured, trust-first platform.
+            Credentials are self-reported unless marked with a Verified ✓ badge.
+            {' '}<span style={{ color: '#ffcdd2' }}>⚠️ Never pay an agent or scout to arrange a trial — legitimate agents never charge players.</span>
+            {' '}Always independently verify credentials before engaging.
           </p>
           <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
             <p className="small mb-0 text-white-50">&copy; {new Date().getFullYear()} SportBridge. All rights reserved.</p>
