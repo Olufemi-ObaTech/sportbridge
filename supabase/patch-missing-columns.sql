@@ -9,6 +9,8 @@ alter table public.profiles
   add column if not exists username           text,
   add column if not exists phone              text,
   add column if not exists avatar_path        text,
+  add column if not exists country            text,
+  add column if not exists region              text,
   add column if not exists sport              text not null default 'football',
   add column if not exists status             text not null default 'active',
   add column if not exists referred_by        uuid references public.profiles(id) on delete set null,
@@ -157,7 +159,10 @@ grant select (
 
 -- profiles — add verification_status to the update grant so VerifyForm can set it
 revoke update on public.profiles from authenticated;
-grant update (full_name, username, avatar_path, phone, updated_at, role, status, verification_status) on public.profiles to authenticated;
+grant update (
+  full_name, username, avatar_path, phone, country, region, updated_at,
+  role, status, verification_status
+) on public.profiles to authenticated;
 
 
 select 'Patch applied successfully.' as result;

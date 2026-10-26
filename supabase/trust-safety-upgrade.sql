@@ -9,9 +9,13 @@ alter table public.profiles
     check (role in ('player','coach','agent','academy','super_admin')),
   add column if not exists status text not null default 'active'
     check (status in ('pending','active','suspended','denied')),
+  add column if not exists country text,
+  add column if not exists region text,
   add column if not exists verification_status text not null default 'unverified'
     check (verification_status in ('unverified','pending','verified','rejected')),
   add column if not exists verification_badge text;
+
+grant update (country, region) on public.profiles to authenticated;
 
 create or replace view public.public_profile_badges
 with (security_barrier = true)
