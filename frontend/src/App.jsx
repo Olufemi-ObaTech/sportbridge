@@ -1059,9 +1059,9 @@ function App() {
 
                     {/* Sub-headline */}
                     <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '56ch' }}>
-                      SportBridge connects <strong style={{ color: '#fff' }}>Verified Players</strong> with{' '}
-                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Managers</strong>{' '}
-                      <span>all across the world.</span>{' '}
+                      SportBridge connects <strong style={{ color: '#fff' }}>Verified Free Players</strong> with{' '}
+                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong>{' '}
+                      <span>in Africa and across The World.</span>{' '}
                       <span>Full CV + Full-Match Video + highlights + Stats + Secure Unlock</span>{' '}
                       <em>not just highlights.</em>
                     </p>

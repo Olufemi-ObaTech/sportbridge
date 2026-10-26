@@ -96,6 +96,15 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
+      - name: Verify Netlify credentials
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ]; then
+            echo "::error::NETLIFY_AUTH_TOKEN is missing. Add it as a GitHub Actions secret to enable Netlify deployment."
+            exit 1
+          fi
+
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v3.0
         with:

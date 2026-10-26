@@ -264,7 +264,7 @@ const entries = [
   ['Get Verified.', 'Faites-vous vérifier.', 'Obtenha verificação.', 'احصل على التوثيق.', 'Verifícate.'],
   ['SportBridge connects', 'SportBridge met en relation', 'O SportBridge liga', 'يربط SportBridge بين', 'SportBridge conecta'],
   ['with', 'avec', 'com', 'مع', 'con'],
-  ['in Africa and across the world.', 'en Afrique et dans le monde entier.', 'em África e em todo o mundo.', 'في أفريقيا وحول العالم.', 'en África y en todo el mundo.'],
+  ['in Africa and across The World.', 'en Afrique et dans le monde entier.', 'em África e em todo o mundo.', 'في أفريقيا وحول العالم.', 'en África y en todo el mundo.'],
   ['Full CV + Full-Match Video + highlights + Stats + Secure Unlock', 'CV complet + vidéo intégrale du match + moments forts + statistiques + accès sécurisé', 'CV completo + vídeo integral do jogo + destaques + estatísticas + acesso seguro', 'سيرة ذاتية كاملة + فيديو المباراة كاملة + أبرز اللقطات + الإحصائيات + فتح آمن', 'CV completo + vídeo del partido completo + mejores momentos + estadísticas + acceso seguro'],
   ['not just highlights.', 'pas seulement des moments forts.', 'não apenas destaques.', 'وليس مجرد لقطات بارزة.', 'no solo mejores momentos.'],
   ['Social Media', 'Réseaux sociaux', 'Redes sociais', 'وسائل التواصل الاجتماعي', 'Redes sociales'],

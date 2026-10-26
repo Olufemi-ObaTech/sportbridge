@@ -50,21 +50,22 @@ After saving, **trigger a redeploy** (Deploys → Trigger deploy → Deploy site
 
 ---
 
-## Step 3 — GitHub secrets (for CI builds)
+## Step 3 — GitHub Actions secrets (for CI and Netlify deployment)
 
 In **GitHub → repo Settings → Secrets and variables → Actions → New repository secret**:
 
 | Secret name | Value |
 |---|---|
 | `VITE_SUPABASE_ANON_KEY` | `eyJ...` (anon key from Supabase) |
+| `NETLIFY_AUTH_TOKEN` | A Netlify personal access token used only by the GitHub Actions deploy job |
 
-This lets the GitHub Actions `build-frontend` job build with real credentials so the CI build matches the Netlify production build exactly. The `VITE_SUPABASE_URL` is non-secret and is hardcoded in the workflow.
+The workflow needs both secrets: `VITE_SUPABASE_ANON_KEY` for the frontend build and `NETLIFY_AUTH_TOKEN` to publish to Netlify. Create the token in Netlify account settings and store it directly in GitHub Actions; do not put it in source files or paste it into chat. The `VITE_SUPABASE_URL` and Netlify site ID are configured in the workflow.
 
 ---
 
 ## Step 4 — Link Netlify to GitHub
 
-Netlify should already be connected. If not:
+The repository's GitHub Actions workflow builds and deploys the frontend to the configured Netlify site. If you also enable Netlify's Git-provider builds, disable one of the deployment paths to avoid duplicate production deploys. To configure Netlify's Git integration instead:
 1. **Netlify → Sites → sportbridgeng → Site configuration → Build & deploy → Continuous deployment**.
 2. Click **Link to a Git provider**, choose GitHub, and select `Olufemi-ObaTech/sportbridge`.
 3. Set **Branch to deploy** to `main`.
