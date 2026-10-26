@@ -93,6 +93,9 @@ alter table public.jobs
   add column if not exists staff_role         text,
   add column if not exists age_group          text,
   add column if not exists region             text,
+  add column if not exists country            text,
+  add column if not exists nationality        text,
+  add column if not exists work_type          text,
   add column if not exists budget             integer,
   add column if not exists salary             integer,
   add column if not exists free_agent_only    boolean not null default false,
@@ -101,6 +104,11 @@ alter table public.jobs
   add column if not exists club_cv_url        text,
   add column if not exists is_verified        boolean not null default false,
   add column if not exists posted_by          uuid references public.profiles(id) on delete set null;
+
+-- ── feed_posts ────────────────────────────────────────────────────────────────
+alter table public.feed_posts
+  add column if not exists training_duration_minutes integer
+    check (training_duration_minutes is null or training_duration_minutes > 0);
 
 -- ── applications ──────────────────────────────────────────────────────────────
 alter table public.applications
@@ -153,7 +161,8 @@ grant select (
   title, description, job_type, player_position, staff_role,
   role_type, requirements, location, salary_min, salary_max, salary,
   currency, contract_type, application_deadline, age_group, region,
-  budget, free_agent_only, license_required, facility_pictures,
+  country, nationality, work_type, budget, free_agent_only,
+  license_required, facility_pictures,
   is_verified, sport, status, created_at
 ) on public.jobs to anon;
 

@@ -17,6 +17,25 @@ alter table public.profiles
 
 grant update (country, region) on public.profiles to authenticated;
 
+-- Columns selected by the feed and job-board pages in older installations.
+alter table public.jobs
+  add column if not exists country text,
+  add column if not exists nationality text,
+  add column if not exists work_type text;
+
+revoke select on public.jobs from anon;
+grant select (
+  id, club_id, academy_id, posted_by_user_id, posted_by, title, description,
+  job_type, player_position, staff_role, role_type, requirements, location,
+  salary_min, salary_max, salary, currency, contract_type, application_deadline,
+  age_group, region, country, nationality, work_type, budget, free_agent_only,
+  license_required, facility_pictures, is_verified, sport, status, created_at
+) on public.jobs to anon;
+
+alter table public.feed_posts
+  add column if not exists training_duration_minutes integer
+    check (training_duration_minutes is null or training_duration_minutes > 0);
+
 create or replace view public.public_profile_badges
 with (security_barrier = true)
 as

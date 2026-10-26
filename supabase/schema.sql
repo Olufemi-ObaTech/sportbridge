@@ -1646,7 +1646,13 @@ grant select (
 revoke select on public.clubs from anon;
 grant select (id, name, slug, sports, country, state, about, website, logo_path, cover_image_path, status, verified_badge, created_at) on public.clubs to anon;
 revoke select on public.jobs from anon;
-grant select (id, club_id, academy_id, posted_by_user_id, posted_by, title, description, job_type, player_position, staff_role, role_type, requirements, location, salary_min, salary_max, salary, currency, contract_type, application_deadline, age_group, region, budget, free_agent_only, license_required, facility_pictures, is_verified, sport, status, created_at) on public.jobs to anon;
+grant select (
+  id, club_id, academy_id, posted_by_user_id, posted_by, title, description,
+  job_type, player_position, staff_role, role_type, requirements, location,
+  salary_min, salary_max, salary, currency, contract_type, application_deadline,
+  age_group, region, country, nationality, work_type, budget, free_agent_only,
+  license_required, facility_pictures, is_verified, sport, status, created_at
+) on public.jobs to anon;
 grant select, insert, update, delete on public.academy_profiles, public.agent_profiles, public.coach_profiles, public.teams, public.player_private, public.coach_private, public.academy_verifications, public.agent_verifications, public.media_assets, public.feed_posts, public.post_comments, public.post_likes, public.watchlists, public.access_requests, public.conversations, public.messages, public.agent_ratings, public.agent_recommendations, public.agent_documents, public.reports, public.admin_logs, public.saved_searches, public.trials, public.try_outs, public.try_out_interests, public.push_subscriptions, public.academy_player_verifications to authenticated;
 grant select (id, user_id, club_id, sports, year_founded, leagues, languages, linkedin, created_at, updated_at) on public.academy_profiles to authenticated;
 grant select (id, user_id, agency_name, sport, nationality, gender, experience_years, regions, about, achievements, photo_path, cover_image_path, linkedin, is_public, verified_badge, created_at, updated_at) on public.agent_profiles to anon, authenticated;
