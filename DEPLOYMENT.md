@@ -21,10 +21,11 @@ The React frontend in `frontend/` is the production app. The Laravel/PHP applica
    - **Project URL** — `https://pzfohowzaeunywaqukwe.supabase.co` (already set in the codebase)
    - **anon / public key** — the `eyJ...` token labelled *anon* or *publishable*. **Do not copy the service_role key.**
 4. Go to **Authentication → URL Configuration**:
-   - Set **Site URL** to `https://www.sportbridge.com.ng`
+   - Set **Site URL** to `https://sportbridge.online`
    - Add to **Redirect URLs**:
      ```
-     https://www.sportbridge.com.ng/**
+     https://sportbridge.online/**
+     https://www.sportbridge.online/**
      https://*.netlify.app/**
      http://localhost:5173/**
      ```
@@ -76,16 +77,15 @@ Every push to `main` on GitHub now triggers both:
 
 ---
 
-## Step 5 — Custom domain (`sportbridge.com.ng`)
+## Step 5 — Custom domain (`sportbridge.online`)
 
-The `netlify.toml` already has HTTP→HTTPS redirects for `sportbridge.com.ng` and `www.sportbridge.com.ng`.
+Add `sportbridge.online` and `www.sportbridge.online` to the `sportbridgeng` site's domain management page. Set `sportbridge.online` as the primary hostname if both should be used. Netlify manages HTTPS and the redirect from the alternate hostname.
 
 At your domain registrar:
-1. Add an **A record**: `@` → Netlify's load balancer IP (shown in Netlify → Domain management).
-2. Add a **CNAME record**: `www` → `sportbridgeng.netlify.app`.
-3. In Netlify → Domain management, add both `sportbridge.com.ng` and `www.sportbridge.com.ng`. Set `www` as the primary domain.
-4. Wait for DNS propagation (up to 48 h), then Netlify auto-provisions a TLS certificate.
-5. Once HTTPS is live, go back to **Supabase → Auth → URL Configuration** and confirm `https://www.sportbridge.com.ng` is the Site URL.
+1. Copy the exact DNS records shown by Netlify after adding the domains. Do not guess A/ALIAS/CNAME targets; they can vary by site and provider.
+2. Add the records in the registrar's DNS settings. Preserve unrelated records such as email MX/TXT records.
+3. Wait for DNS propagation, then confirm Netlify reports the domain as verified and provisions a TLS certificate.
+4. In **Supabase → Auth → URL Configuration**, set `https://sportbridge.online` as the Site URL and allow both production hostnames as redirect URLs.
 
 ---
 

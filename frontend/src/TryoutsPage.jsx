@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { FOOTBALL_POSITIONS, AGE_GROUPS, REGIONS } from './lib/features'
+import VerifiedBadge from './VerifiedBadge.jsx'
 
 function SkeletonCard() {
   return (
@@ -22,6 +23,7 @@ const BLANK = { q: '', position: '', ageGroup: '', region: '', gender: '', freeO
 export default function TryoutsPage({ supabase, user, onSignup }) {
   const [tryouts,    setTryouts]   = useState([])
   const [loading,    setLoading]   = useState(true)
+  const [loadError,  setLoadError] = useState('')
   const [total,      setTotal]     = useState(null)
   const [filters,    setFilters]   = useState(BLANK)
   const [drawerOpen, setDrawerOpen]= useState(false)
@@ -36,14 +38,19 @@ export default function TryoutsPage({ supabase, user, onSignup }) {
   }, [drawerOpen])
 
   useEffect(() => {
-    if (!supabase) { setLoading(false); return }
+    if (!supabase) {
+      setLoadError('Tryout listings are unavailable because the database is not configured.')
+      setLoading(false)
+      return
+    }
     let alive = true
     setLoading(true)
+    setLoadError('')
 
     const run = async () => {
       let q = supabase
         .from('opportunities')
-        .select('id, title, position, age_group, region, venue, tryout_date, gender, description, fee_amount, fee_breakdown, status, is_fee_flagged, created_at, posted_by, profiles!inner(full_name, verification_status)', { count: 'exact' })
+        .select('id, title, position, age_group, region, venue, tryout_date, gender, description, fee_amount, fee_breakdown, status, is_fee_flagged, created_at, posted_by, poster_badge:public_profile_badges(role, verification_status, verification_badge)', { count: 'exact' })
         .eq('status', 'open')
         .eq('is_fee_flagged', false)
 
@@ -57,7 +64,14 @@ export default function TryoutsPage({ supabase, user, onSignup }) {
       q = q.order('tryout_date', { ascending: true, nullsFirst: false }).limit(60)
       const { data, count, error } = await q
       if (!alive) return
-      if (!error) { setTryouts(data ?? []); setTotal(count ?? data?.length ?? 0) }
+      if (error) {
+        setTryouts([])
+        setTotal(null)
+        setLoadError(`Could not load tryout listings: ${error.message}`)
+      } else {
+        setTryouts(data ?? [])
+        setTotal(count ?? data?.length ?? 0)
+      }
       setLoading(false)
     }
     run()
@@ -123,8 +137,7 @@ export default function TryoutsPage({ supabase, user, onSignup }) {
         <div>
           <strong className="d-block mb-1">⚠️ SportBridge Anti-Scam Guarantee</strong>
           <span className="small">
-            SportBridge <strong>never charges tryout fees</strong>. Any opportunity asking you to &ldquo;pay to be selected&rdquo; or offering &ldquo;guaranteed selection&rdquo; is a scam.
-            All paid tryouts are reviewed by our team. Pay only at the venue, with a receipt.{' '}
+          SportBridge does not collect tryout fees. Organizer fees are reviewed before publication, but a listing or verified badge is not a guarantee. Never pay to be selected or accept guaranteed-selection claims.{' '}
             <button className="btn btn-link p-0 small" type="button" onClick={() => user ? null : onSignup?.()}>
               Report a suspicious post
             </button>
@@ -185,6 +198,8 @@ export default function TryoutsPage({ supabase, user, onSignup }) {
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
           {Array.from({ length: 6 }).map((_, i) => <div className="col" key={i}><SkeletonCard /></div>)}
         </div>
+      ) : loadError ? (
+        <div className="alert alert-danger" role="alert">{loadError}</div>
       ) : tryouts.length === 0 ? (
         <div className="fc-empty-state">
           <i className="bi bi-calendar2-week display-4 text-muted d-block mb-3" />
@@ -197,8 +212,7 @@ export default function TryoutsPage({ supabase, user, onSignup }) {
           {tryouts.map((t) => {
             const isFree     = (t.fee_amount ?? 0) === 0
             const daysAway   = t.tryout_date ? Math.ceil((new Date(t.tryout_date) - new Date()) / 86400000) : null
-            const posterName = t.profiles?.full_name ?? 'Organiser'
-            const verified   = t.profiles?.verification_status === 'verified'
+            const verified = t.poster_badge?.verification_status === 'verified'
 
             return (
               <div className="col" key={t.id}>
@@ -230,13 +244,12 @@ export default function TryoutsPage({ supabase, user, onSignup }) {
                     {t.venue  && <span><i className="bi bi-building me-1" aria-hidden="true" />{t.venue}</span>}
                   </div>
 
-                  {/* Fee breakdown for paid tryouts */}
-                  {!isFree && t.fee_breakdown && (
-                    <div className="alert alert-warning py-2 small mb-2">
-                      <i className="bi bi-info-circle me-1" />
-                      <strong>Fee breakdown:</strong> {t.fee_breakdown}
-                    </div>
-                  )}
+                  <div className={`alert ${isFree ? 'alert-success' : 'alert-warning'} py-2 small mb-2`} role="note">
+                    <i className={`bi ${isFree ? 'bi-check-circle' : 'bi-exclamation-triangle'} me-1`} aria-hidden="true" />
+                    {isFree
+                      ? 'No tryout fee is listed. Confirm the terms directly before attending.'
+                      : `Paid tryout — ₦${t.fee_amount.toLocaleString()}. SportBridge does not collect or guarantee this fee. Never pay to be selected.${t.fee_breakdown ? ` Fee details: ${t.fee_breakdown}` : ''}`}
+                  </div>
 
                   <p className="small text-muted mb-3" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {t.description}
@@ -245,11 +258,16 @@ export default function TryoutsPage({ supabase, user, onSignup }) {
                   {/* Organiser */}
                   <div className="d-flex align-items-center gap-2 mt-auto pt-2 border-top">
                     <i className="bi bi-person-circle text-muted" aria-hidden="true" />
-                    <span className="small text-muted">{posterName}</span>
+                    <span className="small text-muted">
+                      {verified ? 'Verified organiser' : 'Organiser'}
+                    </span>
                     {verified && (
-                      <span className="badge text-bg-success ms-auto" style={{ fontSize: 10 }}>
-                        <i className="bi bi-patch-check-fill me-1" />Verified
-                      </span>
+                      <VerifiedBadge
+                        status="verified"
+                        role={t.poster_badge?.role}
+                        label={t.poster_badge?.verification_badge}
+                        className="ms-auto"
+                      />
                     )}
                   </div>
 

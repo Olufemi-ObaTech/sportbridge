@@ -127,11 +127,19 @@ create index if not exists jobs_public_listing_idx
 -- Players — expand anon grant to include Sprint 2 columns
 revoke select on public.players from anon;
 grant select (
-  id, display_name, position, age, country, nationality, gender, bio, sport,
-  primary_photo_path, is_public, status, region, preferred_foot, foot,
-  age_group, availability, stats, achievements_data, views_count,
-  current_club, created_at
+  id, profile_id, display_name, position, secondary_position, age, country,
+  nationality, gender, bio, sport, primary_photo_path, is_public, status,
+  region, preferred_foot, foot, dominant_hand, height_cm, weight_kg,
+  age_group, availability, stats, achievements, achievements_data, linkedin,
+  views_count, current_club, created_at
 ) on public.players to anon;
+grant select (
+  id, profile_id, academy_id, display_name, position, secondary_position,
+  age, country, nationality, gender, bio, sport, primary_photo_path,
+  is_public, status, region, preferred_foot, foot, dominant_hand, height_cm,
+  weight_kg, age_group, availability, stats, achievements, achievements_data,
+  linkedin, views_count, current_club, created_at
+) on public.players to authenticated;
 
 -- Allow authenticated users to increment the view counter
 grant update (views_count) on public.players to authenticated;

@@ -12,26 +12,10 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import DisputeForm from './DisputeForm.jsx'
+import VerifiedBadge from './VerifiedBadge.jsx'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-
-function VerifiedBadge({ status, size = 'sm' }) {
-  if (status === 'verified') {
-    return (
-      <span className={`badge text-bg-success d-inline-flex align-items-center gap-1 ${size === 'lg' ? 'px-3 py-2 fs-6' : 'px-2 py-1'}`}>
-        <i className="bi bi-patch-check-fill" aria-hidden="true" />
-        Verified Player
-      </span>
-    )
-  }
-  return (
-    <span className={`badge text-bg-secondary d-inline-flex align-items-center gap-1 ${size === 'lg' ? 'px-3 py-2 fs-6' : 'px-2 py-1'}`}
-      style={{ opacity: .7 }}>
-      <i className="bi bi-patch-question" aria-hidden="true" />
-      Unverified
-    </span>
-  )
-}
 
 function AvailabilityBadge({ availability }) {
   const map = {
@@ -165,11 +149,11 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
   const [activeTab,   setActiveTab]   = useState('history')
   const [loading,     setLoading]     = useState(true)
   const [error,       setError]       = useState('')
-  const [unlocked,    setUnlocked]    = useState(false)
-  const [unlocking,   setUnlocking]   = useState(false)
-  const [reported,    setReported]    = useState(false)
-  const [reporting,   setReporting]   = useState(false)
-  const [reportDone,  setReportDone]  = useState(false)
+  const [unlocked,      setUnlocked]      = useState(false)
+  const [unlocking,     setUnlocking]     = useState(false)
+  const [viewerVerified, setViewerVerified] = useState(false)
+  const [unlockError,    setUnlockError]    = useState('')
+  const [showDispute,   setShowDispute]   = useState(false)
 
   useEffect(() => {
     if (!supabase || !playerId) { setLoading(false); return }
@@ -183,7 +167,7 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
                    height_cm, weight_kg, current_club, achievements, achievements_data,
                    linkedin, views_count, availability, region, age_group, stats,
                    primary_photo_path, profile_id,
-                   profiles!inner(id, full_name, email, verification_status)`)
+                   profile_badge:public_profile_badges(role, verification_status, verification_badge)`)
           .eq('id', playerId)
           .single(),
         supabase.from('player_history')
@@ -200,15 +184,29 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
       if (pe) { setError(pe.message); setLoading(false); return }
 
       setPlayer(p)
-      setProfile(p.profiles)
+      setProfile(p.profile_badge)
       setHistory(ph ?? [])
       setMedia(m ?? [])
 
       // Check if current user has unlocked contact
       if (user && supabase) {
-        const { data: uc } = await supabase.from('contact_unlocks')
-          .select('id').eq('unlocker_id', user.id).eq('player_id', playerId).maybeSingle()
-        if (alive) setUnlocked(Boolean(uc))
+        const [{ data: uc, error: unlockReadError }, { data: viewerProfile, error: viewerProfileError }] = await Promise.all([
+          supabase.from('contact_unlocks')
+            .select('id').eq('unlocker_id', user.id).eq('player_id', playerId).maybeSingle(),
+          supabase.from('profiles')
+            .select('verification_status').eq('id', user.id).maybeSingle(),
+        ])
+        if (alive) {
+          setUnlocked(Boolean(uc))
+          setViewerVerified(viewerProfile?.verification_status === 'verified')
+          if (unlockReadError) setUnlockError(`Could not check contact access: ${unlockReadError.message}`)
+          else if (viewerProfileError) setUnlockError(`Could not confirm your verification status: ${viewerProfileError.message}`)
+          else setUnlockError('')
+        }
+      } else {
+        setUnlocked(false)
+        setViewerVerified(false)
+        setUnlockError('')
       }
 
       // Increment view count (fire-and-forget, no await needed)
@@ -223,25 +221,41 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
 
   const handleUnlock = async () => {
     if (!user) { onSignup?.('player'); return }
+    if (!supabase) {
+      setUnlockError('Contact access is unavailable because the database is not configured.')
+      return
+    }
+    if (player?.profile_id === user.id) {
+      setUnlockError('You cannot unlock your own player profile.')
+      return
+    }
+    if (!viewerVerified) {
+      setUnlockError('Identity verification must be approved before contact can be unlocked.')
+      return
+    }
     setUnlocking(true)
-    // In production: integrate payment. For demo, free unlock for verified users.
-    const { error: ue } = await supabase.from('contact_unlocks').insert({ unlocker_id: user.id, player_id: playerId })
-    setUnlocking(false)
-    if (!ue) setUnlocked(true)
+    setUnlockError('')
+    try {
+      const { error: ue } = await supabase.from('contact_unlocks').upsert(
+        { unlocker_id: user.id, player_id: playerId },
+        { onConflict: 'unlocker_id,player_id', ignoreDuplicates: true },
+      )
+      if (ue) {
+        setUnlockError(`Contact unlock failed: ${ue.message}`)
+        return
+      }
+      setUnlocked(true)
+    } catch (unlockFailure) {
+      const message = unlockFailure instanceof Error ? unlockFailure.message : 'Unexpected error.'
+      setUnlockError(`Contact unlock failed: ${message}`)
+    } finally {
+      setUnlocking(false)
+    }
   }
 
-  const handleReport = async () => {
+  const handleReport = () => {
     if (!user) { onSignup?.(); return }
-    setReporting(true)
-    await supabase.from('reports').insert({
-      reporter_id:      user.id,
-      reported_user_id: player.profile_id,
-      reason:           'fake_profile',
-      details:          'Reported via player profile page.',
-    })
-    setReporting(false)
-    setReported(true)
-    setTimeout(() => setReportDone(true), 100)
+    setShowDispute(true)
   }
 
   if (loading) return (
@@ -266,7 +280,7 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
   const videos     = media.filter((m) => m.asset_type === 'video' || m.asset_type === 'youtube')
   const cvAsset    = media.find((m) => m.asset_type === 'document')
   const vsStatus   = profile?.verification_status ?? 'unverified'
-  const fullName   = player.display_name || profile?.full_name || 'Player'
+  const fullName   = player.display_name || 'Player'
   const foot       = player.preferred_foot || player.foot
 
   const TABS = [
@@ -307,7 +321,7 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
               <div className="flex-grow-1 min-w-0">
                 <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
                   <h1 className="h3 fw-bold mb-0" style={{ color: 'var(--fc-blue-700)' }}>{fullName}</h1>
-                  <VerifiedBadge status={vsStatus} size="sm" />
+                  <VerifiedBadge status={vsStatus} role={profile?.role} label={profile?.verification_badge} className="px-2 py-1" />
                 </div>
 
                 <div className="d-flex flex-wrap gap-2 mb-3">
@@ -403,6 +417,7 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
           {/* Tab 2: Statistics */}
           {activeTab === 'stats' && (
             <div className="card p-4">
+              <p className="small text-muted">Player-reported statistics; SportBridge has not independently verified these figures.</p>
               <StatRow label="Height"           value={player.height_cm ? `${player.height_cm} cm` : null} />
               <StatRow label="Weight"           value={player.weight_kg ? `${player.weight_kg} kg` : null} />
               <StatRow label="Preferred Foot"   value={foot ? foot.charAt(0).toUpperCase() + foot.slice(1) : null} />
@@ -422,11 +437,11 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
           {activeTab === 'videos' && (
             <div>
               {/* Video sub-tabs */}
-              {['highlights', 'full_match', 'training'].map((vtype) => {
-                const vtLabel = { highlights: '90 sec Highlights', full_match: 'Full Match (5 min uncut)', training: 'Training Clip' }[vtype]
-                const vtVids  = videos.filter((v) => (v.title ?? '').toLowerCase().includes(vtype.replace('_', ' ')) || v.asset_type === vtype)
+              {['highlight', 'full_match', 'training'].map((vtype) => {
+                const vtLabel = { highlight: '90 sec Highlights', full_match: 'Full Match (uncut footage)', training: 'Training Clip' }[vtype]
+                const vtVids  = videos.filter((v) => v.video_kind === vtype || (v.title ?? '').toLowerCase().includes(vtype.replace('_', ' ')))
                 const allVids = videos // fallback: show all if no sub-type match
-                const list    = vtVids.length ? vtVids : (vtype === 'highlights' ? allVids : [])
+                const list    = vtVids.length ? vtVids : (vtype === 'highlight' ? allVids : [])
                 return (
                   <div key={vtype} className="mb-4">
                     <h3 className="h6 fw-bold mb-3 d-flex align-items-center gap-2">
@@ -502,9 +517,11 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
                   <i className="bi bi-lock-fill flex-shrink-0 mt-1" aria-hidden="true" />
                   <div>
                     <div className="fw-semibold">Contact unlock required</div>
-                    <div className="small text-muted">Unlock this profile to download the full CV.</div>
-                    <button className="btn btn-sm btn-warning mt-2" type="button" onClick={handleUnlock} disabled={unlocking}>
-                      {unlocking ? 'Unlocking…' : 'Unlock Profile (Free for Demo)'}
+                    <div className="small text-muted">Identity verification is required. Payment and contact sharing are not active in this test build.</div>
+                    {unlockError && <div className="alert alert-danger py-2 mt-2 small" role="alert">{unlockError}</div>}
+                    {!viewerVerified && <div className="small text-warning-emphasis mt-2">Verify your identity and wait for admin approval to continue.</div>}
+                    <button className="btn btn-sm btn-warning mt-2" type="button" onClick={handleUnlock} disabled={unlocking || !viewerVerified}>
+                      {unlocking ? 'Unlocking…' : 'Unlock Profile (Test Mode)'}
                     </button>
                   </div>
                 </div>
@@ -560,25 +577,26 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
               <div>
                 <div className="alert alert-success py-2 mb-2 small d-flex gap-2 align-items-center">
                   <i className="bi bi-check-circle-fill" aria-hidden="true" />
-                  Contact unlocked — send a message via inbox.
+                  Access recorded for testing. Phone numbers and email addresses remain private; payments and direct messaging are not active.
                 </div>
-                <button className="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2" type="button">
-                  <i className="bi bi-chat-dots-fill" aria-hidden="true" />
-                  Send Message
-                </button>
               </div>
             ) : (
               <div>
                 <p className="small text-muted mb-3">
-                  Phone numbers and emails are never shown publicly.
-                  Unlock to access full contact via secure inbox.
+                  Identity verification is required. This test build does not reveal phone numbers or email addresses, and payments are inactive.
                 </p>
+                {unlockError && <div className="alert alert-danger py-2 small" role="alert">{unlockError}</div>}
+                {!viewerVerified && (
+                  <div className="alert alert-warning py-2 small" role="status">
+                    Complete identity verification and wait for admin approval before requesting access.
+                  </div>
+                )}
                 <button
                   className="btn btn-warning w-100 d-flex align-items-center justify-content-center gap-2 fw-bold"
-                  type="button" onClick={handleUnlock} disabled={unlocking}
+                  type="button" onClick={handleUnlock} disabled={unlocking || !viewerVerified}
                 >
                   <i className="bi bi-unlock-fill" aria-hidden="true" />
-                  {unlocking ? 'Unlocking…' : 'Unlock Profile (Free for Demo)'}
+                  {unlocking ? 'Unlocking…' : 'Unlock Profile (Test Mode)'}
                 </button>
               </div>
             )}
@@ -598,21 +616,29 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
             </button>
           </div>
 
-          {/* Report Fake Profile */}
+          {/* Report / Dispute */}
           <div className="card p-3 mb-3">
-            {reportDone
-              ? <div className="small text-success d-flex gap-2"><i className="bi bi-check-circle-fill" />Report submitted. Our team will review within 24 hours.</div>
-              : reported
-                ? <div className="small text-muted d-flex gap-2"><span className="spinner-border spinner-border-sm" />Submitting…</div>
-                : (
-                  <button
-                    className="btn btn-outline-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
-                    type="button" onClick={handleReport} disabled={reporting}
-                  >
-                    <i className="bi bi-flag-fill" aria-hidden="true" />
-                    Report Fake Profile
-                  </button>
-                )}
+            {showDispute ? (
+              <div>
+                <h3 className="h6 fw-bold mb-3 text-danger"><i className="bi bi-flag-fill me-2" />File a Report</h3>
+                <DisputeForm
+                  supabase={supabase}
+                  user={user}
+                  reportedUserId={player.profile_id}
+                  reportedUserName={player.display_name}
+                  onClose={() => setShowDispute(false)}
+                  onSubmitted={() => { setTimeout(() => setShowDispute(false), 3000) }}
+                />
+              </div>
+            ) : (
+              <button
+                className="btn btn-outline-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
+                type="button" onClick={handleReport}
+              >
+                <i className="bi bi-flag-fill" aria-hidden="true" />
+                Report this profile
+              </button>
+            )}
           </div>
 
           {/* Verification status card */}
@@ -645,7 +671,7 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
         {!unlocked && (
           <button
             className="btn btn-warning d-flex align-items-center justify-content-center gap-2"
-            type="button" onClick={handleUnlock} disabled={unlocking}
+            type="button" onClick={handleUnlock} disabled={unlocking || Boolean(user && !viewerVerified) || player?.profile_id === user?.id}
             style={{ minWidth: 44 }}
           >
             <i className="bi bi-unlock-fill" aria-hidden="true" />

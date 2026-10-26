@@ -311,6 +311,60 @@ button:focus-visible {
     transform: scaleX(1);
 }
 
+.navbar .dropdown-menu {
+    min-width: 12rem;
+    max-width: min(22rem, calc(100vw - 2rem));
+}
+
+@media (max-width: 991.98px) {
+    .navbar .navbar-collapse.show {
+        max-height: calc(100vh - 4.5rem);
+        max-height: calc(100dvh - 4.5rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding-block: .5rem;
+    }
+
+    .navbar .navbar-nav {
+        align-items: stretch;
+    }
+
+    .navbar .navbar-nav .nav-item {
+        width: 100%;
+    }
+
+    .navbar .navbar-nav .nav-link {
+        justify-content: flex-start;
+        text-align: start;
+    }
+
+    .navbar .navbar-nav .nav-link::after {
+        display: none;
+    }
+
+    .navbar .nav-item.dropdown {
+        position: static;
+    }
+
+    .navbar .dropdown-menu {
+        position: static;
+        float: none;
+        width: 100%;
+        max-width: none;
+        margin-block: .25rem .5rem;
+        box-shadow: none;
+    }
+
+    .navbar .dropdown-item {
+        min-height: 44px;
+    }
+
+    .navbar .navbar-nav.ms-auto {
+        gap: 0 !important;
+        margin-top: .5rem;
+    }
+}
+
 /* -----------------------------------------------------------------------
    Hero section
    --------------------------------------------------------------------- */
@@ -723,6 +777,16 @@ button:focus-visible {
     transform-origin: right;
 }
 
+[dir="rtl"] .navbar .dropdown-menu-end {
+    right: auto;
+    left: 0;
+}
+
+[dir="rtl"] .navbar .dropdown-menu:not(.dropdown-menu-end) {
+    right: 0;
+    left: auto;
+}
+
 [dir="rtl"] .fc-hero-ball {
     right: auto;
     left: -40px;
@@ -910,4 +974,27 @@ img[loading="lazy"] {
 /* Verification badge pulse on pending */
 .sb-verif-pending {
   animation: pulse 2s ease-in-out infinite;
+}
+
+.sb-trust-comparison-copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sb-trust-comparison-cell:not(:last-child) {
+  border-bottom: 1px solid rgba(255,255,255,.09);
+}
+
+@media (min-width: 768px) {
+  .sb-trust-comparison-cell:not(:last-child) {
+    border-right: 1px solid rgba(255,255,255,.09);
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .sb-trust-comparison-cell > .px-4 {
+    padding-right: .75rem !important;
+    padding-left: .75rem !important;
+  }
 }

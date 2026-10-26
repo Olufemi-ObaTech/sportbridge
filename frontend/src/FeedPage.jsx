@@ -5,7 +5,9 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { containsContactInfo, containsFraudKeywords } from './lib/features'
+import { containsContactInfo, containsFraudKeywords, MAX_PLAYER_TRAINING_MINUTES } from './lib/features'
+import VerifiedBadge from './VerifiedBadge.jsx'
+import FeeSafetyNotice from './FeeSafetyNotice.jsx'
 
 const PAGE_SIZE = 12
 
@@ -41,8 +43,8 @@ function PostCard({ post, user, supabase, onDelete, onLikeToggle, onCommentAdded
 
   const canDelete = user && (user.id === post.author_id || post.author_profile?.role === 'super_admin')
   const authorName = post.author_profile?.full_name || 'SportBridge member'
-  const role = post.author_profile?.role || 'player'
-  const isVerified = post.author_profile?.verification_status === 'verified'
+  const role = post.author_badge?.role || post.author_profile?.role || 'player'
+  const isVerified = post.author_badge?.verification_status === 'verified'
 
   const handleLike = async () => {
     if (!user || liking) return
@@ -90,6 +92,7 @@ function PostCard({ post, user, supabase, onDelete, onLikeToggle, onCommentAdded
           <span className="fw-bold d-flex align-items-center gap-2" style={{ fontSize: 13 }}>
             <span className="badge bg-white text-danger" style={{ fontSize: 10, animation: 'pulse 1.5s infinite' }}>● LIVE</span>
             {post.live_at && new Date(post.live_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+            {post.training_duration_minutes && ` · ${post.training_duration_minutes} minutes`}
           </span>
           {post.live_link && (
             <a href={post.live_link} target="_blank" rel="noopener noreferrer"
@@ -105,6 +108,7 @@ function PostCard({ post, user, supabase, onDelete, onLikeToggle, onCommentAdded
           <span className="fw-bold d-flex align-items-center gap-2" style={{ fontSize: 13 }}>
             <i className="bi bi-camera-video-fill" />Training Session
             {post.training_at && ' · ' + new Date(post.training_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+            {post.training_duration_minutes && ` · ${post.training_duration_minutes} minutes`}
           </span>
           {post.training_link && (
             <a href={post.training_link} target="_blank" rel="noopener noreferrer"
@@ -126,7 +130,12 @@ function PostCard({ post, user, supabase, onDelete, onLikeToggle, onCommentAdded
             <div>
               <div className="fw-semibold d-flex align-items-center gap-1" style={{ fontSize: 14, lineHeight: 1.3 }}>
                 {authorName}
-                {isVerified && <i className="bi bi-patch-check-fill text-primary" style={{ fontSize: 12 }} title="Verified" />}
+                {isVerified && <VerifiedBadge
+                  status="verified"
+                  role={role}
+                  label={post.author_badge?.verification_badge}
+                  className="ms-1"
+                />}
               </div>
               <div className="text-muted" style={{ fontSize: 11 }}>
                 {role !== 'player' && <span className="text-capitalize me-1">{role} · </span>}
@@ -144,6 +153,8 @@ function PostCard({ post, user, supabase, onDelete, onLikeToggle, onCommentAdded
             )}
           </div>
         </div>
+
+        {role === 'agent' && <FeeSafetyNotice />}
 
         {/* Content */}
         <p className="mb-2" style={{ whiteSpace: 'pre-line', fontSize: 14, lineHeight: 1.6 }}>{post.content}</p>
@@ -225,9 +236,28 @@ function ComposeBox({ user, supabase, onPosted }) {
   const [liveAt, setLiveAt]             = useState('')
   const [trainingLink, setTrainingLink] = useState('')
   const [trainingAt, setTrainingAt]     = useState('')
+  const [trainingDuration, setTrainingDuration] = useState(String(MAX_PLAYER_TRAINING_MINUTES))
+  const [profile, setProfile]           = useState(null)
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [profileError, setProfileError] = useState('')
   const [busy, setBusy]                 = useState(false)
   const [error, setError]               = useState('')
   const textRef = useRef(null)
+
+  useEffect(() => {
+    let alive = true
+    supabase.from('profiles').select('role, verification_status').eq('id', user.id).single()
+      .then(({ data, error: profileError }) => {
+        if (!alive) return
+        if (profileError) setProfileError(profileError.message)
+        else setProfile(data)
+        setProfileLoading(false)
+      })
+    return () => { alive = false }
+  }, [supabase, user.id])
+
+  const canHostSessions = profile?.verification_status === 'verified'
+    && ['player', 'coach', 'academy'].includes(profile.role)
 
   const submit = async (e) => {
     e.preventDefault()
@@ -238,6 +268,15 @@ function ComposeBox({ user, supabase, onPosted }) {
     if (containsFraudKeywords(body)) { setError('Post contains language associated with payment scams. Remove those phrases.'); return }
     if (postType === 'live' && !liveLink.trim()) { setError('A live stream link is required.'); return }
     if (postType === 'training' && !trainingLink.trim()) { setError('A training/meeting link is required.'); return }
+    if (postType !== 'update' && !canHostSessions) { setError('Complete account verification before posting live or training sessions.'); return }
+    const duration = postType === 'update' ? null : Number(trainingDuration)
+    if (postType !== 'update' && (!Number.isInteger(duration) || duration < 1
+      || (profile.role === 'player' && duration > MAX_PLAYER_TRAINING_MINUTES))) {
+      setError(profile.role === 'player'
+        ? `Player-led sessions cannot exceed ${MAX_PLAYER_TRAINING_MINUTES} minutes.`
+        : 'Enter a valid session duration in minutes.')
+      return
+    }
 
     setBusy(true); setError('')
     const { data, error: dbErr } = await supabase.from('feed_posts').insert({
@@ -252,11 +291,12 @@ function ComposeBox({ user, supabase, onPosted }) {
       is_training:   postType === 'training',
       training_link: postType === 'training' ? trainingLink.trim() : null,
       training_at:   postType === 'training' && trainingAt ? new Date(trainingAt).toISOString() : null,
+      training_duration_minutes: duration,
       media_urls:    [],
     }).select('*').single()
     setBusy(false)
     if (dbErr) { setError(dbErr.message); return }
-    setContent(''); setSport(''); setPostType('update'); setLiveLink(''); setLiveAt(''); setTrainingLink(''); setTrainingAt('')
+    setContent(''); setSport(''); setPostType('update'); setLiveLink(''); setLiveAt(''); setTrainingLink(''); setTrainingAt(''); setTrainingDuration(String(MAX_PLAYER_TRAINING_MINUTES))
     textRef.current?.focus()
     onPosted?.(data)
   }
@@ -264,16 +304,18 @@ function ComposeBox({ user, supabase, onPosted }) {
   return (
     <div className="card mb-4" style={{ border: '2px solid var(--fc-blue-100)' }}>
       <div className="card-body p-3">
+        {profileError && <div className="alert alert-danger py-2 small" role="alert">Could not load account verification: {profileError}</div>}
         {/* Post type tabs */}
         <div className="d-flex gap-1 mb-3">
           {[
             { v: 'update',   icon: 'bi-pencil',              label: 'Update'   },
-            { v: 'live',     icon: 'bi-broadcast',           label: 'Go Live'  },
-            { v: 'training', icon: 'bi-camera-video-fill',   label: 'Training' },
-          ].map(({ v, icon, label }) => (
+            { v: 'live',     icon: 'bi-broadcast',           label: 'Go Live', disabled: profileLoading || !canHostSessions },
+            { v: 'training', icon: 'bi-camera-video-fill',   label: 'Training', disabled: profileLoading || !canHostSessions },
+          ].map(({ v, icon, label, disabled }) => (
             <button key={v} type="button"
               className={`btn btn-sm d-flex align-items-center gap-1 ${postType === v ? 'btn-primary' : 'btn-outline-secondary'}`}
-              onClick={() => setPostType(v)}>
+              disabled={disabled} onClick={() => setPostType(v)}
+              title={disabled ? 'Verified players, coaches, and academies can host sessions.' : undefined}>
               <i className={`bi ${icon}`} />{label}
             </button>
           ))}
@@ -331,6 +373,21 @@ function ComposeBox({ user, supabase, onPosted }) {
             </div>
           )}
 
+          {postType !== 'update' && (
+            <div className="mb-2">
+              <label className="form-label small fw-bold text-primary mb-1" htmlFor="training-duration">Session duration (minutes)</label>
+              <input id="training-duration" className="form-control form-control-sm" type="number" min="1"
+                max={profile?.role === 'player' ? MAX_PLAYER_TRAINING_MINUTES : undefined}
+                value={trainingDuration} onChange={(event) => setTrainingDuration(event.target.value)}
+                required aria-describedby="training-duration-help" />
+              <div id="training-duration-help" className="form-text">
+                {profile?.role === 'player'
+                  ? `Player sessions are limited to ${MAX_PLAYER_TRAINING_MINUTES} minutes.`
+                  : 'Verified coaches and academies have no configured duration cap.'}
+              </div>
+            </div>
+          )}
+
           {error && <div className="alert alert-danger py-2 small mb-2">{error}</div>}
 
           <div className="d-flex justify-content-between align-items-center">
@@ -375,19 +432,23 @@ export default function FeedPage({ supabase, user, onSignup }) {
   const [hasMore, setHasMore]     = useState(false)
   const [offset, setOffset]       = useState(0)
   const [likedIds, setLikedIds]   = useState(new Set())
+  const [feedError, setFeedError] = useState('')
 
   const fetchPosts = useCallback(async (sportFilter, filterType, from, replace) => {
     if (!supabase) return
     if (replace) { setLoading(true) } else { setLoadingMore(true) }
+    if (replace) setFeedError('')
 
-    const profileJoin = user ? `, author_profile:profiles!author_id (full_name, role, verification_status)` : ''
+    const profileJoin = user ? `, author_profile:profiles!author_id (full_name, role)` : ''
+    const badgeJoin = ', author_badge:public_profile_badges(role, verification_status, verification_badge)'
     const commentJoin = user ? `, author:profiles!user_id (full_name)` : ''
 
     let q = supabase.from('feed_posts')
       .select(`id, author_id, content, sport, media_urls, visibility, status, is_pinned,
-               is_live, live_link, live_at, is_training, training_link, training_at,
+               is_live, live_link, live_at, is_training, training_link, training_at, training_duration_minutes,
                likes_count, comments_count, created_at
                ${profileJoin}
+               ${badgeJoin}
                ${user ? `, comments:post_comments (id, body, created_at, user_id ${commentJoin})` : ''}`)
       .eq('visibility', 'public').eq('status', 'published')
       .order('is_pinned', { ascending: false })
@@ -398,17 +459,34 @@ export default function FeedPage({ supabase, user, onSignup }) {
     if (filterType === 'live') q = q.eq('is_live', true)
     if (filterType === 'training') q = q.eq('is_training', true)
 
-    const { data, error } = await q
-    if (replace) { setLoading(false) } else { setLoadingMore(false) }
-    if (error || !data) return
+    try {
+      const { data, error: loadError } = await q
+      if (loadError) throw loadError
+      if (!data) throw new Error('The feed returned no data.')
 
-    const enriched = data.map((p) => ({
-      ...p,
-      comments: (p.comments ?? []).map((c) => ({ ...c, author_name: c.author?.full_name || 'Member' })),
-    }))
-    if (replace) { setPosts(enriched) } else { setPosts((prev) => [...prev, ...enriched]) }
-    setHasMore(data.length === PAGE_SIZE)
-    setOffset(from + data.length)
+      const enriched = data.map((p) => ({
+        ...p,
+        comments: (p.comments ?? []).map((c) => ({ ...c, author_name: c.author?.full_name || 'Member' })),
+      }))
+      if (replace) { setPosts(enriched) } else { setPosts((prev) => [...prev, ...enriched]) }
+      setFeedError('')
+      setHasMore(data.length === PAGE_SIZE)
+      setOffset(from + data.length)
+    } catch (loadError) {
+      if (replace) {
+        setPosts([])
+        setHasMore(false)
+      }
+      setFeedError(
+        loadError instanceof Error
+          ? loadError.message
+          : typeof loadError?.message === 'string'
+            ? loadError.message
+            : String(loadError),
+      )
+    } finally {
+      if (replace) { setLoading(false) } else { setLoadingMore(false) }
+    }
   }, [supabase, user])
 
   useEffect(() => { setOffset(0); fetchPosts(sport, filter, 0, true) }, [sport, filter, fetchPosts])
@@ -463,6 +541,11 @@ export default function FeedPage({ supabase, user, onSignup }) {
 
         {/* ── Main feed ──────────────────────────────────────────── */}
         <div className="col-12 col-lg-6">
+          {feedError && (
+            <div className="alert alert-danger" role="alert">
+              Could not load community posts: {feedError}
+            </div>
+          )}
 
           {/* Page header */}
           <div className="d-flex align-items-center justify-content-between mb-3">
@@ -505,7 +588,7 @@ export default function FeedPage({ supabase, user, onSignup }) {
           {/* Posts */}
           {loading ? (
             <>{[1,2,3].map((i) => <SkeletonPost key={i} />)}</>
-          ) : posts.length === 0 ? (
+          ) : feedError && posts.length === 0 ? null : posts.length === 0 ? (
             <div className="text-center py-5 text-muted">
               <i className="bi bi-newspaper fs-1 d-block mb-3" style={{ opacity: .3 }} />
               <p className="fw-semibold mb-1">No posts yet</p>
@@ -542,8 +625,8 @@ export default function FeedPage({ supabase, user, onSignup }) {
               <i className="bi bi-shield-exclamation me-1 text-danger" />Safety Notice
             </h2>
             <p className="small text-muted mb-0">
-              <strong className="text-danger">Never pay</strong> an agent or scout to arrange a trial or introduction.
-              Legitimate agents never charge players. Always check the Verified ✓ badge before engaging.
+              <strong className="text-danger">Never pay an agent or scout to arrange a trial or introduction.</strong>{' '}
+              <span>Legitimate agents never charge players. Always check the Verified ✓ badge before engaging.</span>
             </p>
           </div>
           {!user && (

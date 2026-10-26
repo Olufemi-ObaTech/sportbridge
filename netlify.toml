@@ -1,6 +1,6 @@
 # Netlify configuration for SportBridge
 # Live URL: https://sportbridge-com-ng.netlify.app
-# Custom domain: sportbridge.com.ng (add back when DNS is ready)
+# Custom domain: sportbridge.online (activate after DNS is configured)
 #
 # Required env vars — set in Netlify UI (Site configuration → Environment variables):
 #   VITE_SUPABASE_URL      = https://pzfohowzaeunywaqukwe.supabase.co

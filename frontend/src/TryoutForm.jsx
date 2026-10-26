@@ -46,7 +46,7 @@ const BLANK = {
   feeBreakdown: '',
 }
 
-export default function TryoutForm({ supabase, user, onSaved }) {
+export default function TryoutForm({ supabase, user, profile, onVerify, onSaved }) {
   const [form,      setForm]      = useState(BLANK)
   const [flyers,    setFlyers]    = useState([])  // { file, preview, error }
   const [venuePics, setVenuePics] = useState([])  // { file, preview, error }
@@ -90,6 +90,11 @@ export default function TryoutForm({ supabase, user, onSaved }) {
     setError('')
     setNotice('')
     setFlagged(false)
+
+    if (profile?.verification_status !== 'verified' || !['academy', 'agent'].includes(profile?.role)) {
+      setError('Only verified academies/clubs and agents/scouts can publish tryouts.')
+      return
+    }
 
     // Required
     if (!form.title.trim())    { setError('Title is required.'); return }
@@ -177,6 +182,15 @@ export default function TryoutForm({ supabase, user, onSaved }) {
     } finally {
       setSaving(false)
     }
+  }
+
+  if (profile?.verification_status !== 'verified' || !['academy', 'agent'].includes(profile?.role)) {
+    return (
+      <div className="alert alert-warning d-flex justify-content-between align-items-center gap-3">
+        <span>Complete verification before publishing tryouts or player-search opportunities.</span>
+        <button className="btn btn-sm btn-primary flex-shrink-0" type="button" onClick={onVerify}>Get verified</button>
+      </div>
+    )
   }
 
   return (

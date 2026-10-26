@@ -15,8 +15,8 @@ import logoMark from '../../public/img/logo-mark.svg'
 import worldCupBallImage from '../../public/img/world-cup-ball.avif'
 import { supabase } from './lib/supabase'
 import { BASKETBALL_ENABLED, containsContactInfo } from './lib/features'
+import { getPreferredLanguage, observeLocalization, SUPPORTED_LANGUAGES } from './lib/i18n.js'
 
-// ΓöÇΓöÇΓöÇ constants ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const ROLES = [
   { value: 'player',  label: 'Player',          icon: 'bi-person-arms-up'   },
   { value: 'academy', label: 'Academy / Club',   icon: 'bi-building'         },
@@ -41,7 +41,7 @@ const roleCards = [
     title: 'For Players',
     heroTitle: 'Players',
     heroCopy: 'Free profile. Get discovered.',
-    copy: 'Create a free profile with photos, full-match videos and your CV. Go public and get discovered by verified clubs, academies and agents ΓÇö no middleman required.',
+    copy: 'Create a free profile with photos, full-match videos and your CV. Go public and get discovered by verified clubs, academies and agents — no middleman required.',
     action: 'Create your player profile',
   },
   {
@@ -49,7 +49,7 @@ const roleCards = [
     cardIcon: 'bi-person-badge',
     heroIcon: 'bi-building',
     title: 'For Clubs & Academies',
-    heroTitle: 'Clubs Γ£ô Verified',
+    heroTitle: 'Clubs ✓ Verified',
     heroCopy: 'Showcase your squad to the world.',
     copy: 'Create players, build your squad roster, post Player Needed & Staff Needed jobs, and showcase your verified club to scouts and agents worldwide.',
     action: 'Register your club / academy',
@@ -156,20 +156,15 @@ function AuthModal({ onClose, initialMode, initialRole }) {
     const email = String(fd.get('email') ?? '').trim()
     const pw    = String(fd.get('password') ?? '')
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password: pw })
-    setBusy(false)
-
-    if (error) {
-      if (error.message.toLowerCase().includes('email not confirmed')) {
-        showMsg('Your email is not confirmed yet. Check your inbox for the confirmation link ΓÇö also check your spam folder.', 'info')
-      } else if (error.message.toLowerCase().includes('invalid login credentials') || error.message.toLowerCase().includes('invalid login')) {
-        showMsg('Incorrect email or password. Please check your details and try again.')
-      } else if (error.message.toLowerCase().includes('user not found')) {
-        showMsg('No account found with this email. Create a free account below.', 'info')
-      } else {
-        showMsg(error.message)
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password: pw })
+      if (error) {
+        showMsg('Unable to sign in. Check your email and password, confirm your email if needed, and try again.')
       }
-      return
+    } catch {
+      showMsg('Unable to sign in. Check your connection and try again.')
+    } finally {
+      setBusy(false)
     }
 
     // Success ΓÇö onAuthStateChange fires SIGNED_IN and closes modal automatically
@@ -190,9 +185,9 @@ function AuthModal({ onClose, initialMode, initialRole }) {
     const email    = String(fd.get('email') ?? '').trim()
     const pw       = String(fd.get('password') ?? '')
 
-    if (pw.length < 8) {
+    if (pw.length < 12) {
       setBusy(false)
-      showMsg('Password must be at least 8 characters.')
+      showMsg('Password must be at least 12 characters.')
       return
     }
 
@@ -202,25 +197,29 @@ function AuthModal({ onClose, initialMode, initialRole }) {
       return
     }
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password: pw,
-      options: {
-        data: {
-          full_name: fullName,
-          role,
-          sport,
+    let signupResult
+    try {
+      signupResult = await supabase.auth.signUp({
+        email,
+        password: pw,
+        options: {
+          data: {
+            full_name: fullName,
+            role,
+            sport,
+          },
         },
-      },
-    })
+      })
+    } catch {
+      setBusy(false)
+      showMsg('Unable to create the account. Check your connection and try again.')
+      return
+    }
+    const { data, error } = signupResult
     setBusy(false)
 
     if (error) {
-      if (error.message.toLowerCase().includes('already registered')) {
-        showMsg('An account with this email already exists. Try signing in instead.')
-      } else {
-        showMsg(error.message)
-      }
+      showMsg('Unable to create the account with these details. Please check them and try again.')
       return
     }
 
@@ -235,21 +234,28 @@ function AuthModal({ onClose, initialMode, initialRole }) {
   // ΓöÇΓöÇ forgot password ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const handleForgot = async (e) => {
     e.preventDefault()
-    if (!supabase) return
+    if (!supabase) {
+      showMsg('Connection error. Please try refreshing the page.', 'info')
+      return
+    }
     setBusy(true)
     clearMsg()
     const fd    = new FormData(e.currentTarget)
     const email = String(fd.get('email') ?? '').trim()
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/?reset=1`,
-    })
-    setBusy(false)
-
-    if (error) {
-      showMsg(error.message)
-    } else {
-      setMode('reset-sent')
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/?reset=1`,
+      })
+      if (error) {
+        showMsg('If an account matches that email, password reset instructions will be sent. Please try again later if the request does not arrive.')
+      } else {
+        setMode('reset-sent')
+      }
+    } catch {
+      showMsg('Could not request a password reset. Check your connection and try again.')
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -277,15 +283,26 @@ function AuthModal({ onClose, initialMode, initialRole }) {
             type="button"
             disabled={busy}
             onClick={async () => {
-              if (!supabase) return
+              if (!supabase) {
+                showMsg('Connection error. Please try refreshing the page.', 'info')
+                return
+              }
               setBusy(true)
-              await supabase.auth.resend({ type: 'signup', email: confirmedEmail })
-              setBusy(false)
-              showMsg('Confirmation email resent. Check your inbox and spam folder.', 'info')
+              try {
+                const { error } = await supabase.auth.resend({ type: 'signup', email: confirmedEmail })
+                showMsg(error
+                  ? 'Could not resend the confirmation email. Please try again later.'
+                  : 'If the address can receive a confirmation email, it will arrive shortly. Check your inbox and spam folder.',
+                'info')
+              } catch {
+                showMsg('Could not resend the confirmation email. Check your connection and try again.')
+              } finally {
+                setBusy(false)
+              }
             }}
             style={{ background: 'var(--fc-gradient-gold)', color: 'var(--fc-navy-900)' }}
           >
-            {busy ? <><span className="spinner-border spinner-border-sm me-2" />SendingΓÇª</> : 'Resend confirmation email'}
+            {busy ? <><span className="spinner-border spinner-border-sm me-2" />Sending…</> : 'Resend confirmation email'}
           </button>
           <button
             className="auth-submit mt-2"
@@ -351,7 +368,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
               </p>
             )}
             <button className="auth-submit" type="submit" disabled={busy}>
-              {busy ? <><span className="spinner-border spinner-border-sm me-2" />SendingΓÇª</> : 'Send reset link'}
+              {busy ? <><span className="spinner-border spinner-border-sm me-2" />Sending…</> : 'Send reset link'}
             </button>
           </form>
           <p className="auth-switch">
@@ -424,7 +441,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
               disabled={busy}
             >
               {busy
-                ? <><span className="spinner-border spinner-border-sm me-2" />Signing inΓÇª</>
+                ? <><span className="spinner-border spinner-border-sm me-2" />Signing in…</>
                 : <><i className="bi bi-box-arrow-in-right me-2" aria-hidden="true" />Sign in</>}
             </button>
           </form>
@@ -461,7 +478,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
           {/* Role picker */}
           <div>
             <p className="auth-label mb-2" style={{ marginBottom: 8 }}>
-              <span>I am aΓÇª</span>
+              <span>I am a…</span>
             </p>
             <div className="auth-role-grid">
               {ROLES.map((r) => (
@@ -527,7 +544,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
           {/* Password + strength */}
           <div>
             <label className="auth-label">
-              <span>Password <span style={{ fontWeight: 400, color: 'var(--fc-muted)' }}>(min. 8 characters)</span></span>
+              <span>Password <span style={{ fontWeight: 400, color: 'var(--fc-muted)' }}>(min. 12 characters)</span></span>
               <div className="auth-password-wrap">
                 <input
                   className="auth-input"
@@ -535,7 +552,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
                   name="password"
                   autoComplete="new-password"
                   required
-                  minLength={8}
+                  minLength={12}
                   placeholder="Choose a strong password"
                   value={pwValue}
                   onChange={(e) => setPwValue(e.target.value)}
@@ -582,7 +599,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
             disabled={busy}
           >
             {busy
-              ? <><span className="spinner-border spinner-border-sm me-2" />Creating accountΓÇª</>
+              ? <><span className="spinner-border spinner-border-sm me-2" />Creating account…</>
               : <><i className="bi bi-person-plus me-2" aria-hidden="true" />Create account</>}
           </button>
 
@@ -634,6 +651,8 @@ function App() {
   const [view,            setView]            = useState('home')
   const [selectedPlayerId,setSelectedPlayerId]= useState(null)
   const [user,            setUser]            = useState(null)
+  const [accountStatus,   setAccountStatus]   = useState(null)
+  const [statusCheckKey,  setStatusCheckKey]  = useState(0)
   const [authOpen,        setAuthOpen]        = useState(false)
   const [authInitMode,    setAuthInitMode]    = useState('signin')
   const [authInitRole,    setAuthInitRole]    = useState('player')
@@ -641,9 +660,11 @@ function App() {
   const [darkTheme,       setDarkTheme]       = useState(false)
   const [sport,           setSport]           = useState('football')
   const [sportMenuOpen,   setSportMenuOpen]   = useState(false)
-  const [language,        setLanguage]        = useState('en')
+  const [exploreOpen,     setExploreOpen]     = useState(false)
+  const [language,        setLanguage]        = useState(getPreferredLanguage)
   const [languageMenuOpen,setLanguageMenuOpen]= useState(false)
   const [clockNow,        setClockNow]        = useState(() => new Date())
+  const appRootRef = useRef(null)
 
   const openSignup = (role = 'player') => {
     setAuthInitRole(role)
@@ -662,6 +683,51 @@ function App() {
     document.documentElement.setAttribute('data-bs-theme', darkTheme ? 'dark' : 'light')
   }, [darkTheme])
 
+  // Language — update HTML lang attribute and direction (Arabic is RTL)
+  useEffect(() => {
+    document.documentElement.setAttribute('lang', language)
+    document.documentElement.setAttribute('dir', language === 'ar' ? 'rtl' : 'ltr')
+    try {
+      window.localStorage.setItem('sportbridge-language', language)
+    } catch (error) {
+      console.warn('Could not save the language preference.', error)
+    }
+
+    const appRoot = appRootRef.current
+    if (!appRoot) return
+    return observeLocalization(appRoot, language)
+  }, [language])
+
+  useEffect(() => {
+    const dismissMenus = (event) => {
+      if (!(event.target instanceof Element)) return
+      if (event.target.closest('.navbar .dropdown')) return
+      setExploreOpen(false)
+      setSportMenuOpen(false)
+      setLanguageMenuOpen(false)
+      if (!event.target.closest('.navbar')) setMenuOpen(false)
+    }
+    const dismissMenusOnEscape = (event) => {
+      if (event.key !== 'Escape') return
+      setExploreOpen(false)
+      setSportMenuOpen(false)
+      setLanguageMenuOpen(false)
+      setMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', dismissMenus)
+    document.addEventListener('keydown', dismissMenusOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', dismissMenus)
+      document.removeEventListener('keydown', dismissMenusOnEscape)
+    }
+  }, [])
+
+  const closeDropdownMenus = () => {
+    setExploreOpen(false)
+    setSportMenuOpen(false)
+    setLanguageMenuOpen(false)
+  }
+
   // World clock tick
   useEffect(() => {
     const t = window.setInterval(() => setClockNow(new Date()), 1000)
@@ -675,19 +741,44 @@ function App() {
     supabase.auth.getSession().then(({ data }) => {
       const u = data.session?.user ?? null
       setUser(u)
+      setAccountStatus(u ? 'checking' : null)
       if (u) setView('dashboard')
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const u = session?.user ?? null
       setUser(u)
+      setAccountStatus(u ? 'checking' : null)
       if (event === 'SIGNED_IN')  { setView('dashboard'); setAuthOpen(false) }
       if (event === 'SIGNED_OUT') { setView('home') }
     })
     return () => subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    if (!supabase || !user?.id) {
+      setAccountStatus(null)
+      return
+    }
+    let alive = true
+    const checkStatus = async () => {
+      const { data, error } = await supabase.from('profiles').select('status').eq('id', user.id).single()
+      if (alive) setAccountStatus(error ? 'unavailable' : data?.status ?? 'unavailable')
+    }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') checkStatus()
+    }
+    checkStatus()
+    const interval = window.setInterval(checkStatus, 60_000)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      alive = false
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [user?.id, statusCheckKey])
+
   return (
-    <div data-bs-theme={darkTheme ? 'dark' : 'light'}>
+    <div ref={appRootRef} data-bs-theme={darkTheme ? 'dark' : 'light'}>
       {/* Skip link */}
       <a className="visually-hidden-focusable btn btn-primary position-absolute top-0 start-0 m-2" href="#main-content">
         Skip to main content
@@ -719,43 +810,43 @@ function App() {
           <div className={`collapse navbar-collapse${menuOpen ? ' show' : ''}`} id="mainNavbar">
             <ul className="navbar-nav me-auto mb-2 mb-lg-0">
               <li className="nav-item">
-                <a className="nav-link" href="#home" onClick={() => { setView('home'); setMenuOpen(false) }}>Home</a>
+                <a className="nav-link" href="#home" onClick={() => { setView('home'); setMenuOpen(false); closeDropdownMenus() }}>Home</a>
               </li>
               {user && (
                 <li className="nav-item">
                   <button
                     className={`btn btn-link nav-link${view === 'dashboard' ? ' active' : ''}`}
                     type="button"
-                    onClick={() => { setView('dashboard'); setMenuOpen(false) }}
+                    onClick={() => { setView('dashboard'); setMenuOpen(false); closeDropdownMenus() }}
                   >
                     Dashboard
                   </button>
                 </li>
               )}
               <li className="nav-item">
-                <a className="nav-link" href="#players" onClick={() => setMenuOpen(false)}>Players</a>
+                <a className="nav-link" href="#players" onClick={() => { setMenuOpen(false); closeDropdownMenus() }}>Players</a>
               </li>
-              {/* Explore dropdown — reduces navbar clutter on all devices */}
-              <li className="nav-item dropdown">
+              {/* Explore dropdown — React-state controlled (no Bootstrap JS dependency) */}
+              <li className={`nav-item dropdown${exploreOpen ? ' show' : ''}`}>
                 <button
-                  className={`btn btn-link nav-link d-flex align-items-center gap-1${[view].includes('jobs') || [view].includes('tryouts') || [view].includes('feed') ? ' active' : ''}`}
+                  className={`btn btn-link nav-link d-flex align-items-center gap-1${exploreOpen ? ' show' : ''}${['jobs','tryouts','feed'].includes(view) ? ' active' : ''}`}
                   type="button"
-                  id="exploreDropdown"
-                  onClick={(e) => { const p = e.currentTarget.closest('li'); p.classList.toggle('show'); e.currentTarget.setAttribute('aria-expanded', String(p.classList.contains('show'))) }}
                   aria-haspopup="true"
-                  aria-expanded="false"
+                  aria-controls="explore-menu"
+                  aria-expanded={exploreOpen}
+                  onClick={() => { setExploreOpen((open) => !open); setSportMenuOpen(false); setLanguageMenuOpen(false) }}
                 >
                   Explore <i className="bi bi-chevron-down" style={{ fontSize: 11 }} aria-hidden="true" />
                 </button>
-                <ul className="dropdown-menu">
+                <ul id="explore-menu" className={`dropdown-menu${exploreOpen ? ' show' : ''}`}>
                   <li><button className="dropdown-item d-flex align-items-center gap-2" type="button"
-                    onClick={() => { setView('jobs'); setMenuOpen(false); window.scrollTo(0,0) }}>
+                    onClick={() => { setView('jobs'); setMenuOpen(false); closeDropdownMenus(); window.scrollTo(0,0) }}>
                     <i className="bi bi-briefcase text-primary" />Jobs</button></li>
                   <li><button className="dropdown-item d-flex align-items-center gap-2" type="button"
-                    onClick={() => { setView('tryouts'); setMenuOpen(false); window.scrollTo(0,0) }}>
+                    onClick={() => { setView('tryouts'); setMenuOpen(false); closeDropdownMenus(); window.scrollTo(0,0) }}>
                     <i className="bi bi-calendar-event text-primary" />Tryouts</button></li>
                   <li><button className="dropdown-item d-flex align-items-center gap-2" type="button"
-                    onClick={() => { setView('feed'); setMenuOpen(false); window.scrollTo(0,0) }}>
+                    onClick={() => { setView('feed'); setMenuOpen(false); closeDropdownMenus(); window.scrollTo(0,0) }}>
                     <i className="bi bi-newspaper text-primary" />Community Feed</button></li>
                 </ul>
               </li>
@@ -770,7 +861,7 @@ function App() {
                     type="button"
                     aria-expanded={sportMenuOpen}
                     aria-label="Switch sport"
-                    onClick={() => setSportMenuOpen(!sportMenuOpen)}
+                    onClick={() => { setSportMenuOpen((open) => !open); setExploreOpen(false); setLanguageMenuOpen(false) }}
                   >
                     <i className={`bi ${sport === 'football' ? 'bi-dribbble' : 'bi-circle'}`} aria-hidden="true" />
                     <span>{sport === 'football' ? 'Football' : 'Basketball'}</span>
@@ -809,19 +900,21 @@ function App() {
                   className="btn btn-sm btn-outline-light dropdown-toggle d-inline-flex align-items-center gap-1"
                   type="button"
                   aria-expanded={languageMenuOpen}
+                  aria-controls="language-menu"
                   aria-label="Switch language"
-                  onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
+                  onClick={() => { setLanguageMenuOpen((open) => !open); setExploreOpen(false); setSportMenuOpen(false) }}
                 >
                   <i className="bi bi-globe2" aria-hidden="true" />
                   <span className="text-uppercase">{language}</span>
                 </button>
-                <ul className={`dropdown-menu dropdown-menu-end${languageMenuOpen ? ' show' : ''}`}>
-                  {[['en','English'],['fr','Fran├ºais'],['pt','Portugu├¬s'],['ar','╪º┘ä╪╣╪▒╪¿┘è╪⌐'],['es','Espa├▒ol']].map(([code, label]) => (
+                <ul id="language-menu" className={`dropdown-menu dropdown-menu-end${languageMenuOpen ? ' show' : ''}`}>
+                  {SUPPORTED_LANGUAGES.map(({ code, label }) => (
                     <li key={code}>
                       <button
                         className={`dropdown-item d-flex align-items-center justify-content-between${language === code ? ' active' : ''}`}
                         type="button"
-                        onClick={() => { setLanguage(code); setLanguageMenuOpen(false) }}
+                        lang={code}
+                        onClick={() => { setLanguage(code); setLanguageMenuOpen(false); setMenuOpen(false) }}
                       >
                         {label}
                         {language === code && <i className="bi bi-check-lg" aria-hidden="true" />}
@@ -903,7 +996,24 @@ function App() {
 
       {/* ΓöÇΓöÇ Main content ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
       <main id="main-content" className="flex-grow-1">
-        {view === 'dashboard' && user ? (
+        {user && accountStatus !== 'active' ? (
+          <div className="container py-5">
+            {accountStatus === 'checking' ? (
+              <div className="text-center text-muted" role="status"><span className="spinner-border spinner-border-sm me-2" />Checking account access…</div>
+            ) : (
+              <div className="alert alert-warning mx-auto" style={{ maxWidth: 640 }} role="alert">
+                <h1 className="h5">Account access unavailable</h1>
+                <p className="mb-3">{accountStatus === 'unavailable'
+                  ? 'We could not confirm your account status. Please retry or sign out and contact support.'
+                  : `This account is ${accountStatus}. Account access is currently disabled.`}</p>
+                <div className="d-flex gap-2">
+                  {accountStatus === 'unavailable' && <button className="btn btn-sm btn-outline-primary" type="button" onClick={() => setStatusCheckKey((key) => key + 1)}>Retry</button>}
+                  <button className="btn btn-sm btn-outline-secondary" type="button" onClick={() => supabase?.auth.signOut()}>Sign out</button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : view === 'dashboard' && user ? (
           <Dashboard supabase={supabase} user={user} onBack={() => setView('home')} />
         ) : view === 'player' && selectedPlayerId ? (
           <PlayerProfile
@@ -949,9 +1059,10 @@ function App() {
 
                     {/* Sub-headline */}
                     <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '56ch' }}>
-                      SportBridge connects <strong style={{ color: '#fff' }}>Verified Free Players</strong> with{' '}
-                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong> in Africa and across The World.
-                      Full CV + Full-Match Video + highlights + Stats + Secure Unlock {' '}
+                      SportBridge connects <strong style={{ color: '#fff' }}>Verified Players</strong> with{' '}
+                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Managers</strong>{' '}
+                      <span>all across the world.</span>{' '}
+                      <span>Full CV + Full-Match Video + highlights + Stats + Secure Unlock</span>{' '}
                       <em>not just highlights.</em>
                     </p>
 
@@ -959,8 +1070,8 @@ function App() {
                     <div className="d-flex flex-wrap gap-2 mt-4 fc-animate-in fc-delay-2" role="list" aria-label="SportBridge vs other platforms">
                       {[
                         { vs: 'Social Media', vsText: 'Edited highlights only',          sbText: 'Verified CV + Full Match Video + Availability', icon: 'bi-camera-video' },
-                        { vs: 'Job sites',  vsText: 'Corporate jobs only',            sbText: 'Football jobs by Position ┬╖ Age Group ┬╖ Region',  icon: 'bi-briefcase' },
-                        { vs: 'Groups',        vsText: 'Scams & phone number leaks',    sbText: 'NIN Verified ┬╖ Video Hash ┬╖ No Leaked Contacts',   icon: 'bi-shield-lock' },
+                        { vs: 'Job sites',  vsText: 'Corporate jobs only',            sbText: 'Football jobs by position · age group · region',  icon: 'bi-briefcase' },
+                        { vs: 'Groups',        vsText: 'Scams & phone number leaks',    sbText: 'NIN verified · video hash · no leaked contacts',   icon: 'bi-shield-lock' },
                       ].map(({ vs, vsText, sbText, icon }) => (
                         <div
                           key={vs}
@@ -970,7 +1081,7 @@ function App() {
                         >
                           <i className={`bi ${icon} mt-1 flex-shrink-0`} style={{ color: 'var(--fc-gold-400)', fontSize: 14 }} aria-hidden="true" />
                           <div>
-                            <span style={{ color: 'rgba(247,249,248,.5)' }}>{vs}: <span style={{ textDecoration: 'line-through' }}>{vsText}</span></span>
+                            <span style={{ color: 'rgba(247,249,248,.76)' }}>{vs}: <span style={{ textDecoration: 'line-through' }}>{vsText}</span></span>
                             <br />
                             <span style={{ color: '#fff', fontWeight: 700 }}>SportBridge: {sbText}</span>
                           </div>
@@ -1061,17 +1172,17 @@ function App() {
                       solutionIcon: 'bi-lock-fill',
                     },
                   ].map(({ problem, solution, problemIcon, solutionIcon }, i) => (
-                    <div key={i} className="col-12 col-md-4" style={{ borderRight: i < 2 ? '1px solid rgba(255,255,255,.07)' : undefined }}>
+                    <div key={i} className="col-12 col-md-4 sb-trust-comparison-cell">
                       <div className="px-4 py-4">
                         {/* Problem */}
                         <div className="d-flex align-items-center gap-2 mb-2">
                           <i className={`bi ${problemIcon}`} style={{ color: '#dc3545', fontSize: 15 }} aria-hidden="true" />
-                          <span className="small" style={{ color: 'rgba(247,249,248,.45)', textDecoration: 'line-through' }}>{problem}</span>
+                          <span className="small sb-trust-comparison-copy" style={{ color: 'rgba(247,249,248,.78)', textDecoration: 'line-through' }}>{problem}</span>
                         </div>
                         {/* Solution */}
                         <div className="d-flex align-items-center gap-2">
                           <i className={`bi ${solutionIcon}`} style={{ color: 'var(--fc-gold-400)', fontSize: 15 }} aria-hidden="true" />
-                          <span className="small fw-semibold" style={{ color: '#fff' }}>{solution}</span>
+                          <span className="small fw-semibold sb-trust-comparison-copy" style={{ color: '#fff' }}>{solution}</span>
                         </div>
                       </div>
                     </div>
@@ -1153,7 +1264,7 @@ function App() {
                   Player Directory
                 </h2>
                 <p className="text-muted mb-0">
-                  Search verified free players by position, age group, region and foot ΓÇö find your next signing in seconds.
+                  Search verified free players by position, age group, region and foot — find your next signing in seconds.
                 </p>
               </div>
               <PlayerSearch

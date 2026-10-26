@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { FOOTBALL_POSITIONS, AGE_GROUPS, REGIONS } from './lib/features'
+import VerifiedBadge from './VerifiedBadge.jsx'
 
 // ─── constants ────────────────────────────────────────────────────────────────
 const NATIONALITIES = [
@@ -39,7 +40,7 @@ function FilterSelect({ id, label, value, onChange, options, placeholder }) {
     <div>
       <label className="form-label small fw-semibold mb-1" htmlFor={id}>{label}</label>
       <select id={id} className="form-select form-select-sm" value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">{placeholder ?? `All ${label}s`}</option>
+        <option value="">{placeholder ?? 'Any'}</option>
         {options.map((o) => (
           <option key={typeof o === 'string' ? o : o.value} value={typeof o === 'string' ? o : o.value}>
             {typeof o === 'string' ? o : o.label}
@@ -99,6 +100,7 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
   const [players,       setPlayers]       = useState([])
   const [loading,       setLoading]       = useState(false)
   const [totalCount,    setTotalCount]    = useState(null)
+  const [error,         setError]         = useState('')
   const [drawerOpen,    setDrawerOpen]    = useState(false)
   const drawerRef = useRef(null)
 
@@ -125,11 +127,13 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
     if (!supabase) return
     let alive = true
     setLoading(true)
+    setError('')
 
     const run = async () => {
+      const playerBadgeJoin = `profile_badge:public_profile_badges${filters.verifiedOnly ? '!inner' : ''}(role, verification_status, verification_badge)`
       let q = supabase
         .from('players')
-        .select('id, display_name, position, age, country, nationality, region, availability, preferred_foot, foot, height_cm, current_club, age_group, stats, primary_photo_path, profiles!inner(verification_status)', { count: 'exact' })
+        .select(`id, display_name, position, age, country, nationality, region, availability, preferred_foot, foot, height_cm, current_club, age_group, stats, primary_photo_path, ${playerBadgeJoin}`, { count: 'exact' })
         .eq('is_public', true)
         .eq('status', 'active')
 
@@ -139,22 +143,35 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
       if (filters.foot)         q = q.eq('preferred_foot', filters.foot)
       if (filters.region)       q = q.ilike('region', `%${filters.region}%`)
       if (filters.availability) q = q.eq('availability', filters.availability)
-      if (filters.verifiedOnly) q = q.eq('profiles.verification_status', 'verified')
+      if (filters.verifiedOnly) q = q.eq('profile_badge.verification_status', 'verified')
       if (filters.q)            q = q.or(`display_name.ilike.%${filters.q}%,current_club.ilike.%${filters.q}%`)
 
       // Sort
       if (sort === 'newest')      q = q.order('created_at', { ascending: false })
       else if (sort === 'most_viewed') q = q.order('views_count', { ascending: false })
-      else if (sort === 'verified')    q = q.order('profiles(verification_status)', { ascending: true })
+      else if (sort === 'verified')    q = q.order('profile_badge(verification_status)', { ascending: true })
       else                             q = q.order('created_at', { ascending: false })
 
       q = q.limit(60)
-      const { data, count, error } = await q
+      const { data, count, error: loadError } = await q
       if (!alive) return
-      if (!error) { setPlayers(data ?? []); setTotalCount(count ?? data?.length ?? 0) }
+      if (loadError) {
+        setPlayers([])
+        setTotalCount(null)
+        setError(loadError.message)
+      } else {
+        setPlayers(data ?? [])
+        setTotalCount(count ?? data?.length ?? 0)
+      }
       setLoading(false)
     }
-    run()
+    run().catch((loadError) => {
+      if (!alive) return
+      setPlayers([])
+      setTotalCount(null)
+      setError(loadError instanceof Error ? loadError.message : String(loadError))
+      setLoading(false)
+    })
     return () => { alive = false }
   }, [filters, sort, supabase])
 
@@ -187,23 +204,23 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
 
       <div className="col-6 col-md-3 col-lg-2">
         <FilterSelect id="f-position" label="Position" value={filters.position} onChange={upd('position')}
-          options={FOOTBALL_POSITIONS} />
+          options={FOOTBALL_POSITIONS} placeholder="All positions" />
       </div>
       <div className="col-6 col-md-3 col-lg-2">
         <FilterSelect id="f-agegroup" label="Age Group" value={filters.ageGroup} onChange={upd('ageGroup')}
-          options={AGE_GROUPS} />
+          options={AGE_GROUPS} placeholder="All age groups" />
       </div>
       <div className="col-6 col-md-3 col-lg-2">
         <FilterSelect id="f-nationality" label="Nationality" value={filters.nationality} onChange={upd('nationality')}
-          options={NATIONALITIES} />
+          options={NATIONALITIES} placeholder="All nationalities" />
       </div>
       <div className="col-6 col-md-3 col-lg-2">
         <FilterSelect id="f-foot" label="Preferred Foot" value={filters.foot} onChange={upd('foot')}
-          options={[{ value:'left',label:'Left'},{ value:'right',label:'Right'},{ value:'both',label:'Both'}]} />
+          options={[{ value:'left',label:'Left'},{ value:'right',label:'Right'},{ value:'both',label:'Both'}]} placeholder="Any" />
       </div>
       <div className="col-6 col-md-3 col-lg-2">
         <FilterSelect id="f-region" label="Region" value={filters.region} onChange={upd('region')}
-          options={REGIONS} />
+          options={REGIONS} placeholder="All regions" />
       </div>
       <div className="col-6 col-md-3 col-lg-2">
         <FilterSelect id="f-avail" label="Availability" value={filters.availability} onChange={upd('availability')}
@@ -212,7 +229,7 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
             { value:'available_jan_2026', label:'Available Jan 2026'},
             { value:'available_jul_2026', label:'Available Jul 2026'},
             { value:'under_contract',     label:'Under Contract'    },
-          ]} />
+          ]} placeholder="Any" />
       </div>
       <div className="col-6 col-md-3 col-lg-2">
         <label className="form-label small fw-semibold mb-1" htmlFor="f-minapps">Min Apps</label>
@@ -282,7 +299,7 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
             Filters
             {activeCount > 0 && <span className="badge text-bg-primary ms-1" style={{ fontSize: 10 }}>{activeCount}</span>}
           </button>
-          <select className="form-select form-select-sm flex-shrink-0" style={{ width: 'auto' }}
+          <select className="form-select form-select-sm flex-shrink-1" style={{ width: '7rem', minWidth: 0 }}
             value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort players">
             {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
@@ -353,7 +370,11 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
         </div>
       )}
 
-      {loading ? (
+      {error ? (
+        <div className="alert alert-danger" role="alert">
+          Could not load players: {error}
+        </div>
+      ) : loading ? (
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
           {Array.from({ length: 6 }).map((_, i) => <div className="col" key={i}><SkeletonPlayerCard /></div>)}
         </div>
@@ -367,7 +388,7 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
       ) : (
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
           {players.map((p) => {
-            const verified = p.profiles?.verification_status === 'verified'
+            const verified = p.profile_badge?.verification_status === 'verified'
             const foot     = p.preferred_foot || p.foot
             const avail    = {
               available_now:      { cls: 'text-bg-success', label: 'Available' },
@@ -405,10 +426,8 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
                     <div className="flex-grow-1 min-w-0">
                       <div className="d-flex align-items-center gap-1 flex-wrap mb-1">
                         <span className="fw-bold text-truncate" style={{ color: 'var(--fc-blue-700)' }}>{p.display_name}</span>
-                        {verified && (
-                          <i className="bi bi-patch-check-fill text-success flex-shrink-0" aria-label="Verified" style={{ fontSize: 14 }} />
-                        )}
                       </div>
+                      {verified && <VerifiedBadge status="verified" role={p.profile_badge?.role} label={p.profile_badge?.verification_badge} className="px-2 py-1 mb-2" />}
 
                       <div className="d-flex flex-wrap gap-1 mb-2">
                         {p.position && (

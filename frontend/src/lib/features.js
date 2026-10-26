@@ -5,6 +5,8 @@
  */
 
 export const BASKETBALL_ENABLED = false
+export const PAYMENTS_ENABLED = false
+export const MAX_PLAYER_TRAINING_MINUTES = 30
 
 // ─── Football positions (full list including Left Full Back for job posts) ────
 export const FOOTBALL_POSITIONS = [

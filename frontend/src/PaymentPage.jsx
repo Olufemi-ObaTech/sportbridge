@@ -1,9 +1,8 @@
 /**
  * PaymentPage.jsx — Payment / Premium Plans
  *
- * STATUS: INACTIVE — PAYMENTS_ENABLED = false in features.js
- * All Stripe integration is wired but the UI shows "coming soon" until
- * PAYMENTS_ENABLED is set to true.
+ * STATUS: INACTIVE — checkout is intentionally unavailable until payments
+ * are configured and explicitly enabled.
  *
  * Plans:
  *  - Player Free     — always free, basic profile
@@ -21,8 +20,7 @@
  *  5. Set up Stripe webhook → Netlify Function to update profiles.plan
  */
 
-// ─── Feature flag — flip to true when Stripe is configured ───────────────────
-export const PAYMENTS_ENABLED = false
+import { PAYMENTS_ENABLED } from './lib/features'
 
 const CURRENCY = '₦'
 const PLANS = [

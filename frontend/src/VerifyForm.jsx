@@ -95,6 +95,23 @@ function PlayerVerifyForm({ supabase, user, onDone }) {
 
   const submit = async (e) => {
     e.preventDefault()
+    const { data: fullMatchVideo, error: fullMatchError } = await supabase
+      .from('media_assets')
+      .select('id')
+      .eq('owner_id', user.id)
+      .eq('asset_type', 'video')
+      .eq('video_kind', 'full_match')
+      .limit(1)
+      .maybeSingle()
+    if (fullMatchError) {
+      setError(`Could not confirm your full-match video: ${fullMatchError.message}`)
+      return
+    }
+    if (!fullMatchVideo) {
+      setError('Upload an uncut full-match video from your dashboard before submitting player verification.')
+      return
+    }
+
     if (idType === 'nin') {
       if (!nin.trim() || nin.trim().length < 11) { setError('NIN must be 11 digits.'); return }
     } else {
@@ -113,11 +130,14 @@ function PlayerVerifyForm({ supabase, user, onDone }) {
     if (!letRes.ok) { setError(letRes.error); setSaving(false); return }
 
     let cvUrl = null
+    let cvProfileWarning = ''
     if (cv?.file) {
       const cvRes = await guardedUpload(supabase, cv.file, 'private-documents', `cv/${user.id}/`, 'cv', user.id, 0)
       if (!cvRes.ok) { setError(cvRes.error); setSaving(false); return }
       cvUrl = cvRes.url
-      await supabase.from('player_private').upsert({ player_id: user.id, cv_storage_path: cvUrl, updated_at: new Date().toISOString() }, { onConflict: 'player_id' })
+      const { error: cvProfileError } = await supabase.from('player_private')
+        .upsert({ player_id: user.id, cv_storage_path: cvUrl, updated_at: new Date().toISOString() }, { onConflict: 'player_id' })
+      if (cvProfileError) cvProfileWarning = ` Your CV was uploaded but could not be added to your private profile: ${cvProfileError.message}`
     }
 
     const payload = {
@@ -135,8 +155,13 @@ function PlayerVerifyForm({ supabase, user, onDone }) {
     const { error: dbErr } = await supabase.from('verification_requests').insert(payload)
     setSaving(false)
     if (dbErr) { setError(dbErr.message); return }
-    await supabase.from('profiles').update({ verification_status: 'pending' }).eq('id', user.id)
-    setNotice('Verification submitted! Our team reviews within 48 hours.')
+    const { error: profileError } = await supabase.from('profiles')
+      .update({ verification_status: 'pending' }).eq('id', user.id).select('id').single()
+    if (profileError) {
+      setError(`Verification was submitted, but the profile status could not be updated: ${profileError.message}`)
+      return
+    }
+    setNotice(`Verification submitted! Our team reviews within 48 hours.${cvProfileWarning}`)
     onDone?.()
   }
 
@@ -287,7 +312,12 @@ function AcademyVerifyForm({ supabase, user, onDone }) {
     })
     setSaving(false)
     if (dbErr) { setError(dbErr.message); return }
-    await supabase.from('profiles').update({ verification_status: 'pending' }).eq('id', user.id)
+    const { error: profileError } = await supabase.from('profiles')
+      .update({ verification_status: 'pending' }).eq('id', user.id).select('id').single()
+    if (profileError) {
+      setError(`Verification was submitted, but the profile status could not be updated: ${profileError.message}`)
+      return
+    }
     setNotice('Club verification submitted. Our team reviews within 48 hours.')
     onDone?.()
   }
@@ -444,7 +474,12 @@ function AgentVerifyForm({ supabase, user, onDone }) {
     })
     setSaving(false)
     if (dbErr) { setError(dbErr.message); return }
-    await supabase.from('profiles').update({ verification_status: 'pending' }).eq('id', user.id)
+    const { error: profileError } = await supabase.from('profiles')
+      .update({ verification_status: 'pending' }).eq('id', user.id).select('id').single()
+    if (profileError) {
+      setError(`Verification was submitted, but the profile status could not be updated: ${profileError.message}`)
+      return
+    }
     setNotice('Agent verification submitted. Our team reviews within 48 hours.')
     onDone?.()
   }
@@ -572,7 +607,12 @@ function CoachVerifyForm({ supabase, user, onDone }) {
     })
     setSaving(false)
     if (dbErr) { setError(dbErr.message); return }
-    await supabase.from('profiles').update({ verification_status: 'pending' }).eq('id', user.id)
+    const { error: profileError } = await supabase.from('profiles')
+      .update({ verification_status: 'pending' }).eq('id', user.id).select('id').single()
+    if (profileError) {
+      setError(`Verification was submitted, but the profile status could not be updated: ${profileError.message}`)
+      return
+    }
     setNotice('Coach verification submitted. Our team reviews within 48 hours.')
     onDone?.()
   }

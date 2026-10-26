@@ -99,8 +99,15 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  if auth.uid() = old.id and new.role is distinct from old.role then
-    raise exception 'Profile roles cannot be changed by the profile owner.';
+  if auth.uid() = old.id
+     and (
+       new.role is distinct from old.role
+       or (
+         new.status is distinct from old.status
+         and not public.current_user_is_admin()
+       )
+     ) then
+    raise exception 'Profile roles and account status cannot be changed by the profile owner.';
   end if;
 
   return new;
@@ -176,10 +183,40 @@ alter table public.profiles
   add column if not exists username text,
   add column if not exists phone text,
   add column if not exists avatar_path text,
+  add column if not exists country text,
+  add column if not exists region text,
   add column if not exists sport text not null default 'football',
   add column if not exists status text not null default 'active',
+  add column if not exists verification_status text not null default 'unverified'
+    check (verification_status in ('unverified','pending','verified','rejected')),
+  add column if not exists verification_badge text,
   add column if not exists referred_by uuid references public.profiles(id) on delete set null,
   add column if not exists updated_at timestamptz not null default now();
+
+create or replace function public.protect_verification_fields()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if (
+    new.verification_badge is distinct from old.verification_badge
+    or (
+      new.verification_status is distinct from old.verification_status
+      and new.verification_status not in ('pending','unverified')
+    )
+  ) and not public.current_user_is_admin() then
+    raise exception 'Only an administrator can award or revoke verification badges.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_profile_verification_fields on public.profiles;
+create trigger protect_profile_verification_fields
+  before update on public.profiles
+  for each row execute function public.protect_verification_fields();
 
 create unique index if not exists profiles_username_unique_idx on public.profiles (lower(username)) where username is not null;
 
@@ -257,6 +294,60 @@ create table if not exists public.coach_profiles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+create table if not exists public.academy_player_verifications (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid not null unique references public.players(id) on delete cascade,
+  academy_id uuid not null references public.academy_profiles(id) on delete cascade,
+  submitted_by uuid not null references public.profiles(id) on delete cascade,
+  ownership_proof_path text not null,
+  identity_document_path text not null,
+  status text not null default 'pending'
+    check (status in ('pending','approved','rejected')),
+  reviewer_id uuid references public.profiles(id) on delete set null,
+  reviewer_notes text,
+  submitted_at timestamptz not null default now(),
+  reviewed_at timestamptz
+);
+
+create or replace function public.review_academy_player_verification(
+  p_verification_id uuid,
+  p_approved boolean,
+  p_reviewer_notes text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  reviewed_player_id uuid;
+begin
+  if not public.current_user_is_admin() then
+    raise exception 'Only an administrator can review academy player documents.';
+  end if;
+
+  update public.academy_player_verifications
+  set status = case when p_approved then 'approved' else 'rejected' end,
+      reviewer_id = (select auth.uid()),
+      reviewer_notes = p_reviewer_notes,
+      reviewed_at = now()
+  where id = p_verification_id and status = 'pending'
+  returning player_id into reviewed_player_id;
+
+  if reviewed_player_id is null then
+    raise exception 'Pending academy player verification was not found.';
+  end if;
+
+  update public.players
+  set is_public = p_approved,
+      updated_at = now()
+  where id = reviewed_player_id;
+end;
+$$;
+
+revoke all on function public.review_academy_player_verification(uuid, boolean, text) from public, anon;
+grant execute on function public.review_academy_player_verification(uuid, boolean, text) to authenticated;
 
 create table if not exists public.teams (
   id uuid primary key default gen_random_uuid(),
@@ -349,6 +440,7 @@ create table if not exists public.feed_posts (
   is_training boolean not null default false,
   training_link text,
   training_at timestamptz,
+  training_duration_minutes integer check (training_duration_minutes is null or training_duration_minutes > 0),
   is_live boolean not null default false,
   live_link text,
   live_at timestamptz,
@@ -372,6 +464,8 @@ create table if not exists public.media_assets (
   storage_path text,
   external_url text,
   youtube_embed_id text,
+  video_kind text check (video_kind is null or video_kind in ('highlight','full_match','training')),
+  file_hash text check (file_hash is null or file_hash ~ '^[a-f0-9]{64}$'),
   title text,
   thumbnail_path text,
   duration_seconds integer check (duration_seconds is null or duration_seconds >= 0),
@@ -387,6 +481,50 @@ create table if not exists public.media_assets (
   check (storage_bucket <> 'private-media' or visibility = 'private'),
   check (asset_type <> 'document' or (visibility = 'private' and storage_bucket = 'private-documents'))
 );
+
+alter table public.media_assets
+  add column if not exists video_kind text,
+  add column if not exists file_hash text;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conrelid = 'public.media_assets'::regclass
+      and conname = 'media_assets_video_kind_check'
+  ) then
+    alter table public.media_assets
+      add constraint media_assets_video_kind_check
+      check (video_kind is null or video_kind in ('highlight','full_match','training'));
+  end if;
+end;
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conrelid = 'public.media_assets'::regclass
+      and conname = 'media_assets_file_hash_check'
+  ) then
+    alter table public.media_assets
+      add constraint media_assets_file_hash_check
+      check (file_hash is null or file_hash ~ '^[a-f0-9]{64}$');
+  end if;
+end;
+$$;
+
+-- Existing videos are classified only when their stored title makes the type clear.
+update public.media_assets
+set video_kind = case
+  when lower(coalesce(title, '')) like '%full match%' then 'full_match'
+  when lower(coalesce(title, '')) like '%training%' then 'training'
+  when lower(coalesce(title, '')) like '%highlight%' then 'highlight'
+  else null
+end
+where asset_type = 'video' and video_kind is null;
 
 create table if not exists public.post_comments (
   id uuid primary key default gen_random_uuid(),
@@ -410,6 +548,23 @@ alter table public.jobs
   add column if not exists academy_id uuid references public.academy_profiles(id) on delete cascade,
   add column if not exists posted_by_user_id uuid references public.profiles(id) on delete set null,
   add column if not exists sport text not null default 'football',
+  add column if not exists job_type text not null default 'player_needed'
+    check (job_type in ('player_needed','staff_needed','seeking_job')),
+  add column if not exists player_position text,
+  add column if not exists staff_role text,
+  add column if not exists age_group text,
+  add column if not exists region text,
+  add column if not exists country text,
+  add column if not exists nationality text,
+  add column if not exists work_type text,
+  add column if not exists budget integer,
+  add column if not exists salary integer,
+  add column if not exists free_agent_only boolean not null default false,
+  add column if not exists license_required boolean not null default false,
+  add column if not exists facility_pictures jsonb not null default '[]'::jsonb,
+  add column if not exists club_cv_url text,
+  add column if not exists is_verified boolean not null default false,
+  add column if not exists posted_by uuid references public.profiles(id) on delete set null,
   add column if not exists role_type text,
   add column if not exists requirements text,
   add column if not exists location text,
@@ -506,6 +661,18 @@ create table if not exists public.agent_recommendations (
   updated_at timestamptz not null default now(),
   check (player_id is not null or nullif(trim(recommended_to_name), '') is not null)
 );
+
+alter table public.agent_recommendations
+  alter column agent_profile_id drop not null,
+  add column if not exists academy_profile_id uuid references public.academy_profiles(id) on delete cascade,
+  add column if not exists recommended_to_type text not null default 'agent'
+    check (recommended_to_type in ('agent','academy'));
+
+alter table public.agent_recommendations
+  drop constraint if exists agent_recommendations_target_check;
+alter table public.agent_recommendations
+  add constraint agent_recommendations_target_check
+  check ((agent_profile_id is not null) <> (academy_profile_id is not null));
 
 create table if not exists public.agent_documents (
   id uuid primary key default gen_random_uuid(),
@@ -637,6 +804,41 @@ as $$
   );
 $$;
 
+create or replace function public.current_user_is_verified()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = (select auth.uid())
+      and status = 'active'
+      and verification_status = 'verified'
+  );
+$$;
+
+create or replace function public.current_user_can_host_training(p_duration_minutes integer)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = (select auth.uid())
+      and status = 'active'
+      and verification_status = 'verified'
+      and p_duration_minutes > 0
+      and (
+        (role = 'player' and p_duration_minutes <= 30)
+        or role in ('coach', 'academy')
+      )
+  );
+$$;
+
 create or replace function public.current_user_owns_academy(p_academy_id uuid)
 returns boolean
 language sql
@@ -721,12 +923,16 @@ as $$
 $$;
 
 revoke all on function public.profile_is_active(uuid) from public;
+revoke all on function public.current_user_is_verified() from public, anon;
+revoke all on function public.current_user_can_host_training(integer) from public, anon;
 revoke all on function public.current_user_owns_academy(uuid) from public, anon;
 revoke all on function public.current_user_owns_player(uuid) from public, anon;
 revoke all on function public.current_user_owns_agent(uuid) from public, anon;
 revoke all on function public.current_user_is_conversation_member(uuid) from public, anon;
 revoke all on function public.current_user_has_agent_interaction(uuid) from public, anon;
 grant execute on function public.profile_is_active(uuid) to anon, authenticated;
+grant execute on function public.current_user_is_verified() to authenticated;
+grant execute on function public.current_user_can_host_training(integer) to authenticated;
 grant execute on function public.current_user_owns_academy(uuid) to authenticated;
 grant execute on function public.current_user_owns_player(uuid) to authenticated;
 grant execute on function public.current_user_owns_agent(uuid) to authenticated;
@@ -1000,16 +1206,65 @@ create policy "players authenticated read" on public.players for select to authe
   );
 create policy "players owner insert" on public.players for insert to authenticated
   with check (
-    (profile_id = (select auth.uid()) and public.profile_is_active((select auth.uid())))
-    or (academy_id is not null and public.current_user_owns_academy(academy_id))
+    (profile_id = (select auth.uid()) and academy_id is null and public.profile_is_active((select auth.uid())))
+    or (
+      profile_id is null
+      and
+      academy_id is not null
+      and public.current_user_owns_academy(academy_id)
+      and public.current_user_is_verified()
+      and not is_public
+    )
   );
 create policy "players owner update" on public.players for update to authenticated
   using (public.current_user_owns_player(id))
-  with check (public.current_user_owns_player(id));
+  with check (
+    public.current_user_owns_player(id)
+    and (
+      public.current_user_is_admin()
+      or profile_id = (select auth.uid())
+      or (
+        academy_id is not null
+        and public.current_user_owns_academy(academy_id)
+        and (
+          not is_public
+          or exists (
+            select 1 from public.academy_player_verifications as verification
+            where verification.player_id = players.id
+              and verification.status = 'approved'
+          )
+        )
+      )
+    )
+  );
 create policy "players owner delete" on public.players for delete to authenticated
   using (public.current_user_owns_player(id));
 create policy "players admin manage" on public.players for all to authenticated
   using (public.current_user_is_admin()) with check (public.current_user_is_admin());
+
+alter table public.academy_player_verifications enable row level security;
+drop policy if exists "academy player verification read" on public.academy_player_verifications;
+create policy "academy player verification read" on public.academy_player_verifications
+  for select to authenticated
+  using (submitted_by = (select auth.uid()) or public.current_user_is_admin());
+drop policy if exists "academy player verification insert" on public.academy_player_verifications;
+create policy "academy player verification insert" on public.academy_player_verifications
+  for insert to authenticated
+  with check (
+    submitted_by = (select auth.uid())
+    and status = 'pending'
+    and public.current_user_is_verified()
+    and public.current_user_owns_academy(academy_id)
+    and exists (
+      select 1 from public.players
+      where players.id = player_id and players.academy_id = academy_id and not players.is_public
+    )
+  );
+drop policy if exists "academy player verification admin update" on public.academy_player_verifications;
+create policy "academy player verification admin update" on public.academy_player_verifications
+  for update to authenticated
+  using (public.current_user_is_admin())
+  with check (public.current_user_is_admin());
 
 drop policy if exists "jobs are viewable by everyone" on public.jobs;
 drop policy if exists "jobs can be created by club owner" on public.jobs;
@@ -1031,11 +1286,36 @@ create policy "jobs authenticated read" on public.jobs for select to authenticat
 create policy "jobs owner insert" on public.jobs for insert to authenticated
   with check (
     posted_by_user_id = (select auth.uid())
+    and public.current_user_is_verified()
+    and exists (
+      select 1 from public.profiles
+      where id = (select auth.uid())
+        and (
+          (role = 'academy' and job_type in ('player_needed','staff_needed'))
+          or (role = 'agent' and job_type = 'player_needed')
+          or (role = 'coach' and job_type = 'seeking_job')
+        )
+    )
     and (club_id is null or exists (select 1 from public.clubs where clubs.id = club_id and owner_id = (select auth.uid())))
   );
 create policy "jobs owner update" on public.jobs for update to authenticated
   using (posted_by_user_id = (select auth.uid()) or exists (select 1 from public.clubs where clubs.id = jobs.club_id and clubs.owner_id = (select auth.uid())))
-  with check (posted_by_user_id = (select auth.uid()) or exists (select 1 from public.clubs where clubs.id = jobs.club_id and clubs.owner_id = (select auth.uid())));
+  with check (
+    (
+      (posted_by_user_id = (select auth.uid()) or exists (select 1 from public.clubs where clubs.id = jobs.club_id and clubs.owner_id = (select auth.uid())))
+      and public.current_user_is_verified()
+      and exists (
+        select 1 from public.profiles
+        where id = (select auth.uid())
+          and (
+            (role = 'academy' and job_type in ('player_needed','staff_needed'))
+            or (role = 'agent' and job_type = 'player_needed')
+            or (role = 'coach' and job_type = 'seeking_job')
+          )
+      )
+    )
+    or public.current_user_is_admin()
+  );
 create policy "jobs owner delete" on public.jobs for delete to authenticated
   using (posted_by_user_id = (select auth.uid()) or exists (select 1 from public.clubs where clubs.id = jobs.club_id and clubs.owner_id = (select auth.uid())));
 create policy "jobs admin manage" on public.jobs for all to authenticated
@@ -1063,6 +1343,16 @@ drop policy if exists "academy profile owner access" on public.academy_profiles;
 create policy "academy profile owner access" on public.academy_profiles for all to authenticated
   using (user_id = (select auth.uid()) or public.current_user_is_admin())
   with check (user_id = (select auth.uid()) or public.current_user_is_admin());
+drop policy if exists "active academy profiles are discoverable" on public.academy_profiles;
+create policy "active academy profiles are discoverable" on public.academy_profiles for select to authenticated
+  using (
+    exists (
+      select 1 from public.clubs
+      where clubs.id = academy_profiles.club_id
+        and clubs.status = 'active'
+        and public.profile_is_active(academy_profiles.user_id)
+    )
+  );
 drop policy if exists "agent profiles public read" on public.agent_profiles;
 drop policy if exists "agent profile authenticated read" on public.agent_profiles;
 drop policy if exists "agent profile owner access" on public.agent_profiles;
@@ -1138,10 +1428,25 @@ create policy "feed posts visible read" on public.feed_posts for select to anon,
   using ((visibility = 'public' and status = 'published' and public.profile_is_active(author_id))
     or author_id = (select auth.uid()) or public.current_user_is_admin());
 create policy "feed posts author insert" on public.feed_posts for insert to authenticated
-  with check (author_id = (select auth.uid()) and public.profile_is_active((select auth.uid())) and not is_pinned);
+  with check (
+    author_id = (select auth.uid())
+    and public.profile_is_active((select auth.uid()))
+    and not is_pinned
+    and (
+      (not is_live and not is_training)
+      or public.current_user_can_host_training(training_duration_minutes)
+    )
+  );
 create policy "feed posts author update" on public.feed_posts for update to authenticated
   using (author_id = (select auth.uid()) or public.current_user_is_admin())
-  with check (author_id = (select auth.uid()) or public.current_user_is_admin());
+  with check (
+    (author_id = (select auth.uid()) or public.current_user_is_admin())
+    and (
+      (not is_live and not is_training)
+      or public.current_user_can_host_training(training_duration_minutes)
+      or public.current_user_is_admin()
+    )
+  );
 create policy "feed posts author delete" on public.feed_posts for delete to authenticated
   using (author_id = (select auth.uid()) or public.current_user_is_admin());
 
@@ -1237,14 +1542,38 @@ create policy "agent ratings owner update" on public.agent_ratings for update to
 
 drop policy if exists "recommendations participant access" on public.agent_recommendations;
 create policy "recommendations participant access" on public.agent_recommendations for select to authenticated
-  using (recommender_user_id = (select auth.uid()) or public.current_user_owns_agent(agent_profile_id) or public.current_user_is_admin());
+  using (
+    recommender_user_id = (select auth.uid())
+    or public.current_user_owns_agent(agent_profile_id)
+    or public.current_user_owns_academy(academy_profile_id)
+    or public.current_user_is_admin()
+  );
 drop policy if exists "recommendations owner insert" on public.agent_recommendations;
 create policy "recommendations owner insert" on public.agent_recommendations for insert to authenticated
-  with check (recommender_user_id = (select auth.uid()));
+  with check (
+    recommender_user_id = (select auth.uid())
+    and public.current_user_is_verified()
+    and recommended_to_type = case
+      when agent_profile_id is not null then 'agent'
+      else 'academy'
+    end
+    and exists (
+      select 1 from public.profiles
+      where id = (select auth.uid()) and role = 'coach'
+    )
+  );
 drop policy if exists "recommendations participants update" on public.agent_recommendations;
 create policy "recommendations participants update" on public.agent_recommendations for update to authenticated
-  using (public.current_user_owns_agent(agent_profile_id) or public.current_user_is_admin())
-  with check (public.current_user_owns_agent(agent_profile_id) or public.current_user_is_admin());
+  using (
+    public.current_user_owns_agent(agent_profile_id)
+    or public.current_user_owns_academy(academy_profile_id)
+    or public.current_user_is_admin()
+  )
+  with check (
+    public.current_user_owns_agent(agent_profile_id)
+    or public.current_user_owns_academy(academy_profile_id)
+    or public.current_user_is_admin()
+  );
 
 drop policy if exists "agent documents private access" on public.agent_documents;
 create policy "agent documents private access" on public.agent_documents for all to authenticated
@@ -1307,15 +1636,18 @@ grant usage on schema public to anon, authenticated;
 revoke all on public.profiles from anon;
 revoke update on public.profiles from authenticated;
 grant select on public.profiles to authenticated;
-grant update (full_name, username, avatar_path, phone, updated_at, role, status, verification_status) on public.profiles to authenticated;
+grant update (full_name, username, avatar_path, phone, country, region, updated_at, role, status, verification_status) on public.profiles to authenticated;
 revoke select on public.players from anon;
-grant select (id, display_name, position, age, country, nationality, gender, bio, sport, primary_photo_path, is_public, status, region, preferred_foot, foot, age_group, availability, stats, achievements_data, current_club, created_at) on public.players to anon;
+grant select (
+  id, display_name, position, age, country, nationality, gender, bio, sport,
+  primary_photo_path, is_public, status, foot, current_club, created_at
+) on public.players to anon;
 -- views_count is added by ALTER TABLE further below — granted again after that ALTER
 revoke select on public.clubs from anon;
 grant select (id, name, slug, sports, country, state, about, website, logo_path, cover_image_path, status, verified_badge, created_at) on public.clubs to anon;
 revoke select on public.jobs from anon;
 grant select (id, club_id, academy_id, posted_by_user_id, posted_by, title, description, job_type, player_position, staff_role, role_type, requirements, location, salary_min, salary_max, salary, currency, contract_type, application_deadline, age_group, region, budget, free_agent_only, license_required, facility_pictures, is_verified, sport, status, created_at) on public.jobs to anon;
-grant select, insert, update, delete on public.academy_profiles, public.agent_profiles, public.coach_profiles, public.teams, public.player_private, public.coach_private, public.academy_verifications, public.agent_verifications, public.media_assets, public.feed_posts, public.post_comments, public.post_likes, public.watchlists, public.access_requests, public.conversations, public.messages, public.agent_ratings, public.agent_recommendations, public.agent_documents, public.reports, public.admin_logs, public.saved_searches, public.trials, public.try_outs, public.try_out_interests, public.push_subscriptions to authenticated;
+grant select, insert, update, delete on public.academy_profiles, public.agent_profiles, public.coach_profiles, public.teams, public.player_private, public.coach_private, public.academy_verifications, public.agent_verifications, public.media_assets, public.feed_posts, public.post_comments, public.post_likes, public.watchlists, public.access_requests, public.conversations, public.messages, public.agent_ratings, public.agent_recommendations, public.agent_documents, public.reports, public.admin_logs, public.saved_searches, public.trials, public.try_outs, public.try_out_interests, public.push_subscriptions, public.academy_player_verifications to authenticated;
 grant select (id, user_id, club_id, sports, year_founded, leagues, languages, linkedin, created_at, updated_at) on public.academy_profiles to authenticated;
 grant select (id, user_id, agency_name, sport, nationality, gender, experience_years, regions, about, achievements, photo_path, cover_image_path, linkedin, is_public, verified_badge, created_at, updated_at) on public.agent_profiles to anon, authenticated;
 grant select (id, user_id, sport, full_name, badges, preferred_role, experience_years, current_club, nationality, gender, about, achievements, photo_path, cover_image_path, open_to_work, linkedin, is_public, created_at, updated_at) on public.coach_profiles to anon, authenticated;
@@ -1325,7 +1657,7 @@ grant select (id, feed_post_id, user_id, body, created_at) on public.post_commen
 grant select (id, feed_post_id, user_id, created_at) on public.post_likes to anon;
 grant select (id, posted_by_user_id, sport, gender, title, description, location, scheduled_date, age_group, status, created_at) on public.try_outs to anon;
 revoke select on public.media_assets from anon;
-grant select (id, player_id, feed_post_id, asset_type, storage_bucket, storage_path, external_url, youtube_embed_id, title, thumbnail_path, duration_seconds, is_featured, visibility, sort_order, created_at) on public.media_assets to anon;
+grant select (id, player_id, feed_post_id, asset_type, storage_bucket, storage_path, external_url, youtube_embed_id, video_kind, file_hash, title, thumbnail_path, duration_seconds, is_featured, visibility, sort_order, created_at) on public.media_assets to anon;
 grant select on public.media_assets to authenticated;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -1444,12 +1776,15 @@ alter table public.profiles
 -- JobPostForm posts to this table with job_type, player_position, staff_role.
 alter table public.jobs
   add column if not exists job_type text
-    not null default 'player_needed'
-    check (job_type in ('player_needed','staff_needed')),
+    not null default 'player_needed',
   add column if not exists player_position text,
   add column if not exists staff_role text,
   add column if not exists age_group text,
   add column if not exists region text,
+  add column if not exists country text,
+  add column if not exists nationality text,
+  add column if not exists work_type text
+    check (work_type in ('full_time','short_term','loan','internship')),
   add column if not exists budget integer,
   add column if not exists salary integer,
   add column if not exists free_agent_only boolean not null default false,
@@ -1458,6 +1793,22 @@ alter table public.jobs
   add column if not exists club_cv_url text,
   add column if not exists is_verified boolean not null default false,
   add column if not exists posted_by uuid references public.profiles(id) on delete set null;
+
+alter table public.jobs drop constraint if exists jobs_job_type_check;
+alter table public.jobs
+  add constraint jobs_job_type_check
+  check (job_type in ('player_needed','staff_needed','seeking_job'));
+alter table public.jobs drop constraint if exists jobs_work_type_check;
+alter table public.jobs
+  add constraint jobs_work_type_check
+  check (work_type is null or work_type in ('full_time','short_term','loan','internship'));
+
+alter table public.profiles
+  add column if not exists verification_badge text;
+
+alter table public.feed_posts
+  add column if not exists training_duration_minutes integer
+  check (training_duration_minutes is null or training_duration_minutes > 0);
 
 -- Backfill posted_by for existing job rows that already have a club_id
 update public.jobs j
@@ -1495,6 +1846,37 @@ create table if not exists public.opportunities (
 
 alter table public.opportunities enable row level security;
 
+create or replace function public.flag_opportunity_for_review()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  requires_review boolean;
+begin
+  if public.current_user_is_admin() then
+    return new;
+  end if;
+
+  requires_review :=
+    new.fee_amount > 0
+    or new.is_fee_flagged
+    or lower(coalesce(new.title, '') || ' ' || coalesce(new.description, ''))
+      ~ '(guaranteed selection|guaranteed trial|100% selection|100% guaranteed|pay before trial|pay to be selected|must pay|payment required|pay to play|pay for trial)';
+
+  new.is_fee_flagged := requires_review;
+  if requires_review then
+    new.status := 'pending_approval';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists flag_opportunity_for_review on public.opportunities;
+create trigger flag_opportunity_for_review
+  before insert or update on public.opportunities
+  for each row execute function public.flag_opportunity_for_review();
+
 -- Public read: anyone can see open, non-flagged tryouts
 drop policy if exists "opportunities public read" on public.opportunities;
 create policy "opportunities public read" on public.opportunities
@@ -1511,14 +1893,31 @@ create policy "opportunities owner read" on public.opportunities
 drop policy if exists "opportunities authenticated insert" on public.opportunities;
 create policy "opportunities authenticated insert" on public.opportunities
   for insert to authenticated
-  with check (posted_by = (select auth.uid()) and public.profile_is_active((select auth.uid())));
+  with check (
+    posted_by = (select auth.uid())
+    and public.current_user_is_verified()
+    and exists (
+      select 1 from public.profiles
+      where id = (select auth.uid()) and role in ('academy','agent')
+    )
+  );
 
 -- Owner can update their own; admin can update any
 drop policy if exists "opportunities owner update" on public.opportunities;
 create policy "opportunities owner update" on public.opportunities
   for update to authenticated
   using (posted_by = (select auth.uid()) or public.current_user_is_admin())
-  with check (posted_by = (select auth.uid()) or public.current_user_is_admin());
+  with check (
+    public.current_user_is_admin()
+    or (
+      posted_by = (select auth.uid())
+      and public.current_user_is_verified()
+      and exists (
+        select 1 from public.profiles
+        where id = (select auth.uid()) and role in ('academy','agent')
+      )
+    )
+  );
 
 -- ─── 4. uploads table (hash deduplication) ───────────────────────────────────
 -- guardedUpload() inserts here after every successful upload.
@@ -1533,6 +1932,14 @@ create table if not exists public.uploads (
   created_at   timestamptz not null default now()
 );
 
+update public.media_assets as media_row
+set file_hash = upload_row.file_hash
+from public.uploads as upload_row
+where media_row.owner_id = upload_row.user_id
+  and media_row.storage_path = upload_row.url
+  and media_row.file_hash is null
+  and media_row.asset_type = 'video';
+
 create index if not exists uploads_hash_idx      on public.uploads (file_hash);
 create index if not exists uploads_user_idx      on public.uploads (user_id);
 create index if not exists uploads_duplicate_idx on public.uploads (is_duplicate) where is_duplicate = true;
@@ -1542,15 +1949,89 @@ alter table public.uploads enable row level security;
 -- Users can read and insert their own uploads
 drop policy if exists "uploads owner access" on public.uploads;
 create policy "uploads owner access" on public.uploads
-  for all to authenticated
-  using  (user_id = (select auth.uid()) or public.current_user_is_admin())
-  with check (user_id = (select auth.uid()) or public.current_user_is_admin());
-
--- Hash lookup: any authenticated user can SELECT by hash (for duplicate check)
-drop policy if exists "uploads hash lookup" on public.uploads;
-create policy "uploads hash lookup" on public.uploads
   for select to authenticated
-  using (true);   -- RLS permits the read; row contains no PII beyond user_id
+  using (user_id = (select auth.uid()) or public.current_user_is_admin());
+
+-- Hash checks run through narrow functions so upload ownership and paths stay private.
+drop policy if exists "uploads hash lookup" on public.uploads;
+
+create or replace function public.upload_hash_exists_for_other_user(p_file_hash text)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  current_user_id uuid := (select auth.uid());
+begin
+  if current_user_id is null then
+    raise exception 'Sign in before checking duplicate uploads.';
+  end if;
+  if p_file_hash !~ '^[a-f0-9]{64}$' then
+    raise exception 'A valid SHA-256 hash is required.';
+  end if;
+
+  return exists (
+    select 1
+    from public.uploads
+    where file_hash = p_file_hash and user_id <> current_user_id
+  );
+end;
+$$;
+
+create or replace function public.register_upload_record(
+  p_file_hash text,
+  p_file_type text,
+  p_url text
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  current_user_id uuid := (select auth.uid());
+begin
+  if current_user_id is null then
+    raise exception 'Sign in before recording an upload.';
+  end if;
+  if p_file_hash !~ '^[a-f0-9]{64}$' then
+    raise exception 'A valid SHA-256 hash is required.';
+  end if;
+  if coalesce(length(p_file_type), 0) = 0 or coalesce(length(p_file_type), 0) > 128 then
+    raise exception 'A valid file type is required.';
+  end if;
+  if coalesce(length(p_url), 0) = 0 or coalesce(length(p_url), 0) > 2048 then
+    raise exception 'A valid storage path is required.';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(p_file_hash, 0));
+
+  if exists (
+    select 1 from public.uploads
+    where file_hash = p_file_hash and user_id <> current_user_id
+  ) then
+    insert into public.uploads (user_id, file_hash, file_type, url, is_duplicate)
+    values (current_user_id, p_file_hash, p_file_type, p_url, true);
+    return false;
+  end if;
+
+  if not exists (
+    select 1 from public.uploads
+    where file_hash = p_file_hash and user_id = current_user_id
+  ) then
+    insert into public.uploads (user_id, file_hash, file_type, url)
+    values (current_user_id, p_file_hash, p_file_type, p_url);
+  end if;
+  return true;
+end;
+$$;
+
+revoke all on function public.upload_hash_exists_for_other_user(text) from public, anon;
+revoke all on function public.register_upload_record(text, text, text) from public, anon;
+grant execute on function public.upload_hash_exists_for_other_user(text) to authenticated;
+grant execute on function public.register_upload_record(text, text, text) to authenticated;
 
 -- ─── 5. Indexes for new columns ──────────────────────────────────────────────
 create index if not exists jobs_job_type_idx       on public.jobs (job_type, status);
@@ -1582,7 +2063,8 @@ create trigger opportunities_updated_at
 -- already established earlier in this file.
 grant select             on public.opportunities to anon;
 grant select, insert, update on public.opportunities to authenticated;
-grant select, insert     on public.uploads       to authenticated;
+grant select on public.uploads to authenticated;
+revoke insert, update, delete on public.uploads from authenticated;
 
 -- =============================================================================
 -- END OF DEMO ADDITIONS
@@ -1608,15 +2090,36 @@ alter table public.players
   -- view counter: incremented by PlayerProfile on each page load
   add column if not exists views_count integer not null default 0;
 
+revoke insert, update on public.players from authenticated;
+grant insert (
+  profile_id, academy_id, display_name, position, secondary_position, age,
+  country, nationality, bio, is_public, sport, gender, foot, preferred_foot,
+  dominant_hand, height_cm, weight_kg, current_club, achievements, linkedin,
+  region, stats, updated_at
+) on public.players to authenticated;
+grant update (
+  display_name, position, secondary_position, age, country, nationality, bio,
+  is_public, sport, gender, foot, preferred_foot, dominant_hand, height_cm,
+  weight_kg, current_club, achievements, linkedin, region, stats, updated_at
+) on public.players to authenticated;
+grant update (views_count) on public.players to authenticated;
+
 -- Now views_count exists — regrant players to anon with all Sprint 2 columns
 revoke select on public.players from anon;
 grant select (
-  id, display_name, position, age, country, nationality, gender, bio, sport,
-  primary_photo_path, is_public, status, region, preferred_foot, foot,
-  age_group, availability, stats, achievements_data, views_count,
-  current_club, created_at
+  id, profile_id, display_name, position, secondary_position, age, country,
+  nationality, gender, bio, sport, primary_photo_path, is_public, status,
+  region, preferred_foot, foot, dominant_hand, height_cm, weight_kg,
+  age_group, availability, stats, achievements, achievements_data, linkedin,
+  views_count, current_club, created_at
 ) on public.players to anon;
-grant update (views_count) on public.players to authenticated;
+grant select (
+  id, profile_id, academy_id, display_name, position, secondary_position,
+  age, country, nationality, gender, bio, sport, primary_photo_path,
+  is_public, status, region, preferred_foot, foot, dominant_hand, height_cm,
+  weight_kg, age_group, availability, stats, achievements, achievements_data,
+  linkedin, views_count, current_club, created_at
+) on public.players to authenticated;
 
 create index if not exists players_views_idx on public.players (views_count desc) where is_public = true and status = 'active';
 
@@ -1697,6 +2200,99 @@ create table if not exists public.verification_requests (
   reviewed_at          timestamptz
 );
 
+create or replace function public.review_verification_request(
+  p_request_id uuid,
+  p_approved boolean,
+  p_reviewer_notes text default null
+)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  request_row public.verification_requests%rowtype;
+  badge_label text;
+  coach_role text;
+begin
+  if not public.current_user_is_admin() then
+    raise exception 'Only an administrator can review verification requests.';
+  end if;
+
+  select * into request_row
+  from public.verification_requests
+  where id = p_request_id and status = 'pending'
+  for update;
+
+  if not found then
+    raise exception 'Pending verification request was not found.';
+  end if;
+
+  if p_approved then
+    if request_row.role = 'player' then
+      if not exists (
+        select 1
+        from public.players as player_row
+        join public.media_assets as media_row on media_row.player_id = player_row.id
+        where player_row.profile_id = request_row.user_id
+          and media_row.owner_id = request_row.user_id
+          and media_row.asset_type = 'video'
+          and media_row.video_kind = 'full_match'
+          and media_row.visibility = 'public'
+      ) then
+        raise exception 'A public full-match video must be uploaded before player verification can be approved.';
+      end if;
+      badge_label := 'Verified Player';
+    elsif request_row.role = 'academy' then
+      badge_label := case
+        when request_row.fa_verification_body like 'FIFA TMS:%' then 'FIFA TMS Verified Academy / Club'
+        else 'Verified Academy / Club'
+      end;
+    elsif request_row.role = 'agent' then
+      badge_label := case when request_row.fifa_agent_id is not null
+        then 'FIFA Agent Verified'
+        else 'Verified Agent / Scout'
+      end;
+    elsif request_row.role = 'coach' then
+      select preferred_role into coach_role
+      from public.coach_profiles where user_id = request_row.user_id;
+      badge_label := case
+        when lower(coalesce(coach_role, '')) like '%goal%keep%' then 'Verified Goalkeeper Coach'
+        when lower(coalesce(coach_role, '')) like '%fitness%' or lower(coalesce(coach_role, '')) like '%physio%' then 'Verified Fitness Coach'
+        when lower(coalesce(coach_role, '')) like '%team manager%' then 'Verified Team Manager'
+        when lower(coalesce(coach_role, '')) like '%sporting director%' then 'Verified Sporting Director'
+        when lower(coalesce(coach_role, '')) like '%scout%' then 'Verified Scout'
+        else 'Verified Coach'
+      end;
+    else
+      badge_label := 'Verified';
+    end if;
+  end if;
+
+  update public.verification_requests
+  set status = case when p_approved then 'approved' else 'rejected' end,
+      reviewer_id = (select auth.uid()),
+      reviewer_notes = p_reviewer_notes,
+      reviewed_at = now()
+  where id = request_row.id;
+
+  update public.profiles
+  set verification_status = case when p_approved then 'verified' else 'rejected' end,
+      verification_badge = case when p_approved then badge_label else null end
+  where id = request_row.user_id;
+
+  if request_row.role = 'agent' then
+    update public.agent_profiles set verified_badge = p_approved where user_id = request_row.user_id;
+  elsif request_row.role = 'academy' then
+    update public.clubs set verified_badge = p_approved where owner_id = request_row.user_id;
+  end if;
+  return badge_label;
+end;
+$$;
+
+revoke all on function public.review_verification_request(uuid, boolean, text) from public, anon;
+grant execute on function public.review_verification_request(uuid, boolean, text) to authenticated;
+
 alter table public.verification_requests enable row level security;
 
 -- Idempotent additions for existing Supabase deployments
@@ -1722,7 +2318,13 @@ create policy "verif owner read" on public.verification_requests
 drop policy if exists "verif owner insert" on public.verification_requests;
 create policy "verif owner insert" on public.verification_requests
   for insert to authenticated
-  with check (user_id = (select auth.uid()));
+  with check (
+    user_id = (select auth.uid())
+    and status = 'pending'
+    and reviewer_id is null
+    and reviewed_at is null
+    and role = (select profiles.role from public.profiles where profiles.id = (select auth.uid()))
+  );
 
 drop policy if exists "verif admin update" on public.verification_requests;
 create policy "verif admin update" on public.verification_requests
@@ -1730,7 +2332,7 @@ create policy "verif admin update" on public.verification_requests
   using (public.current_user_is_admin());
 
 -- ─── 5. Contact unlock table ──────────────────────────────────────────────────
--- Tracks which authenticated user has paid to unlock a player's contact.
+-- Records identity-gated test access; payment integration remains inactive.
 create table if not exists public.contact_unlocks (
   id          uuid primary key default gen_random_uuid(),
   unlocker_id uuid not null references public.profiles(id) on delete cascade,
@@ -1743,9 +2345,24 @@ alter table public.contact_unlocks enable row level security;
 
 drop policy if exists "contact unlock owner" on public.contact_unlocks;
 create policy "contact unlock owner" on public.contact_unlocks
-  for all to authenticated
-  using  (unlocker_id = (select auth.uid()) or public.current_user_is_admin())
-  with check (unlocker_id = (select auth.uid()));
+  for select to authenticated
+  using (unlocker_id = (select auth.uid()) or public.current_user_is_admin());
+drop policy if exists "contact unlock verified insert" on public.contact_unlocks;
+create policy "contact unlock verified insert" on public.contact_unlocks
+  for insert to authenticated
+  with check (
+    unlocker_id = (select auth.uid())
+    and public.current_user_is_verified()
+    and exists (
+      select 1
+      from public.players as player_row
+      where player_row.id = contact_unlocks.player_id
+        and player_row.profile_id <> (select auth.uid())
+        and player_row.is_public
+        and player_row.status = 'active'
+        and public.profile_is_active(player_row.profile_id)
+    )
+  );
 
 -- ─── 6. Indexes ───────────────────────────────────────────────────────────────
 create index if not exists players_availability_idx  on public.players (availability, is_public, status);
@@ -1761,6 +2378,164 @@ grant select, insert, update, delete on public.player_history to authenticated;
 grant select, insert on public.verification_requests to authenticated;
 grant update on public.verification_requests to authenticated;
 grant select, insert on public.contact_unlocks to authenticated;
+
+-- A narrowly scoped public projection avoids exposing private profile fields
+-- while allowing public player pages and feed cards to show verification.
+create or replace view public.public_profile_badges
+with (security_barrier = true)
+as
+select id, role, verification_status, verification_badge
+from public.profiles
+where status = 'active';
+
+revoke all on public.public_profile_badges from public;
+grant select on public.public_profile_badges to anon, authenticated;
+
+-- Computed relationships let PostgREST embed the safe badge projection without
+-- exposing profiles or relying on foreign keys from these tables to a view.
+create or replace function public.public_profile_badges(player_row public.players)
+returns setof public.public_profile_badges
+rows 1
+language sql
+stable
+set search_path = ''
+as $function$
+  select badge.*
+  from public.public_profile_badges as badge
+  where badge.id = player_row.profile_id
+$function$;
+
+create or replace function public.public_profile_badges(job_row public.jobs)
+returns setof public.public_profile_badges
+rows 1
+language sql
+stable
+set search_path = ''
+as $function$
+  select badge.*
+  from public.public_profile_badges as badge
+  where badge.id = job_row.posted_by_user_id
+$function$;
+
+create or replace function public.public_profile_badges(post_row public.feed_posts)
+returns setof public.public_profile_badges
+rows 1
+language sql
+stable
+set search_path = ''
+as $function$
+  select badge.*
+  from public.public_profile_badges as badge
+  where badge.id = post_row.author_id
+$function$;
+
+create or replace function public.public_profile_badges(opportunity_row public.opportunities)
+returns setof public.public_profile_badges
+rows 1
+language sql
+stable
+set search_path = ''
+as $function$
+  select badge.*
+  from public.public_profile_badges as badge
+  where badge.id = opportunity_row.posted_by
+$function$;
+
+revoke all on function public.public_profile_badges(public.players) from public;
+revoke all on function public.public_profile_badges(public.jobs) from public;
+revoke all on function public.public_profile_badges(public.feed_posts) from public;
+revoke all on function public.public_profile_badges(public.opportunities) from public;
+grant execute on function public.public_profile_badges(public.players) to anon, authenticated;
+grant execute on function public.public_profile_badges(public.jobs) to anon, authenticated;
+grant execute on function public.public_profile_badges(public.feed_posts) to anon, authenticated;
+grant execute on function public.public_profile_badges(public.opportunities) to anon, authenticated;
+
+notify pgrst, 'reload schema';
+
+-- Admin review flow for user reports. A confirmed scam blocks sign-in access
+-- through the profile status while preserving report and account history.
+alter table public.reports
+  add column if not exists reviewer_notes text;
+
+alter table public.reports
+  drop constraint if exists reports_status_check,
+  drop constraint if exists reports_reported_user_id_fkey,
+  alter column reported_user_id drop not null;
+
+alter table public.reports
+  add constraint reports_status_check
+    check (status in ('pending','investigating','confirmed_scam','dismissed','actioned')),
+  add constraint reports_reported_user_id_fkey
+    foreign key (reported_user_id) references public.profiles(id) on delete set null;
+
+create or replace function public.review_user_report(
+  p_report_id uuid,
+  p_outcome text,
+  p_reviewer_notes text
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  report_row public.reports%rowtype;
+  admin_user_id uuid := (select auth.uid());
+begin
+  if not public.current_user_is_admin() then
+    raise exception 'Only an administrator can review user reports.';
+  end if;
+  if p_outcome not in ('investigating','confirmed_scam','dismissed') then
+    raise exception 'Unsupported report outcome.';
+  end if;
+  if nullif(trim(coalesce(p_reviewer_notes, '')), '') is null then
+    raise exception 'Investigation notes are required to resolve a report.';
+  end if;
+
+  select * into report_row
+  from public.reports
+  where id = p_report_id and status in ('pending','investigating')
+  for update;
+
+  if not found then
+    raise exception 'An open report was not found.';
+  end if;
+
+  if p_outcome = 'confirmed_scam' then
+    if report_row.reported_user_id is null then
+      raise exception 'The reported account no longer exists.';
+    end if;
+
+    update public.profiles
+    set status = 'denied', updated_at = now()
+    where id = report_row.reported_user_id;
+  end if;
+
+  update public.reports
+  set status = p_outcome,
+      reviewer_id = admin_user_id,
+      reviewer_notes = trim(p_reviewer_notes),
+      reviewed_at = now(),
+      updated_at = now()
+  where id = p_report_id;
+
+  insert into public.admin_logs (admin_id, action, target_type, target_id, details)
+  values (
+    admin_user_id,
+    case when p_outcome = 'confirmed_scam' then 'confirmed_scam_account_disabled' else 'reviewed_user_report' end,
+    'report',
+    p_report_id,
+    jsonb_build_object(
+      'outcome', p_outcome,
+      'reported_user_id', report_row.reported_user_id,
+      'reviewer_notes', trim(p_reviewer_notes)
+    )
+  );
+end;
+$$;
+
+revoke all on function public.review_user_report(uuid, text, text) from public, anon;
+grant execute on function public.review_user_report(uuid, text, text) to authenticated;
 
 -- =============================================================================
 -- END SPRINT 2 ADDITIONS

@@ -38,7 +38,7 @@ function SecurityNote({ children }) {
 // ─── component ────────────────────────────────────────────────────────────────
 export default function PlayerUploadForm({ supabase, user, player, onSaved }) {
   const [cv,      setCv]      = useState(null)    // { file, name, error }
-  const [videos,  setVideos]  = useState([])      // { file, name, error }
+  const [videos,  setVideos]  = useState([])      // { file, name, videoKind, error }
   const [images,  setImages]  = useState([])      // { file, preview, error }
   const [caption, setCaption] = useState('')      // video caption / description
   const [saving,  setSaving]  = useState(false)
@@ -61,7 +61,12 @@ export default function PlayerUploadForm({ supabase, user, player, onSaved }) {
     const next = [...videos]
     for (const file of files) {
       const result = validateVideo(file, next.length)
-      next.push({ file: result.ok ? file : null, name: file.name, error: result.ok ? null : result.error })
+      next.push({
+        file: result.ok ? file : null,
+        name: file.name,
+        videoKind: 'highlight',
+        error: result.ok ? null : result.error,
+      })
       if (next.length >= 3) break
     }
     setVideos(next)
@@ -106,6 +111,10 @@ export default function PlayerUploadForm({ supabase, user, player, onSaved }) {
     if (cv?.error)                              { setError(`CV error: ${cv.error}`); return }
     if (videos.some((v) => v.error))            { setError(`Video error: ${videos.find((v) => v.error).error}`); return }
     if (images.some((i) => i.error))            { setError(`Image error: ${images.find((i) => i.error).error}`); return }
+    if (videos.some((video) => video.file) && !player?.id) {
+      setError('Complete your player profile before uploading videos so they can be attached to the correct player.')
+      return
+    }
     if (!cv?.file && videos.length === 0 && images.length === 0) {
       setError('Please select at least one file to upload.')
       return
@@ -139,16 +148,29 @@ export default function PlayerUploadForm({ supabase, user, player, onSaved }) {
         const res = await guardedUpload(supabase, vid.file, 'public-media', `videos/${user.id}/`, 'video', user.id, i)
         if (!res.ok) { setError(res.error); setSaving(false); setProgress(''); return }
 
-        await supabase.from('media_assets').insert({
+        const typeLabel = {
+          highlight: 'Highlights',
+          full_match: 'Full Match',
+          training: 'Training',
+        }[vid.videoKind]
+        const { error: mediaError } = await supabase.from('media_assets').insert({
           owner_id:       user.id,
-          player_id:      player?.id ?? null,
+          player_id:      player.id,
           asset_type:     'video',
+          video_kind:     vid.videoKind,
+          file_hash:      res.hash,
           storage_bucket: 'public-media',
           storage_path:   res.url,
-          title:          caption.trim() || null,
+          title:          [typeLabel, caption.trim()].filter(Boolean).join(' — '),
           visibility:     'public',
           sort_order:     i,
         })
+        if (mediaError) {
+          setError(`Video uploaded, but could not be attached to your player profile: ${mediaError.message}`)
+          setSaving(false)
+          setProgress('')
+          return
+        }
 
         results.push({ type: 'video', url: res.url })
       }
@@ -226,8 +248,8 @@ export default function PlayerUploadForm({ supabase, user, player, onSaved }) {
 
         {/* ── Videos ───────────────────────────────────────────────────── */}
         <Field
-          label="Highlight videos (MP4 or MOV · 100 MB each · max 3)"
-          hint="30-second preview shown publicly. Full video unlocked for verified viewers."
+          label="Player videos (MP4 or MOV · 100 MB each · max 3)"
+          hint="Choose a type for each video. At least one uncut full-match video is required before an administrator can approve player verification."
           col="col-12"
         >
           <input
@@ -246,6 +268,20 @@ export default function PlayerUploadForm({ supabase, user, player, onSaved }) {
                     <i className={`bi ${v.error ? 'bi-exclamation-circle' : 'bi-film'} me-2`} />
                     {v.error ?? v.name}
                   </span>
+                  {!v.error && (
+                    <select
+                      className="form-select form-select-sm w-auto ms-auto me-3"
+                      aria-label={`Video type for ${v.name}`}
+                      value={v.videoKind}
+                      onChange={(e) => setVideos((current) => current.map((item, index) => (
+                        index === i ? { ...item, videoKind: e.target.value } : item
+                      )))}
+                    >
+                      <option value="highlight">Highlights</option>
+                      <option value="full_match">Full match (uncut)</option>
+                      <option value="training">Training</option>
+                    </select>
+                  )}
                   <button type="button" className="btn btn-link btn-sm text-danger p-0" onClick={() => removeVideo(i)} aria-label="Remove">
                     <i className="bi bi-x-lg" />
                   </button>

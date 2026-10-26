@@ -2,7 +2,7 @@
 
 A multi-sport (football & basketball) talent and recruitment platform connecting **Academies/Clubs**, **Agents/Scouts**, and **Coaches/Managers**. Academies showcase players and post jobs. Agents discover players and request access to full profiles. Coaches browse and apply to jobs. A Super Admin moderates every account and piece of content.
 
-Production frontend: React/Vite in `frontend/`, hosted by Netlify and backed by Supabase. See [DEPLOYMENT.md](DEPLOYMENT.md) for provider setup, database schema, custom-domain activation, and SMS readiness.
+Production frontend: React/Vite in `frontend/`, hosted by Netlify and backed by Supabase. See [SYSTEM_GUIDE.md](SYSTEM_GUIDE.md) for roles, verification, moderation, payments, and product capabilities, and [DEPLOYMENT.md](DEPLOYMENT.md) for provider setup, database schema, and hosting.
 
 The Laravel 12/MySQL application below is the legacy implementation retained for local development and reference; it is not deployed by the Netlify/Supabase architecture.
 

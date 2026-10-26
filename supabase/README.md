@@ -50,3 +50,12 @@ The two `VITE_` values are embedded in the React build. The unprefixed pair is u
 ## Migration boundary
 
 This schema is the Supabase backend contract for the Netlify frontend; it does not automatically migrate existing Laravel/MySQL records. Export/import legacy data separately after mapping and reviewing privacy fields. Apply schema changes in versioned SQL migrations and keep `schema.sql` as the complete fresh-project setup script.
+
+## Existing-project trust and badge upgrades
+
+After confirming the base tables from `schema.sql` exist, run these files in order in the intended Supabase project's SQL Editor:
+
+1. `fix-public-badge-relationships.sql` creates the public badge view before its computed relationships, including the opportunity relationship. This order is required because the relationship functions return the view's row type.
+2. `trust-safety-upgrade.sql` creates the profile verification helper functions before the policies that call them, applies the trust and safety rules, and grants the player-list/profile columns selected by the frontend while RLS controls which rows are visible.
+
+Both scripts use transactions. If either reports an error, its transaction should be rolled back; fix the cause and rerun the complete file. The relationship patch adds missing profile badge/status columns on older installations, and the trust upgrade ensures `current_user_is_verified()`, `profile_is_active(uuid)`, and `current_user_is_admin()` exist before use. These files require the base application tables (including `profiles`, `players`, `opportunities`, `media_assets`, and `uploads`) and are not replacements for initial setup with `schema.sql`.

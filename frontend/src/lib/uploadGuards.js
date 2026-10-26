@@ -39,8 +39,12 @@ function isSafeFilename(name) {
  * Used to detect duplicate uploads across different users.
  */
 export async function hashFile(file) {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error('SHA-256 is unavailable. Open SportBridge over HTTPS or localhost and try again.')
+  }
+
   const buf    = await file.arrayBuffer()
-  const digest = await crypto.subtle.digest('SHA-256', buf)
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', buf)
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
@@ -164,48 +168,45 @@ export function blockContactInfo(text, fieldLabel = 'This field') {
   return null
 }
 
-// ─── Duplicate check via Supabase uploads table ───────────────────────────────
+// ─── Duplicate check via a privacy-safe Supabase function ─────────────────────
 /**
- * Checks if a file hash already exists in the uploads table.
- * Returns { isDuplicate: true, existingUserId } or { isDuplicate: false }.
+ * Checks whether another account has registered this file hash without
+ * exposing the uploader's identity or storage path.
+ * Returns a duplicate result, or an error when the lookup cannot be completed.
  *
  * @param {object} supabase   Supabase client
  * @param {string} hash       SHA-256 hex hash
- * @param {string} userId     Current user's ID
  */
-export async function checkDuplicate(supabase, hash, userId) {
-  if (!supabase) return { isDuplicate: false }
+export async function checkDuplicate(supabase, hash) {
+  if (!supabase) return { isDuplicate: false, error: 'Upload service is unavailable.' }
 
-  const { data, error } = await supabase
-    .from('uploads')
-    .select('id, user_id, is_duplicate')
-    .eq('file_hash', hash)
-    .limit(1)
-    .maybeSingle()
+  const { data, error } = await supabase.rpc('upload_hash_exists_for_other_user', {
+    p_file_hash: hash,
+  })
 
-  if (error || !data) return { isDuplicate: false }
-
-  // Same file hash from a different user = duplicate
-  if (data.user_id !== userId) {
-    return { isDuplicate: true, existingUserId: data.user_id }
+  if (error) return { isDuplicate: false, error: error.message }
+  if (typeof data !== 'boolean') {
+    return { isDuplicate: false, error: 'The duplicate-check service returned an invalid response.' }
   }
-
-  return { isDuplicate: false }
+  return { isDuplicate: data }
 }
 
 // ─── Record upload in uploads table ──────────────────────────────────────────
 /**
  * Inserts a row into the uploads table after a successful upload.
  */
-export async function recordUpload(supabase, { userId, fileHash, fileType, url, isDuplicate = false }) {
-  if (!supabase) return
-  await supabase.from('uploads').insert({
-    user_id:      userId,
-    file_hash:    fileHash,
-    file_type:    fileType,
-    url,
-    is_duplicate: isDuplicate,
+export async function recordUpload(supabase, { fileHash, fileType, url }) {
+  if (!supabase) return 'Upload service is unavailable.'
+  const { data, error } = await supabase.rpc('register_upload_record', {
+    p_file_hash: fileHash,
+    p_file_type: fileType,
+    p_url: url,
   })
+  if (error) return error.message
+  if (data !== true) {
+    return 'This file was registered by another account while the upload was in progress.'
+  }
+  return null
 }
 
 // ─── Upload to Supabase Storage with guards ───────────────────────────────────
@@ -226,6 +227,8 @@ export async function recordUpload(supabase, { userId, fileHash, fileType, url, 
  * @returns {{ ok: true, url: string, hash: string } | { ok: false, error: string }}
  */
 export async function guardedUpload(supabase, file, bucket, pathPrefix, type, userId, currentCount = 0) {
+  if (!supabase) return { ok: false, error: 'Upload service is unavailable.' }
+
   // Step 1: validate
   let validation
   if (type === 'cv')    validation = await validateCV(file)
@@ -236,8 +239,17 @@ export async function guardedUpload(supabase, file, bucket, pathPrefix, type, us
   if (!validation.ok) return validation
 
   // Step 2: hash + duplicate check
-  const hash = await hashFile(file)
-  const dupCheck = await checkDuplicate(supabase, hash, userId)
+  let hash
+  try {
+    hash = await hashFile(file)
+  } catch (error) {
+    return { ok: false, error: `Could not calculate the file's SHA-256 hash: ${error.message}` }
+  }
+
+  const dupCheck = await checkDuplicate(supabase, hash)
+  if (dupCheck.error) {
+    return { ok: false, error: `Could not check for duplicate uploads: ${dupCheck.error}` }
+  }
   if (dupCheck.isDuplicate) {
     return {
       ok: false,
@@ -247,7 +259,11 @@ export async function guardedUpload(supabase, file, bucket, pathPrefix, type, us
 
   // Step 3: upload
   const ext      = file.name.split('.').pop()?.toLowerCase()
-  const filename = `${pathPrefix}${hash.slice(0, 16)}.${ext}`
+  const normalizedPrefix = pathPrefix.replace(/^\/+|\/+$/g, '')
+  const safePrefix = normalizedPrefix.startsWith(`${userId}/`)
+    ? normalizedPrefix
+    : `${userId}/${normalizedPrefix}`
+  const filename = `${safePrefix}/${hash.slice(0, 16)}.${ext}`
 
   const { data, error: uploadError } = await supabase.storage
     .from(bucket)
@@ -258,10 +274,19 @@ export async function guardedUpload(supabase, file, bucket, pathPrefix, type, us
   }
 
   // Step 4: get public/signed URL and record
-  const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(data.path)
-  const url = urlData?.publicUrl ?? data.path
+  const url = bucket === 'private-documents'
+    ? data.path
+    : supabase.storage.from(bucket).getPublicUrl(data.path).data?.publicUrl ?? data.path
 
-  await recordUpload(supabase, { userId, fileHash: hash, fileType: file.type, url, isDuplicate: false })
+  const recordError = await recordUpload(supabase, { fileHash: hash, fileType: file.type, url })
+  if (recordError) {
+    const { error: cleanupError } = await supabase.storage.from(bucket).remove([data.path])
+    const cleanupMessage = cleanupError ? ` Uploaded file cleanup also failed: ${cleanupError.message}` : ''
+    return {
+      ok: false,
+      error: `Upload succeeded but could not be recorded for duplicate protection: ${recordError}.${cleanupMessage}`,
+    }
+  }
 
   return { ok: true, url, hash }
 }

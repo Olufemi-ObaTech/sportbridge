@@ -34,13 +34,16 @@ function Field({ label, col = 'col-12 col-md-6', required, hint, children }) {
 }
 
 const BLANK = {
-  jobType:     'player_needed',  // 'player_needed' | 'staff_needed'
+  jobType:     'player_needed',
   // Player needed
   position:    '',
   ageGroup:    '',
   region:      '',
   budget:      '',
   freeAgentOnly: false,
+  country:     '',
+  nationality: '',
+  workType:    'full_time',
   // Staff needed
   staffRole:   '',
   licenseRequired: false,
@@ -50,8 +53,11 @@ const BLANK = {
   description: '',
 }
 
-export default function JobPostForm({ supabase, user, onSaved }) {
-  const [form,      setForm]      = useState(BLANK)
+export default function JobPostForm({ supabase, user, profile, onVerify, onSaved }) {
+  const [form,      setForm]      = useState(() => ({
+    ...BLANK,
+    jobType: profile?.role === 'coach' ? 'seeking_job' : 'player_needed',
+  }))
   const [images,    setImages]    = useState([])
   const [clubCv,    setClubCv]    = useState(null)
   const [clubId,    setClubId]    = useState(null)  // resolved on mount
@@ -108,6 +114,11 @@ export default function JobPostForm({ supabase, user, onSaved }) {
     setError('')
     setNotice('')
 
+    if (profile?.verification_status !== 'verified') {
+      setError('Complete verification before posting a job or job-seeker listing.')
+      return
+    }
+
     // Contact-info guard on description
     const ciErr = blockContactInfo(form.description, 'Description')
     if (ciErr) { setError(ciErr); return }
@@ -126,7 +137,7 @@ export default function JobPostForm({ supabase, user, onSaved }) {
 
     // Required fields
     if (form.jobType === 'player_needed' && !form.position) { setError('Position is required for a Player Needed job.'); return }
-    if (form.jobType === 'staff_needed'  && !form.staffRole)  { setError('Staff role is required for a Staff Needed job.'); return }
+    if (form.jobType !== 'player_needed' && !form.staffRole) { setError('Staff role is required.'); return }
     if (!form.region) { setError('Region is required.'); return }
     if (!form.description.trim()) { setError('Description is required.'); return }
 
@@ -164,11 +175,14 @@ export default function JobPostForm({ supabase, user, onSaved }) {
         sport:               'football',
         job_type:            form.jobType,
         player_position:     form.jobType === 'player_needed' ? form.position     : null,
-        staff_role:          form.jobType === 'staff_needed'  ? form.staffRole    : null,
+        staff_role:          form.jobType !== 'player_needed' ? form.staffRole    : null,
         age_group:           form.jobType === 'player_needed' ? form.ageGroup     : form.ageGroupToCoach,
         region:              form.region,
+        country:             form.country.trim() || null,
+        nationality:         form.nationality.trim() || null,
+        work_type:           form.workType,
         budget:              form.jobType === 'player_needed' && form.budget ? Number(form.budget)   : null,
-        salary:              form.jobType === 'staff_needed'  && form.salary ? Number(form.salary)   : null,
+        salary:              form.jobType !== 'player_needed' && form.salary ? Number(form.salary)   : null,
         free_agent_only:     form.jobType === 'player_needed' ? form.freeAgentOnly : false,
         license_required:    form.jobType === 'staff_needed'  ? form.licenseRequired : false,
         description:         form.description.trim(),
@@ -183,7 +197,7 @@ export default function JobPostForm({ supabase, user, onSaved }) {
       if (dbErr) { setError(dbErr.message); setSaving(false); return }
 
       setNotice('Job posted successfully! It will appear in the job board shortly.')
-      setForm(BLANK)
+      setForm({ ...BLANK, jobType: profile.role === 'coach' ? 'seeking_job' : 'player_needed' })
       setImages([])
       setClubCv(null)
       onSaved?.()
@@ -194,14 +208,29 @@ export default function JobPostForm({ supabase, user, onSaved }) {
     }
   }
 
+  if (profile?.verification_status !== 'verified') {
+    return (
+      <div className="alert alert-warning d-flex justify-content-between align-items-center gap-3">
+        <span>Verify your account before posting job openings or job-seeker availability.</span>
+        <button className="btn btn-sm btn-primary flex-shrink-0" type="button" onClick={onVerify}>Get verified</button>
+      </div>
+    )
+  }
+
+  const jobTypes = profile.role === 'academy'
+    ? [
+        { v: 'player_needed', label: 'Player Needed', icon: 'bi-person-arms-up' },
+        { v: 'staff_needed', label: 'Staff Needed', icon: 'bi-clipboard2-pulse' },
+      ]
+    : profile.role === 'agent'
+      ? [{ v: 'player_needed', label: 'Player Needed', icon: 'bi-person-arms-up' }]
+      : [{ v: 'seeking_job', label: 'I am seeking a role', icon: 'bi-person-workspace' }]
+
   return (
     <form onSubmit={submit} noValidate>
       {/* Job type toggle */}
       <div className="d-flex gap-2 mb-4">
-        {[
-          { v: 'player_needed', label: 'Player Needed', icon: 'bi-person-arms-up' },
-          { v: 'staff_needed',  label: 'Staff Needed',  icon: 'bi-clipboard2-pulse' },
-        ].map(({ v, label, icon }) => (
+        {jobTypes.map(({ v, label, icon }) => (
           <button
             key={v}
             type="button"
@@ -261,35 +290,68 @@ export default function JobPostForm({ supabase, user, onSaved }) {
         </>)}
 
         {/* ── Staff Needed fields ──────────────────────────────────────────── */}
-        {form.jobType === 'staff_needed' && (<>
+        {form.jobType !== 'player_needed' && (<>
           <Field label="Staff role" required>
             <select className="form-select" value={form.staffRole} onChange={upd('staffRole')} required>
               <option value="">— Select role —</option>
               {STAFF_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </Field>
-          <Field label="Age group to coach">
-            <select className="form-select" value={form.ageGroupToCoach} onChange={upd('ageGroupToCoach')}>
-              <option value="">— Any —</option>
-              {AGE_GROUPS.map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
-          </Field>
+          {form.jobType === 'staff_needed' && (
+            <Field label="Age group to coach">
+              <select className="form-select" value={form.ageGroupToCoach} onChange={upd('ageGroupToCoach')}>
+                <option value="">— Any —</option>
+                {AGE_GROUPS.map((a) => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </Field>
+          )}
           <Field label="Region" required>
             <select className="form-select" value={form.region} onChange={upd('region')} required>
               <option value="">— Select region —</option>
               {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </Field>
-          <Field label="Salary (USD/month)" hint="Leave blank if not disclosed">
+          <Field label={form.jobType === 'seeking_job' ? 'Expected salary (optional)' : 'Salary (USD/month)'} hint="Leave blank if not disclosed">
             <input className="form-control" type="number" min="0" value={form.salary} onChange={upd('salary')} placeholder="e.g. 1200" />
           </Field>
-          <div className="col-12">
+          {form.jobType === 'staff_needed' && <div className="col-12">
             <div className="form-check form-switch">
               <input className="form-check-input" type="checkbox" id="license-req" checked={form.licenseRequired} onChange={upd('licenseRequired')} />
               <label className="form-check-label fw-semibold" htmlFor="license-req">Coaching licence required</label>
             </div>
-          </div>
+          </div>}
         </>)}
+
+        {form.jobType === 'player_needed' && (
+          <>
+            <Field label="Country" hint="Country where the opportunity is based">
+              <input className="form-control" value={form.country} onChange={upd('country')} maxLength={80} />
+            </Field>
+            <Field label="Required nationality" hint="Optional nationality preference">
+              <input className="form-control" value={form.nationality} onChange={upd('nationality')} maxLength={80} />
+            </Field>
+          </>
+        )}
+
+        {form.jobType === 'seeking_job' && (
+          <>
+            <Field label="Nationality">
+              <input className="form-control" value={form.nationality} onChange={upd('nationality')} maxLength={80} />
+            </Field>
+            <Field label="Country">
+              <input className="form-control" value={form.country} onChange={upd('country')} maxLength={80} />
+            </Field>
+          </>
+        )}
+
+        <Field label="Work arrangement">
+          <select className="form-select" value={form.workType} onChange={upd('workType')}>
+            <option value="full_time">Full-time</option>
+            <option value="short_term">Short-term</option>
+            <option value="loan">Loan</option>
+            <option value="internship">Internship</option>
+          </select>
+        </Field>
 
         {/* ── Common: description ──────────────────────────────────────────── */}
         <div className="col-12">

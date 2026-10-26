@@ -6,16 +6,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { FOOTBALL_POSITIONS, AGE_GROUPS, REGIONS, STAFF_ROLES } from './lib/features'
+import FeeSafetyNotice from './FeeSafetyNotice.jsx'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-function VerifiedBadge() {
-  return (
-    <span className="badge text-bg-success d-inline-flex align-items-center gap-1" style={{ fontSize: 11 }}>
-      <i className="bi bi-patch-check-fill" aria-hidden="true" />Verified Club
-    </span>
-  )
-}
-
 function SkeletonCard() {
   return (
     <div className="card p-4" style={{ animation: 'pulse 1.5s ease-in-out infinite' }}>
@@ -28,11 +21,12 @@ function SkeletonCard() {
 
 const BLANK = {
   q:          '',
-  jobType:    '',   // player_needed | staff_needed
+  jobType:    '',   // player_needed | staff_needed | seeking_job
   position:   '',
   staffRole:  '',
   ageGroup:   '',
   region:     '',
+  workType:   '',
   verifiedOnly: false,
 }
 
@@ -52,21 +46,27 @@ export default function JobsPage({ supabase, user, onSignup }) {
   const [drawerOpen,  setDrawerOpen]  = useState(false)
   const [applying,    setApplying]    = useState(null)   // job id currently being applied to
   const [applied,     setApplied]     = useState(new Set()) // job ids already applied
+  const [error,       setError]       = useState('')
   const drawerRef = useRef(null)
 
   const handleApply = async (job) => {
     if (!user) { onSignup?.('player'); return }
     if (applied.has(job.id)) return
     if (!supabase) return
+    setError('')
     setApplying(job.id)
-    const { error } = await supabase.from('applications').insert({
+    const { error: applyError } = await supabase.from('applications').insert({
       job_id:           job.id,
       applicant_user_id: user.id,
       status:           'pending',
       applied_at:       new Date().toISOString(),
     })
     setApplying(null)
-    if (!error) setApplied((prev) => new Set([...prev, job.id]))
+    if (applyError) {
+      setError(`Could not submit your application: ${applyError.message}`)
+      return
+    }
+    setApplied((prev) => new Set([...prev, job.id]))
   }
 
   // close drawer on outside click / Escape
@@ -82,11 +82,13 @@ export default function JobsPage({ supabase, user, onSignup }) {
     if (!supabase) { setLoading(false); return }
     let alive = true
     setLoading(true)
+    setError('')
 
     const run = async () => {
+      const posterBadgeJoin = `poster_profile:public_profile_badges${filters.verifiedOnly ? '!inner' : ''}(role, verification_status, verification_badge)`
       let q = supabase
         .from('jobs')
-        .select('id, title, description, job_type, player_position, staff_role, age_group, region, budget, salary, free_agent_only, is_verified, status, created_at, club_id, clubs(id, name, verified_badge, country, state, logo_path)', { count: 'exact' })
+        .select(`id, title, description, job_type, player_position, staff_role, age_group, region, country, nationality, work_type, budget, salary, free_agent_only, is_verified, status, created_at, club_id, posted_by_user_id, clubs(id, name, verified_badge, country, state, logo_path), ${posterBadgeJoin}`, { count: 'exact' })
         .eq('status', 'open')
 
       if (filters.jobType)   q = q.eq('job_type', filters.jobType)
@@ -94,26 +96,34 @@ export default function JobsPage({ supabase, user, onSignup }) {
       if (filters.staffRole) q = q.eq('staff_role', filters.staffRole)
       if (filters.ageGroup)  q = q.eq('age_group', filters.ageGroup)
       if (filters.region)    q = q.ilike('region', `%${filters.region}%`)
+      if (filters.workType)  q = q.eq('work_type', filters.workType)
+      if (filters.verifiedOnly) q = q.eq('poster_profile.verification_status', 'verified')
       if (filters.q)         q = q.or(`title.ilike.%${filters.q}%,description.ilike.%${filters.q}%`)
 
       if (sort === 'newest')   q = q.order('created_at', { ascending: false })
       else if (sort === 'salary')   q = q.order('salary', { ascending: false, nullsFirst: false })
-      else if (sort === 'verified') q = q.order('is_verified', { ascending: false }).order('created_at', { ascending: false })
+      else if (sort === 'verified') q = q.order('poster_profile(verification_status)', { ascending: false }).order('created_at', { ascending: false })
 
       q = q.limit(60)
       const { data, count, error } = await q
       if (!alive) return
-      if (!error) {
-        // Apply verifiedOnly filter client-side (PostgREST join filter is unreliable)
-        const results = filters.verifiedOnly
-          ? (data ?? []).filter((j) => j.clubs?.verified_badge === true)
-          : (data ?? [])
-        setJobs(results)
-        setTotal(filters.verifiedOnly ? results.length : (count ?? data?.length ?? 0))
+      if (error) {
+        setJobs([])
+        setTotal(null)
+        setError(`Could not load jobs: ${error.message}`)
+      } else {
+        setJobs(data ?? [])
+        setTotal(count ?? data?.length ?? 0)
       }
       setLoading(false)
     }
-    run()
+    run().catch((loadError) => {
+      if (!alive) return
+      setJobs([])
+      setTotal(null)
+      setError(`Could not load jobs: ${loadError.message}`)
+      setLoading(false)
+    })
     return () => { alive = false }
   }, [filters, sort, supabase])
 
@@ -134,6 +144,7 @@ export default function JobsPage({ supabase, user, onSignup }) {
           <option value="">All types</option>
           <option value="player_needed">Player Needed</option>
           <option value="staff_needed">Staff Needed</option>
+          <option value="seeking_job">Professionals seeking roles</option>
         </select>
       </div>
       {filters.jobType !== 'staff_needed' && (
@@ -164,6 +175,15 @@ export default function JobsPage({ supabase, user, onSignup }) {
           {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
         </select>
       </div>
+      <div className="col-6 col-md-2 col-lg-2">
+        <select className="form-select form-select-sm" value={filters.workType} onChange={(e) => upd('workType')(e.target.value)} aria-label="Work arrangement">
+          <option value="">Any arrangement</option>
+          <option value="full_time">Full-time</option>
+          <option value="short_term">Short-term</option>
+          <option value="loan">Loan</option>
+          <option value="internship">Internship</option>
+        </select>
+      </div>
       <div className="col-6 col-md-2 col-lg-1">
         <select className="form-select form-select-sm" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort">
           {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -187,7 +207,7 @@ export default function JobsPage({ supabase, user, onSignup }) {
       <div className="mb-4">
         <span className="text-uppercase small fw-semibold text-muted">Opportunities</span>
         <h1 className="h2 fw-bold mb-1" style={{ color: 'var(--fc-blue-700)' }}>Football Job Board</h1>
-        <p className="text-muted mb-0">Player positions and staff roles posted by verified clubs and academies across Nigeria.</p>
+        <p className="text-muted mb-0">Player and staff openings, plus verified professionals seeking roles.</p>
       </div>
 
       {/* Desktop sticky filter bar */}
@@ -232,18 +252,19 @@ export default function JobsPage({ supabase, user, onSignup }) {
       {/* Results count */}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <span className="small text-muted">
-          {loading ? 'Loading…' : `${total ?? 0} job${total !== 1 ? 's' : ''} found`}
+          {loading ? 'Loading…' : total == null ? '' : `${total} job${total !== 1 ? 's' : ''} found`}
         </span>
       </div>
 
       {!supabase && <div className="alert alert-warning">Database not configured — job board unavailable.</div>}
+      {error && <div className="alert alert-danger" role="alert">{error}</div>}
 
       {/* Job cards */}
       {loading ? (
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
           {Array.from({ length: 6 }).map((_, i) => <div className="col" key={i}><SkeletonCard /></div>)}
         </div>
-      ) : jobs.length === 0 ? (
+      ) : error && jobs.length === 0 ? null : jobs.length === 0 ? (
         <div className="fc-empty-state">
           <i className="bi bi-briefcase display-4 text-muted d-block mb-3" />
           <h3 className="h5">No jobs match your filters</h3>
@@ -254,9 +275,15 @@ export default function JobsPage({ supabase, user, onSignup }) {
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
           {jobs.map((job) => {
             const isPlayer = job.job_type === 'player_needed'
+            const isSeeking = job.job_type === 'seeking_job'
             const roleText = isPlayer ? job.player_position : job.staff_role
             const pay      = isPlayer ? job.budget : job.salary
             const club     = job.clubs
+            const posterRole = job.poster_profile?.role
+            const posterLabel = posterRole === 'agent' ? 'Agent / Scout'
+              : posterRole === 'coach' ? 'Coach / Manager'
+                : posterRole === 'academy' ? 'Academy / Club'
+                  : 'SportBridge member'
 
             return (
               <div className="col" key={job.id}>
@@ -269,16 +296,23 @@ export default function JobsPage({ supabase, user, onSignup }) {
                     </div>
                     <div className="min-w-0">
                       <div className="fw-bold small text-truncate" style={{ color: 'var(--fc-blue-700)' }}>
-                        {club?.name ?? 'Club'}
+                        {club?.name ?? posterLabel}
                       </div>
-                      {club?.verified_badge && <VerifiedBadge />}
+                      {(club?.verified_badge || job.poster_profile?.verification_status === 'verified') && (
+                        <span className="badge text-bg-success d-inline-flex align-items-center gap-1" style={{ fontSize: 11 }}>
+                          <i className="bi bi-patch-check-fill" aria-hidden="true" />
+                          {job.poster_profile?.verification_badge || 'Verified'}
+                        </span>
+                      )}
                     </div>
                   </div>
+
+                  {posterRole === 'agent' && <FeeSafetyNotice />}
 
                   {/* Job type badge */}
                   <div className="d-flex gap-1 flex-wrap mb-2">
                     <span className={`badge ${isPlayer ? 'text-bg-primary' : 'text-bg-secondary'}`} style={{ fontSize: 10 }}>
-                      {isPlayer ? 'Player Needed' : 'Staff Needed'}
+                      {isSeeking ? 'Professional Seeking Role' : isPlayer ? 'Player Needed' : 'Staff Needed'}
                     </span>
                     {job.age_group && <span className="badge text-bg-light text-dark" style={{ fontSize: 10 }}>{job.age_group}</span>}
                     {job.free_agent_only && <span className="badge text-bg-warning text-dark" style={{ fontSize: 10 }}>Free agents only</span>}
@@ -294,6 +328,9 @@ export default function JobsPage({ supabase, user, onSignup }) {
 
                   <div className="d-flex flex-wrap gap-2 small text-muted mb-3">
                     {job.region && <span><i className="bi bi-geo-alt me-1" aria-hidden="true" />{job.region}</span>}
+                    {job.country && <span><i className="bi bi-globe2 me-1" aria-hidden="true" />{job.country}</span>}
+                    {job.nationality && <span><i className="bi bi-flag me-1" aria-hidden="true" />{job.nationality}</span>}
+                    {job.work_type && <span><i className="bi bi-clock me-1" aria-hidden="true" />{job.work_type.replace(/_/g, ' ')}</span>}
                     {pay > 0 && <span><i className="bi bi-cash me-1" aria-hidden="true" />₦{pay.toLocaleString()}/mo</span>}
                     <span><i className="bi bi-clock me-1" aria-hidden="true" />{new Date(job.created_at).toLocaleDateString()}</span>
                   </div>
