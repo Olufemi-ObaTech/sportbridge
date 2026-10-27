@@ -3,57 +3,10 @@ import JobPostForm from './JobPostForm.jsx'
 import PlayerUploadForm from './PlayerUploadForm.jsx'
 import TryoutForm from './TryoutForm.jsx'
 import VerifyForm, { CvOnlyForm } from './VerifyForm.jsx'
-import VerifiedBadge from './VerifiedBadge.jsx'
-import AcademyPlayerForm from './AcademyPlayerForm.jsx'
 import { blockContactInfo } from './lib/uploadGuards'
 import { FOOTBALL_POSITIONS, REGIONS, STAFF_ROLES } from './lib/features'
 
-async function attachEvidenceLinks(supabase, item, isRosterEntry = false) {
-  const candidates = isRosterEntry
-    ? [
-        ['Ownership / contract proof', item.ownership_proof_path],
-        ['Player identity document', item.identity_document_path],
-      ]
-    : [
-        ['Identity document', item.id_document_path || item.nin_selfie_path],
-        ['Player release letter', item.release_letter_path],
-        ['Academy CAC document', item.cac_document_path],
-        ['Agent passport', item.agent_passport_path],
-        ['Agent federation letter', item.license_path],
-        ['Coach passport', item.coach_passport_path],
-        ['Coach federation letter', item.coach_licence_path],
-        ['CV', item.cv_path],
-        ...((item.player_contracts ?? []).map((path, index) => [`Player contract ${index + 1}`, path])),
-        ...((item.facility_pictures ?? []).map((path, index) => [`Facility photo ${index + 1}`, path])),
-      ]
-  const links = []
-  const errors = []
-
-  for (const [label, path] of candidates) {
-    if (typeof path !== 'string' || !path) continue
-    const legacyMarker = '/storage/v1/object/public/private-documents/'
-    const legacyPath = path.includes(legacyMarker)
-      ? decodeURIComponent(path.slice(path.indexOf(legacyMarker) + legacyMarker.length))
-      : path
-    if (/^https?:\/\//i.test(legacyPath) && legacyPath === path) {
-      links.push({ label, url: path })
-      continue
-    }
-    if (label.startsWith('Facility photo') && /^https?:\/\//i.test(legacyPath)) {
-      links.push({ label, url: legacyPath })
-      continue
-    }
-    const { data, error } = await supabase.storage.from('private-documents').createSignedUrl(legacyPath, 600)
-    if (error || !data?.signedUrl) {
-      errors.push(`${label}: ${error?.message ?? 'signed link unavailable'}`)
-      continue
-    }
-    links.push({ label, url: data.signedUrl })
-  }
-  return { links, errors }
-}
-
-// â”€â”€â”€ constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ΓöÇΓöÇΓöÇ constants ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 const ROLE_LABELS = {
   player:      'Player',
@@ -72,25 +25,15 @@ const ROLE_ICONS = {
 }
 
 const ALL_ROLES = ['player', 'coach', 'agent', 'academy', 'super_admin']
-const USERS_PAGE_SIZE = 50
 
 const POSITIONS_FOOTBALL = FOOTBALL_POSITIONS
-const PLAYER_STATS_FIELDS = [
-  { key: 'total_appearances', label: 'Total appearances' },
-  { key: 'total_goals', label: 'Total goals' },
-  { key: 'total_assists', label: 'Total assists' },
-  { key: 'total_clean_sheets', label: 'Clean sheets' },
-  { key: 'pass_accuracy', label: 'Pass accuracy (%)', max: 100 },
-  { key: 'dribble_success', label: 'Dribble success (%)', max: 100 },
-  { key: 'minutes_played', label: 'Minutes played' },
-]
 const COUNTRIES = [
-  'Nigeria','Ghana','South Africa','Kenya','Egypt','Senegal',"Côte d'Ivoire",'Cameroon',
+  'Nigeria','Ghana','South Africa','Kenya','Egypt','Senegal',"C├┤te d'Ivoire",'Cameroon',
   'Morocco','England','France','Germany','Spain','Portugal','Italy','Brazil',
   'Argentina','USA','Japan','South Korea','Saudi Arabia','Qatar','UAE','Other',
 ]
 
-// â”€â”€â”€ shared UI helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ΓöÇΓöÇΓöÇ shared UI helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function StatCard({ icon, label, value, colour }) {
   return (
@@ -103,7 +46,7 @@ function StatCard({ icon, label, value, colour }) {
           <i className={`bi ${icon}`} aria-hidden="true" />
         </span>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 800, fontFamily: 'var(--fc-font-heading)', lineHeight: 1 }}>{value ?? '—'}</div>
+          <div style={{ fontSize: 22, fontWeight: 800, fontFamily: 'var(--fc-font-heading)', lineHeight: 1 }}>{value ?? 'ΓÇö'}</div>
           <div className="small text-muted mt-1">{label}</div>
         </div>
       </div>
@@ -135,13 +78,25 @@ function Field({ label, col = 'col-12 col-md-6', hint, children }) {
   )
 }
 
-// â”€â”€â”€ Verification badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ΓöÇΓöÇΓöÇ Verification badge ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
-function VerificationBadge({ status, role, label }) {
-  return <VerifiedBadge status={status} role={role} label={label} className="px-2 py-1" />
+function VerificationBadge({ status }) {
+  const map = {
+    verified:  { cls: 'text-bg-success', icon: 'bi-patch-check-fill', label: 'Verified' },
+    pending:   { cls: 'text-bg-warning',  icon: 'bi-hourglass-split',  label: 'Verification Pending' },
+    rejected:  { cls: 'text-bg-danger',   icon: 'bi-x-circle-fill',    label: 'Verification Rejected' },
+    unverified:{ cls: 'text-bg-secondary',icon: 'bi-patch-question',   label: 'Unverified' },
+  }
+  const v = map[status ?? 'unverified'] ?? map.unverified
+  return (
+    <span className={`badge d-inline-flex align-items-center gap-1 px-2 py-1 ${v.cls}`} style={{ fontSize: 12 }}>
+      <i className={`bi ${v.icon}`} aria-hidden="true" />
+      {v.label}
+    </span>
+  )
 }
 
-// â”€â”€â”€ Profile completeness bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ΓöÇΓöÇΓöÇ Profile completeness bar ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function completenessScore(profile, roleData) {
   const checks = [
@@ -177,7 +132,7 @@ function CompletenessBar({ score }) {
   )
 }
 
-// â”€â”€â”€ Player dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ΓöÇΓöÇΓöÇ Player dashboard ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function PlayerDashboard({ supabase, user, profile }) {
   const [player,      setPlayer]   = useState(null)
@@ -191,7 +146,7 @@ function PlayerDashboard({ supabase, user, profile }) {
   useEffect(() => {
     let alive = true
     supabase.from('players')
-      .select('id, display_name, position, secondary_position, age, country, nationality, bio, is_public, sport, gender, foot, dominant_hand, height_cm, weight_kg, current_club, achievements, linkedin, views_count, region, stats')
+      .select('id, display_name, position, secondary_position, age, country, nationality, bio, is_public, sport, gender, foot, dominant_hand, height_cm, weight_kg, current_club, achievements, linkedin, views_count, region')
       .eq('profile_id', user.id)
       .maybeSingle()
       .then(({ data, error: err }) => {
@@ -218,10 +173,6 @@ function PlayerDashboard({ supabase, user, profile }) {
           achievements:       p.achievements       ?? '',
           linkedin:           p.linkedin           ?? '',
           region:             p.region             ?? '',
-          stats: Object.fromEntries(PLAYER_STATS_FIELDS.map(({ key }) => [
-            key,
-            p.stats?.[key] != null ? String(p.stats[key]) : '',
-          ])),
         })
         setLoading(false)
       })
@@ -235,24 +186,8 @@ function PlayerDashboard({ supabase, user, profile }) {
     const ci = blockContactInfo(draft.bio, 'About / Bio') || blockContactInfo(draft.achievements, 'Achievements')
     if (ci) { setError(ci); return }
     setSaving(true); setError(''); setNotice('')
-    const stats = player?.stats && typeof player.stats === 'object' && !Array.isArray(player.stats)
-      ? { ...player.stats }
-      : {}
-    for (const { key, label, max } of PLAYER_STATS_FIELDS) {
-      const rawValue = draft.stats?.[key]?.trim() ?? ''
-      if (!rawValue) {
-        delete stats[key]
-        continue
-      }
-      const value = Number(rawValue)
-      if (!Number.isSafeInteger(value) || value < 0 || (max != null && value > max)) {
-        setError(`${label} must be a whole number${max == null ? ' greater than or equal to 0' : ` between 0 and ${max}`}.`)
-        setSaving(false)
-        return
-      }
-      stats[key] = value
-    }
     const payload = {
+      profile_id:         user.id,
       display_name:       draft.display_name.trim() || profile.full_name || 'Player',
       position:           draft.position || null,
       secondary_position: draft.secondary_position || null,
@@ -272,12 +207,11 @@ function PlayerDashboard({ supabase, user, profile }) {
       achievements:       draft.achievements.trim() || null,
       linkedin:           draft.linkedin.trim() || null,
       region:             draft.region?.trim() || null,
-      stats,
       updated_at:         new Date().toISOString(),
     }
     const q = player
       ? supabase.from('players').update(payload).eq('id', player.id).eq('profile_id', user.id)
-      : supabase.from('players').insert({ profile_id: user.id, ...payload })
+      : supabase.from('players').insert(payload)
     const { data, error: err } = await q.select().single()
     setSaving(false)
     if (err) { setError(err.message); return }
@@ -287,7 +221,7 @@ function PlayerDashboard({ supabase, user, profile }) {
 
   const positions = POSITIONS_FOOTBALL
 
-  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
+  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />LoadingΓÇª</div>
 
   const score = completenessScore(profile, draft)
 
@@ -297,8 +231,8 @@ function PlayerDashboard({ supabase, user, profile }) {
 
       <div className="row g-3 mb-4">
         <StatCard icon="bi-eye"           label="Profile views"   value={player?.views_count ?? 0}  colour="var(--fc-gradient-primary)" />
-        <StatCard icon="bi-images"        label="Media items"     value="—"                          colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
-        <StatCard icon="bi-bookmark-star" label="Watchlisted by"  value="—"                          colour="var(--fc-gradient-gold)" />
+        <StatCard icon="bi-images"        label="Media items"     value="ΓÇö"                          colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
+        <StatCard icon="bi-bookmark-star" label="Watchlisted by"  value="ΓÇö"                          colour="var(--fc-gradient-gold)" />
         <StatCard icon="bi-globe2"        label="Visibility"      value={draft?.is_public ? 'Public' : 'Private'} colour={draft?.is_public ? 'linear-gradient(135deg,#198754,#20c997)' : 'linear-gradient(135deg,#6c757d,#adb5bd)'} />
       </div>
 
@@ -338,25 +272,25 @@ function PlayerDashboard({ supabase, user, profile }) {
               </Field>
               <Field label="Position">
                 <select className="form-select" value={draft.position} onChange={upd('position')}>
-                  <option value="">— Select —</option>
+                  <option value="">ΓÇö Select ΓÇö</option>
                   {positions.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               </Field>
               <Field label="Secondary position">
                 <select className="form-select" value={draft.secondary_position} onChange={upd('secondary_position')}>
-                  <option value="">— None —</option>
+                  <option value="">ΓÇö None ΓÇö</option>
                   {positions.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               </Field>
               <Field label="Gender">
                 <select className="form-select" value={draft.gender} onChange={upd('gender')}>
-                  <option value="">— Select —</option>
+                  <option value="">ΓÇö Select ΓÇö</option>
                   <option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
                 </select>
               </Field>
               <Field label="Preferred foot">
                 <select className="form-select" value={draft.foot} onChange={upd('foot')}>
-                  <option value="">— Select —</option>
+                  <option value="">ΓÇö Select ΓÇö</option>
                   <option value="right">Right</option><option value="left">Left</option><option value="both">Both</option>
                 </select>
               </Field>
@@ -365,30 +299,30 @@ function PlayerDashboard({ supabase, user, profile }) {
               <Field label="Weight (kg)"><input className="form-control" type="number" min="30" max="200" value={draft.weight_kg} onChange={upd('weight_kg')} placeholder="e.g. 75" /></Field>
               <Field label="Nationality">
                 <select className="form-select" value={draft.nationality} onChange={upd('nationality')}>
-                  <option value="">— Select —</option>
+                  <option value="">ΓÇö Select ΓÇö</option>
                   {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </Field>
               <Field label="Country (based in)">
                 <select className="form-select" value={draft.country} onChange={upd('country')}>
-                  <option value="">— Select —</option>
+                  <option value="">ΓÇö Select ΓÇö</option>
                   {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </Field>
               <Field label="Region">
                 <select className="form-select" value={draft.region ?? ''} onChange={upd('region')}>
-                  <option value="">— Select —</option>
+                  <option value="">ΓÇö Select ΓÇö</option>
                   {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </Field>
               <Field label="Current club"><input className="form-control" value={draft.current_club} onChange={upd('current_club')} placeholder="e.g. FC Academy Lagos" /></Field>
               <Field label="LinkedIn URL" col="col-12"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} placeholder="https://linkedin.com/in/yourname" /></Field>
               <Field label="About / Bio" col="col-12">
-                <textarea className="form-control" rows={4} value={draft.bio} onChange={upd('bio')} placeholder="Playing style, experience and goals…" />
+                <textarea className="form-control" rows={4} value={draft.bio} onChange={upd('bio')} placeholder="Playing style, experience and goalsΓÇª" />
                 {blockContactInfo(draft.bio) && <div className="small text-danger mt-1"><i className="bi bi-exclamation-circle me-1" />{blockContactInfo(draft.bio)}</div>}
               </Field>
               <Field label="Achievements" col="col-12">
-                <textarea className="form-control" rows={3} value={draft.achievements} onChange={upd('achievements')} placeholder="Honours, caps, notable clubs…" />
+                <textarea className="form-control" rows={3} value={draft.achievements} onChange={upd('achievements')} placeholder="Honours, caps, notable clubsΓÇª" />
               </Field>
               <div className="col-12">
                 <div className="form-check form-switch">
@@ -399,30 +333,8 @@ function PlayerDashboard({ supabase, user, profile }) {
               </div>
             </FormRow>
           </SectionCard>
-          <SectionCard title="Performance statistics">
-            <p className="small text-muted">Add or update your football statistics. These figures are player-reported and are not independently verified by SportBridge.</p>
-            <FormRow>
-              {PLAYER_STATS_FIELDS.map(({ key, label, max }) => (
-                <Field key={key} label={label}>
-                  <input
-                    className="form-control"
-                    type="number"
-                    min="0"
-                    max={max}
-                    step="1"
-                    inputMode="numeric"
-                    value={draft.stats?.[key] ?? ''}
-                    onChange={(event) => setDraft((current) => ({
-                      ...current,
-                      stats: { ...current.stats, [key]: event.target.value },
-                    }))}
-                  />
-                </Field>
-              ))}
-            </FormRow>
-          </SectionCard>
           <button className="btn btn-primary px-5" type="submit" disabled={saving}>
-            {saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : <><i className="bi bi-check2 me-2" />Save profile</>}
+            {saving ? <><span className="spinner-border spinner-border-sm me-2" />SavingΓÇª</> : <><i className="bi bi-check2 me-2" />Save profile</>}
           </button>
         </form>
       )}
@@ -442,7 +354,7 @@ function PlayerDashboard({ supabase, user, profile }) {
   )
 }
 
-// â”€â”€â”€ Coach dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ΓöÇΓöÇΓöÇ Coach dashboard ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function CoachDashboard({ supabase, user, profile }) {
   const [coach,      setCoach]      = useState(null)
@@ -455,7 +367,6 @@ function CoachDashboard({ supabase, user, profile }) {
   const [recPlayers, setRecPlayers] = useState([])
   const [recSearch,  setRecSearch]  = useState('')
   const [recPlayer,  setRecPlayer]  = useState('')
-  const [recTargetType, setRecTargetType] = useState('agent')
   const [recTarget,  setRecTarget]  = useState('')
   const [recNote,    setRecNote]    = useState('')
   const [recBusy,    setRecBusy]    = useState(false)
@@ -523,9 +434,9 @@ function CoachDashboard({ supabase, user, profile }) {
     setNotice('Coach profile saved.')
   }
 
-  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
+  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />LoadingΓÇª</div>
 
-  // â”€â”€ Recommend player handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ΓöÇΓöÇ Recommend player handler ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const searchPlayers = async (q) => {
     setRecSearch(q)
     if (!q || q.length < 2 || !supabase) { setRecPlayers([]); return }
@@ -536,62 +447,33 @@ function CoachDashboard({ supabase, user, profile }) {
   const submitRecommendation = async (e) => {
     e.preventDefault()
     if (!recPlayer || !recTarget.trim()) return
-    if (profile?.verification_status !== 'verified') {
-      setError('Complete verification before recommending players.')
+    setRecBusy(true)
+    // Find the agent profile to recommend to
+    const { data: agentData } = await supabase
+      .from('agent_profiles')
+      .select('id, user_id, agency_name')
+      .ilike('agency_name', `%${recTarget}%`)
+      .limit(1)
+      .maybeSingle()
+
+    if (!agentData) {
+      // Store as a note-based recommendation without agent_profile_id
+      setRecBusy(false)
+      setRecDone(`Recommendation noted. "${recTarget}" will be notified when they join SportBridge.`)
       return
     }
-    setRecBusy(true)
-    let agentProfileId = null
-    let academyProfileId = null
-    let targetName = recTarget.trim()
-    if (recTargetType === 'agent') {
-      const { data, error: targetError } = await supabase.from('agent_profiles')
-        .select('id, agency_name').ilike('agency_name', `%${targetName}%`).limit(1).maybeSingle()
-      if (targetError) {
-        setRecBusy(false); setError(targetError.message); return
-      }
-      agentProfileId = data?.id ?? null
-      targetName = data?.agency_name ?? targetName
-      if (!agentProfileId) {
-        setRecBusy(false); setError('No matching public agent or scout profile was found.'); return
-      }
-    } else {
-      const { data: club, error: clubError } = await supabase.from('clubs')
-        .select('id, name').ilike('name', `%${targetName}%`).limit(1).maybeSingle()
-      if (clubError) {
-        setRecBusy(false); setError(clubError.message); return
-      }
-      if (club) {
-        const { data: academy, error: academyError } = await supabase.from('academy_profiles')
-          .select('id').eq('club_id', club.id).maybeSingle()
-        if (academyError) {
-          setRecBusy(false); setError(academyError.message); return
-        }
-        academyProfileId = academy?.id ?? null
-        targetName = club.name
-      }
-      if (!academyProfileId) {
-        setRecBusy(false); setError('No matching active academy or club profile was found.'); return
-      }
-    }
 
-    const { error: recommendationError } = await supabase.from('agent_recommendations').insert({
+    await supabase.from('agent_recommendations').insert({
       recommender_user_id: user.id,
-      agent_profile_id:    agentProfileId,
-      academy_profile_id:  academyProfileId,
-      recommended_to_type: recTargetType,
+      agent_profile_id:    agentData.id,
       sport:               'football',
       player_id:           recPlayer,
-      recommended_to_name: targetName,
+      recommended_to_name: recTarget,
       note:                recNote.trim() || null,
       status:              'pending',
     })
     setRecBusy(false)
-    if (recommendationError) {
-      setError(recommendationError.message)
-      return
-    }
-    setRecDone(`Player recommendation sent to ${targetName}.`)
+    setRecDone(`Player recommended to ${agentData.agency_name ?? recTarget} successfully.`)
     setRecPlayer(''); setRecTarget(''); setRecNote(''); setRecSearch(''); setRecPlayers([])
   }
 
@@ -599,9 +481,9 @@ function CoachDashboard({ supabase, user, profile }) {
     <>
       <CompletenessBar score={completenessScore(profile, draft)} />
       <div className="row g-3 mb-4">
-        <StatCard icon="bi-briefcase" label="Applications sent" value="—" colour="var(--fc-gradient-primary)" />
-        <StatCard icon="bi-star"      label="Shortlisted"        value="—" colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
-        <StatCard icon="bi-trophy"    label="Hired"              value="—" colour="linear-gradient(135deg,#198754,#20c997)" />
+        <StatCard icon="bi-briefcase" label="Applications sent" value="ΓÇö" colour="var(--fc-gradient-primary)" />
+        <StatCard icon="bi-star"      label="Shortlisted"        value="ΓÇö" colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
+        <StatCard icon="bi-trophy"    label="Hired"              value="ΓÇö" colour="linear-gradient(135deg,#198754,#20c997)" />
         <StatCard icon="bi-eye"       label="Visibility"         value={draft?.is_public ? 'Public' : 'Private'} colour={draft?.is_public ? 'linear-gradient(135deg,#198754,#20c997)' : 'linear-gradient(135deg,#6c757d,#adb5bd)'} />
       </div>
       {error  && <div className="alert alert-danger"  role="alert">{error}</div>}
@@ -609,12 +491,7 @@ function CoachDashboard({ supabase, user, profile }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[
-          ['profile','bi-clipboard2-pulse','Coaching Profile'],
-          ...(profile?.verification_status === 'verified' ? [['recommend','bi-send-check','Recommend a Player']] : []),
-          ['cv','bi-file-earmark-person','Upload CV'],
-          ['verify','bi-patch-check','Get Verified'],
-        ].map(([tab, icon, label]) => (
+        {[['profile','bi-clipboard2-pulse','Coaching Profile'],['recommend','bi-send-check','Recommend a Player'],['cv','bi-file-earmark-person','Upload CV'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
@@ -635,7 +512,7 @@ function CoachDashboard({ supabase, user, profile }) {
               </Field>
               <Field label="Preferred role">
                 <select className="form-select" value={draft.preferred_role} onChange={upd('preferred_role')}>
-                  <option value="">— Select —</option>
+                  <option value="">ΓÇö Select ΓÇö</option>
                   {STAFF_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </Field>
@@ -643,12 +520,12 @@ function CoachDashboard({ supabase, user, profile }) {
               <Field label="Current club"><input className="form-control" value={draft.current_club} onChange={upd('current_club')} /></Field>
               <Field label="Nationality">
                 <select className="form-select" value={draft.nationality} onChange={upd('nationality')}>
-                  <option value="">— Select —</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <option value="">ΓÇö Select ΓÇö</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </Field>
               <Field label="Gender">
                 <select className="form-select" value={draft.gender} onChange={upd('gender')}>
-                  <option value="">— Select —</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
+                  <option value="">ΓÇö Select ΓÇö</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
                 </select>
               </Field>
               <Field label="LinkedIn URL"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} /></Field>
@@ -675,17 +552,17 @@ function CoachDashboard({ supabase, user, profile }) {
             </FormRow>
           </SectionCard>
           <button className="btn btn-primary px-5" type="submit" disabled={saving}>
-            {saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : <><i className="bi bi-check2 me-2" />Save profile</>}
+            {saving ? <><span className="spinner-border spinner-border-sm me-2" />SavingΓÇª</> : <><i className="bi bi-check2 me-2" />Save profile</>}
           </button>
         </form>
       )}
 
-      {/* â”€â”€ Recommend a Player to Agent / Club â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ΓöÇΓöÇ Recommend a Player to Agent / Club ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
       {activeTab === 'recommend' && (
         <SectionCard title="Recommend a Player">
           <p className="text-muted small mb-4">
             As a coach, you can recommend talented players directly to agents and clubs on SportBridge.
-            Your recommendation carries weight — it shows alongside the player&apos;s profile.
+            Your recommendation carries weight ΓÇö it shows alongside the player&apos;s profile.
           </p>
           {recDone ? (
             <div className="alert alert-success d-flex gap-2 align-items-center">
@@ -700,7 +577,7 @@ function CoachDashboard({ supabase, user, profile }) {
                 <input
                   className="form-control"
                   type="search"
-                  placeholder="Type player name…"
+                  placeholder="Type player nameΓÇª"
                   value={recSearch}
                   onChange={(e) => searchPlayers(e.target.value)}
                 />
@@ -721,18 +598,11 @@ function CoachDashboard({ supabase, user, profile }) {
                   </ul>
                 )}
               </div>
-              <div className="col-12 col-md-4">
-                <label className="form-label fw-semibold" style={{ fontSize: 13 }}>Recipient type</label>
-                <select className="form-select" value={recTargetType} onChange={(event) => setRecTargetType(event.target.value)}>
-                  <option value="agent">Agent / Scout</option>
-                  <option value="academy">Academy / Club</option>
-                </select>
-              </div>
-              <div className="col-12 col-md-8">
-                <label className="form-label fw-semibold" style={{ fontSize: 13 }}>{recTargetType === 'agent' ? 'Agent or agency name' : 'Academy or club name'}</label>
+              <div className="col-12">
+                <label className="form-label fw-semibold" style={{ fontSize: 13 }}>Recommend to (agent or club name)</label>
                 <input
                   className="form-control"
-                  placeholder={recTargetType === 'agent' ? 'e.g. Premier Football Agency' : 'e.g. Lagos United FC'}
+                  placeholder="e.g. Premier Football Agency, Lagos United FC"
                   value={recTarget}
                   onChange={(e) => setRecTarget(e.target.value)}
                   required
@@ -751,7 +621,7 @@ function CoachDashboard({ supabase, user, profile }) {
               <div className="col-12">
                 <button className="btn btn-primary px-5" type="submit" disabled={recBusy || !recPlayer || !recTarget.trim()}>
                   {recBusy
-                    ? <><span className="spinner-border spinner-border-sm me-2" />Sending…</>
+                    ? <><span className="spinner-border spinner-border-sm me-2" />SendingΓÇª</>
                     : <><i className="bi bi-send-check me-2" />Send Recommendation</>}
                 </button>
               </div>
@@ -761,7 +631,7 @@ function CoachDashboard({ supabase, user, profile }) {
       )}
 
       {activeTab === 'cv' && (
-        <SectionCard title="Upload CV / Résumé">
+        <SectionCard title="Upload CV / R├⌐sum├⌐">
           <p className="text-muted small mb-3">Your CV is stored privately and only shared with clubs, academies and agents you directly apply to or approve.</p>
           <CvOnlyForm supabase={supabase} user={user} onDone={() => setNotice('CV uploaded successfully.')} />
         </SectionCard>
@@ -776,7 +646,7 @@ function CoachDashboard({ supabase, user, profile }) {
   )
 }
 
-// â”€â”€â”€ Agent dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ΓöÇΓöÇΓöÇ Agent dashboard ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function AgentDashboard({ supabase, user, profile }) {
   const [agent,          setAgent]        = useState(null)
@@ -845,15 +715,15 @@ function AgentDashboard({ supabase, user, profile }) {
     setNotice('Agency profile saved.')
   }
 
-  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
+  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />LoadingΓÇª</div>
 
   return (
     <>
       <div className="row g-3 mb-4">
-        <StatCard icon="bi-bookmark-star"   label="Watchlisted players"  value={watchlistCount ?? '—'} colour="var(--fc-gradient-primary)" />
-        <StatCard icon="bi-shield-check"    label="Access granted"       value="—"                     colour="linear-gradient(135deg,#198754,#20c997)" />
-        <StatCard icon="bi-hourglass-split" label="Pending requests"     value="—"                     colour="var(--fc-gradient-gold)" />
-        <StatCard icon="bi-star"            label="Avg. rating"          value="—"                     colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
+        <StatCard icon="bi-bookmark-star"   label="Watchlisted players"  value={watchlistCount ?? 'ΓÇö'} colour="var(--fc-gradient-primary)" />
+        <StatCard icon="bi-shield-check"    label="Access granted"       value="ΓÇö"                     colour="linear-gradient(135deg,#198754,#20c997)" />
+        <StatCard icon="bi-hourglass-split" label="Pending requests"     value="ΓÇö"                     colour="var(--fc-gradient-gold)" />
+        <StatCard icon="bi-star"            label="Avg. rating"          value="ΓÇö"                     colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
       </div>
 
       {error  && <div className="alert alert-danger"  role="alert">{error}</div>}
@@ -861,15 +731,7 @@ function AgentDashboard({ supabase, user, profile }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[
-          ['profile','bi-person-vcard','Agency Profile'],
-          ...(profile?.verification_status === 'verified' ? [
-            ['post-tryout','bi-calendar2-plus','Post Tryout'],
-            ['post-position','bi-briefcase-fill','Post Position Needed'],
-          ] : []),
-          ['cv','bi-file-earmark-person','Upload CV'],
-          ['verify','bi-patch-check','Get Verified'],
-        ].map(([tab, icon, label]) => (
+        {[['profile','bi-person-vcard','Agency Profile'],['post-tryout','bi-calendar2-plus','Post Tryout'],['post-position','bi-briefcase-fill','Post Position Needed'],['cv','bi-file-earmark-person','Upload CV'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
@@ -891,12 +753,12 @@ function AgentDashboard({ supabase, user, profile }) {
               <Field label="Years of experience"><input className="form-control" type="number" min="0" max="60" value={draft.experience_years} onChange={upd('experience_years')} /></Field>
               <Field label="Nationality">
                 <select className="form-select" value={draft.nationality} onChange={upd('nationality')}>
-                  <option value="">— Select —</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <option value="">ΓÇö Select ΓÇö</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </Field>
               <Field label="Gender">
                 <select className="form-select" value={draft.gender} onChange={upd('gender')}>
-                  <option value="">— Select —</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
+                  <option value="">ΓÇö Select ΓÇö</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
                 </select>
               </Field>
               <Field label="LinkedIn URL"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} /></Field>
@@ -916,31 +778,31 @@ function AgentDashboard({ supabase, user, profile }) {
             </FormRow>
           </SectionCard>
           <button className="btn btn-primary px-5" type="submit" disabled={saving}>
-            {saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : <><i className="bi bi-check2 me-2" />Save profile</>}
+            {saving ? <><span className="spinner-border spinner-border-sm me-2" />SavingΓÇª</> : <><i className="bi bi-check2 me-2" />Save profile</>}
           </button>
         </form>
       )}
 
-      {/* â”€â”€ Demo Flow 3: Agent posts Tryout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ΓöÇΓöÇ Demo Flow 3: Agent posts Tryout ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
       {activeTab === 'post-tryout' && (
         <SectionCard title="Post a Tryout Opportunity">
-          <TryoutForm supabase={supabase} user={user} profile={profile} onVerify={() => setActiveTab('verify')} onSaved={() => { setActiveTab('profile'); setNotice('Tryout posted.') }} />
+          <TryoutForm supabase={supabase} user={user} onSaved={() => { setActiveTab('profile'); setNotice('Tryout posted.') }} />
         </SectionCard>
       )}
 
-      {/* â”€â”€ Agent posts Player Position Needed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ΓöÇΓöÇ Agent posts Player Position Needed ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
       {activeTab === 'post-position' && (
         <SectionCard title="Post Player Position Needed">
           <p className="text-muted small mb-4">
             Post a specific player position needed on behalf of a club or as an independent scout.
             This appears on the public Job Board and is matched to available players by position, age group and region.
           </p>
-          <JobPostForm supabase={supabase} user={user} profile={profile} onVerify={() => setActiveTab('verify')} onSaved={() => { setActiveTab('profile'); setNotice('Position posted to job board.') }} />
+          <JobPostForm supabase={supabase} user={user} onSaved={() => { setActiveTab('profile'); setNotice('Position posted to job board.') }} />
         </SectionCard>
       )}
 
       {activeTab === 'cv' && (
-        <SectionCard title="Upload CV / Résumé">
+        <SectionCard title="Upload CV / R├⌐sum├⌐">
           <p className="text-muted small mb-3">Your CV is stored privately and only shared with parties you directly engage with through SportBridge.</p>
           <CvOnlyForm supabase={supabase} user={user} onDone={() => setNotice('CV uploaded successfully.')} />
         </SectionCard>
@@ -955,7 +817,7 @@ function AgentDashboard({ supabase, user, profile }) {
   )
 }
 
-// â”€â”€â”€ Academy dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ΓöÇΓöÇΓöÇ Academy dashboard ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function AcademyDashboard({ supabase, user, profile }) {
   const [academy, setAcademy] = useState(null)
@@ -1029,16 +891,16 @@ function AcademyDashboard({ supabase, user, profile }) {
     setAcademy(data); setNotice('Academy profile saved.')
   }
 
-  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
+  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />LoadingΓÇª</div>
 
   return (
     <>
       <CompletenessBar score={completenessScore(profile, { ...draft, bio: draft?.about })} />
       <div className="row g-3 mb-4">
-        <StatCard icon="bi-people"         label="Players"         value={stats.players ?? '—'} colour="var(--fc-gradient-primary)" />
-        <StatCard icon="bi-briefcase"      label="Active jobs"     value={stats.jobs    ?? '—'} colour="var(--fc-gradient-gold)" />
-        <StatCard icon="bi-shield-check"   label="Access requests" value="—"                    colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
-        <StatCard icon="bi-calendar-event" label="Active trials"   value="—"                    colour="linear-gradient(135deg,#198754,#20c997)" />
+        <StatCard icon="bi-people"         label="Players"         value={stats.players ?? 'ΓÇö'} colour="var(--fc-gradient-primary)" />
+        <StatCard icon="bi-briefcase"      label="Active jobs"     value={stats.jobs    ?? 'ΓÇö'} colour="var(--fc-gradient-gold)" />
+        <StatCard icon="bi-shield-check"   label="Access requests" value="ΓÇö"                    colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
+        <StatCard icon="bi-calendar-event" label="Active trials"   value="ΓÇö"                    colour="linear-gradient(135deg,#198754,#20c997)" />
       </div>
 
       {error  && <div className="alert alert-danger"  role="alert">{error}</div>}
@@ -1046,15 +908,7 @@ function AcademyDashboard({ supabase, user, profile }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[
-          ['profile','bi-building','Club Profile'],
-          ...(profile?.verification_status === 'verified' ? [
-            ['roster','bi-people-fill','Add Player to Roster'],
-            ['post-job','bi-briefcase-fill','Post a Job'],
-          ] : []),
-          ['cv','bi-file-earmark-person','Upload CV'],
-          ['verify','bi-patch-check','Get Verified'],
-        ].map(([tab, icon, label]) => (
+        {[['profile','bi-building','Club Profile'],['post-job','bi-briefcase-fill','Post a Job'],['cv','bi-file-earmark-person','Upload CV'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
@@ -1074,7 +928,7 @@ function AcademyDashboard({ supabase, user, profile }) {
               <Field label="Year founded" col="col-12 col-md-4"><input className="form-control" type="number" min="1800" max={new Date().getFullYear()} value={draft.year_founded} onChange={upd('year_founded')} /></Field>
               <Field label="Country">
                 <select className="form-select" value={draft.country} onChange={upd('country')}>
-                  <option value="">— Select —</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <option value="">ΓÇö Select ΓÇö</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </Field>
               <Field label="State / Region"><input className="form-control" value={draft.state} onChange={upd('state')} /></Field>
@@ -1100,36 +954,20 @@ function AcademyDashboard({ supabase, user, profile }) {
             </FormRow>
           </SectionCard>
           <button className="btn btn-primary px-5" type="submit" disabled={saving}>
-            {saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : <><i className="bi bi-check2 me-2" />Save profile</>}
+            {saving ? <><span className="spinner-border spinner-border-sm me-2" />SavingΓÇª</> : <><i className="bi bi-check2 me-2" />Save profile</>}
           </button>
         </form>
       )}
 
-      {/* â”€â”€ Demo Flow 1: Club posts Player / Staff job â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      {activeTab === 'roster' && (
-        <SectionCard title="Add a player to your roster">
-          <AcademyPlayerForm
-            supabase={supabase}
-            user={user}
-            profile={profile}
-            academyId={academy?.id}
-            onVerify={() => setActiveTab('verify')}
-            onSaved={() => {
-              setStats((current) => ({ ...current, players: (current.players ?? 0) + 1 }))
-              setNotice('Player submitted for document review.')
-            }}
-          />
-        </SectionCard>
-      )}
-
+      {/* ΓöÇΓöÇ Demo Flow 1: Club posts Player / Staff job ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
       {activeTab === 'post-job' && (
         <SectionCard title="Post a Job">
-          <JobPostForm supabase={supabase} user={user} profile={profile} onVerify={() => setActiveTab('verify')} onSaved={() => { setActiveTab('profile'); setStats((s) => ({ ...s, jobs: (s.jobs ?? 0) + 1 })); setNotice('Job posted.') }} />
+          <JobPostForm supabase={supabase} user={user} onSaved={() => { setActiveTab('profile'); setStats((s) => ({ ...s, jobs: (s.jobs ?? 0) + 1 })); setNotice('Job posted.') }} />
         </SectionCard>
       )}
 
       {activeTab === 'cv' && (
-        <SectionCard title="Upload CV / Résumé">
+        <SectionCard title="Upload CV / R├⌐sum├⌐">
           <p className="text-muted small mb-3">Upload your club&apos;s representative CV, portfolio, or company profile document. Stored privately.</p>
           <CvOnlyForm supabase={supabase} user={user} onDone={() => setNotice('CV uploaded successfully.')} />
         </SectionCard>
@@ -1144,355 +982,276 @@ function AcademyDashboard({ supabase, user, profile }) {
   )
 }
 
-// â”€â”€â”€ Super Admin dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ΓöÇΓöÇΓöÇ Super Admin dashboard ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function AdminDashboard({ supabase, user }) {
   const [users,        setUsers]       = useState([])
   const [accountCount, setAccountCount]= useState(0)
-  const [matchingUserCount, setMatchingUserCount] = useState(0)
   const [newToday,     setNewToday]    = useState(0)
-  const [roleCounts,   setRoleCounts]  = useState({})
-  const [userPage,     setUserPage]    = useState(0)
   const [roleDrafts,   setRoleDrafts]  = useState({})
   const [saving,       setSaving]      = useState(false)
   const [notice,       setNotice]      = useState('')
   const [error,        setError]       = useState('')
   const [loading,      setLoading]     = useState(true)
   const [search,       setSearch]      = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [activeTab,    setActiveTab]   = useState('users')
   const [duplicates,   setDuplicates]  = useState([])
   const [flagged,      setFlagged]     = useState([])
   const [verifQueue,   setVerifQueue]  = useState([])
-  const [rosterQueue,  setRosterQueue] = useState([])
-  const [verificationLoaded, setVerificationLoaded] = useState(false)
-  const [disputes,     setDisputes]    = useState([])
   const [verifNote,    setVerifNote]   = useState({})
-  const [reportNotes,  setReportNotes] = useState({})
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300)
-    return () => window.clearTimeout(timer)
-  }, [search])
 
   useEffect(() => {
     let alive = true
-    setLoading(true)
-    setError('')
-    const todayStart = new Date()
-    todayStart.setHours(0, 0, 0, 0)
-    const safeSearch = debouncedSearch.replace(/[(),*%_+\\'"]/g, ' ').trim().replace(/\s+/g, ' ')
-    const profilesQuery = supabase.from('profiles')
-      .select('id, email, full_name, role, created_at, status, verification_status, verification_badge, country, region', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(userPage * USERS_PAGE_SIZE, (userPage + 1) * USERS_PAGE_SIZE - 1)
-    if (safeSearch) {
-      const pattern = `%${safeSearch}%`
-      profilesQuery.or([
-        `full_name.ilike.${pattern}`,
-        `email.ilike.${pattern}`,
-        `role.ilike.${pattern}`,
-        `status.ilike.${pattern}`,
-        `country.ilike.${pattern}`,
-        `region.ilike.${pattern}`,
-      ].join(','))
-    } else if (debouncedSearch) {
-      profilesQuery.eq('id', '00000000-0000-0000-0000-000000000000')
-    }
-    Promise.all([
-      profilesQuery,
-      supabase.from('profiles').select('id', { count: 'exact', head: true }),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
-      ...ALL_ROLES.map((role) => supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', role)),
-    ]).then(([profileResult, totalResult, todayResult, ...roleResults]) => {
+    supabase.from('profiles')
+      .select('id, email, full_name, role, created_at, status, verification_status', { count: 'exact' })
+      .order('created_at', { ascending: false }).limit(300)
+      .then(({ data, count, error: err }) => {
         if (!alive) return
-        const queryError = [profileResult, totalResult, todayResult, ...roleResults].find((result) => result.error)?.error
-        if (queryError) setError(queryError.message)
-        const profiles = profileResult.data ?? []
+        if (err) setError(err.message)
+        const profiles = data ?? []
         setUsers(profiles)
-        setMatchingUserCount(profileResult.count ?? profiles.length)
-        setAccountCount(totalResult.count ?? 0)
-        setNewToday(todayResult.count ?? 0)
-        setRoleCounts(Object.fromEntries(ALL_ROLES.map((role, index) => [
-          role,
-          roleResults[index].count ?? 0,
-        ])))
+        setAccountCount(count ?? profiles.length)
+        const todayStart = new Date(); todayStart.setHours(0,0,0,0)
+        setNewToday(profiles.filter((u) => u.created_at && new Date(u.created_at) >= todayStart).length)
         setRoleDrafts(Object.fromEntries(profiles.map((u) => [u.id, u.role])))
-        setLoading(false)
-      }).catch((loadError) => {
-        if (!alive) return
-        setError(`Could not load admin user data: ${loadError.message}`)
         setLoading(false)
       })
     return () => { alive = false }
-  }, [supabase, userPage, debouncedSearch])
+  }, [supabase])
 
   useEffect(() => {
     if (activeTab === 'duplicates' && duplicates.length === 0) {
-      supabase.from('uploads').select('id, user_id, file_hash, file_type, url, is_duplicate, created_at').eq('is_duplicate', true).order('created_at', { ascending: false }).limit(100)
-        .then(({ data, error: duplicateError }) => {
-          if (duplicateError) setError(`Could not load duplicate uploads: ${duplicateError.message}`)
-          else setDuplicates(data ?? [])
-        })
+      supabase.from('uploads').select('id, user_id, file_hash, file_type, url, is_duplicate, created_at')
+        .eq('is_duplicate', true).order('created_at', { ascending: false }).limit(100)
+        .then(({ data }) => setDuplicates(data ?? []))
     }
     if (activeTab === 'flagged' && flagged.length === 0) {
-      supabase.from('opportunities').select('id, title, region, fee_amount, fee_breakdown, description, status, is_fee_flagged, created_at').eq('is_fee_flagged', true).order('created_at', { ascending: false }).limit(100)
-        .then(({ data, error: flaggedError }) => {
-          if (flaggedError) setError(`Could not load flagged tryouts: ${flaggedError.message}`)
-          else setFlagged(data ?? [])
-        })
+      supabase.from('opportunities').select('id, title, region, fee_amount, fee_breakdown, description, status, is_fee_flagged, created_at')
+        .eq('is_fee_flagged', true).order('created_at', { ascending: false }).limit(100)
+        .then(({ data }) => setFlagged(data ?? []))
     }
-    if (activeTab === 'verification' && !verificationLoaded) {
-      Promise.all([
-        supabase.from('verification_requests')
-          .select('id, user_id, role, id_type, nin_number, passport_number, id_document_path, nin_selfie_path, release_letter_path, player_contracts, cac_document_path, company_reg_number, official_email, facility_pictures, fifa_agent_id, fa_verification_body, agent_passport_path, license_path, coach_passport_path, coach_fa_body, coach_licence_path, cv_path, status, submitted_at, reviewer_notes, profiles!verification_requests_user_id_fkey!inner(email, full_name)')
-          .eq('status', 'pending').order('submitted_at', { ascending: true }).limit(40),
-        supabase.from('academy_player_verifications')
-          .select('id, player_id, academy_id, submitted_by, ownership_proof_path, identity_document_path, status, submitted_at, reviewer_notes, players!inner(display_name, position, age, nationality, country), profiles!academy_player_verifications_submitted_by_fkey(full_name, email)')
-          .eq('status', 'pending').order('submitted_at', { ascending: true }).limit(40),
-      ]).then(async ([requests, roster]) => {
-        if (requests.error) setError(`Verification queue: ${requests.error.message}`)
-        if (roster.error) setError(`Academy player review queue: ${roster.error.message}`)
-        const enrichedRequests = await Promise.all((requests.data ?? []).map(async (item) => {
-          const evidence = await attachEvidenceLinks(supabase, item)
-          if (evidence.errors.length) setError(`Some verification evidence could not be opened: ${evidence.errors.join('; ')}`)
-          return { ...item, evidenceLinks: evidence.links }
-        }))
-        const enrichedRoster = await Promise.all((roster.data ?? []).map(async (item) => {
-          const evidence = await attachEvidenceLinks(supabase, item, true)
-          if (evidence.errors.length) setError(`Some academy player evidence could not be opened: ${evidence.errors.join('; ')}`)
-          return { ...item, evidenceLinks: evidence.links }
-        }))
-        setVerifQueue(enrichedRequests)
-        setRosterQueue(enrichedRoster)
-        setVerificationLoaded(true)
-      }).catch((queueError) => {
-        setError(`Could not load verification evidence: ${queueError.message}`)
-        setVerificationLoaded(true)
-      })
+    if (activeTab === 'verification' && verifQueue.length === 0) {
+      supabase.from('verification_requests')
+        .select('id, user_id, role, nin_number, status, submitted_at, reviewer_notes, profiles!inner(email, full_name)')
+        .eq('status', 'pending').order('submitted_at', { ascending: true }).limit(100)
+        .then(({ data }) => setVerifQueue(data ?? []))
     }
-    if (activeTab === 'disputes' && disputes.length === 0) {
-      supabase.from('reports')
-        .select('id, reporter_id, reported_user_id, reason, details, status, reviewer_notes, created_at, reporter:profiles!reporter_id (email, full_name), reported:profiles!reported_user_id (id, email, full_name, status)')
-        .order('created_at', { ascending: false }).limit(100)
-        .then(({ data, error: reportError }) => {
-          if (reportError) setError(reportError.message)
-          else setDisputes(data ?? [])
-        })
-    }
-  }, [activeTab, supabase, duplicates.length, flagged.length, verificationLoaded, disputes.length])
+  }, [activeTab, supabase, duplicates.length, flagged.length, verifQueue.length])
 
   const approveOpp = async (id) => {
-    setSaving(true); setError(''); setNotice('')
-    const { error: updateError } = await supabase.from('opportunities')
-      .update({ status: 'open', is_fee_flagged: false }).eq('id', id).select('id').single()
-    setSaving(false)
-    if (updateError) { setError(updateError.message); return }
-    setFlagged((current) => current.filter((opportunity) => opportunity.id !== id))
-    setNotice('Tryout approved.')
+    await supabase.from('opportunities').update({ status: 'open', is_fee_flagged: false }).eq('id', id)
+    setFlagged((f) => f.filter((o) => o.id !== id)); setNotice('Tryout approved.')
   }
   const rejectOpp = async (id) => {
-    setSaving(true); setError(''); setNotice('')
-    const { error: updateError } = await supabase.from('opportunities')
-      .update({ status: 'rejected' }).eq('id', id).select('id').single()
-    setSaving(false)
-    if (updateError) { setError(updateError.message); return }
-    setFlagged((current) => current.filter((opportunity) => opportunity.id !== id))
-    setNotice('Tryout rejected.')
+    await supabase.from('opportunities').update({ status: 'rejected' }).eq('id', id)
+    setFlagged((f) => f.filter((o) => o.id !== id)); setNotice('Tryout rejected.')
   }
 
   const approveVerif = async (req) => {
     setSaving(true); setError(''); setNotice('')
     const note = verifNote[req.id] ?? ''
-    const { data: badge, error: reviewError } = await supabase.rpc('review_verification_request', {
-      p_request_id: req.id,
-      p_approved: true,
-      p_reviewer_notes: note || null,
-    })
-    if (reviewError) {
-      setSaving(false)
-      setError(reviewError.message)
-      return
+    await supabase.from('verification_requests').update({ status: 'approved', reviewer_id: user.id, reviewer_notes: note, reviewed_at: new Date().toISOString() }).eq('id', req.id)
+    await supabase.from('profiles').update({ verification_status: 'verified' }).eq('id', req.user_id)
+    if (req.role === 'agent') {
+      const { data: ap } = await supabase.from('agent_profiles').select('id').eq('user_id', req.user_id).maybeSingle()
+      if (ap) await supabase.from('agent_profiles').update({ verified_badge: true }).eq('id', ap.id)
+    }
+    if (req.role === 'academy') {
+      const { data: cl } = await supabase.from('clubs').select('id').eq('owner_id', req.user_id).maybeSingle()
+      if (cl) await supabase.from('clubs').update({ verified_badge: true }).eq('id', cl.id)
     }
     setVerifQueue((q) => q.filter((r) => r.id !== req.id))
-    setUsers((u) => u.map((row) => row.id === req.user_id
-      ? { ...row, verification_status: 'verified', verification_badge: badge }
-      : row))
-    setSaving(false); setNotice(`${req.profiles?.email} verified — ${badge} badge applied.`)
+    setUsers((u) => u.map((row) => row.id === req.user_id ? { ...row, verification_status: 'verified' } : row))
+    setSaving(false); setNotice(`Verified: ${req.profiles?.email}`)
   }
 
   const rejectVerif = async (req) => {
     setSaving(true); setError(''); setNotice('')
     const note = verifNote[req.id] ?? 'Verification rejected by admin.'
-    const { error: reviewError } = await supabase.rpc('review_verification_request', {
-      p_request_id: req.id,
-      p_approved: false,
-      p_reviewer_notes: note,
-    })
-    if (reviewError) {
-      setSaving(false)
-      setError(reviewError.message)
-      return
-    }
+    await supabase.from('verification_requests').update({ status: 'rejected', reviewer_id: user.id, reviewer_notes: note, reviewed_at: new Date().toISOString() }).eq('id', req.id)
+    await supabase.from('profiles').update({ verification_status: 'rejected' }).eq('id', req.user_id)
     setVerifQueue((q) => q.filter((r) => r.id !== req.id))
-    setUsers((u) => u.map((row) => row.id === req.user_id
-      ? { ...row, verification_status: 'rejected', verification_badge: null }
-      : row))
-    setSaving(false); setNotice(`${req.profiles?.email} verification rejected.`)
-  }
-
-  const reviewAcademyPlayer = async (item, approved) => {
-    setSaving(true); setError(''); setNotice('')
-    const { error: reviewError } = await supabase.rpc('review_academy_player_verification', {
-      p_verification_id: item.id,
-      p_approved: approved,
-      p_reviewer_notes: verifNote[item.id] || null,
-    })
-    setSaving(false)
-    if (reviewError) {
-      setError(reviewError.message)
-      return
-    }
-    setRosterQueue((current) => current.filter((row) => row.id !== item.id))
-    setNotice(approved
-      ? `${item.players?.display_name ?? 'Player'} approved and added to the public academy roster.`
-      : `${item.players?.display_name ?? 'Player'} submission rejected.`)
+    setSaving(false); setNotice(`Rejected: ${req.profiles?.email}`)
   }
 
   const saveRole = async (uid) => {
     setSaving(true); setError(''); setNotice('')
-    const { data, error: err } = await supabase.from('profiles')
-      .update({ role: roleDrafts[uid], updated_at: new Date().toISOString() })
-      .eq('id', uid).select('id, email, full_name, role, created_at, status').single()
+    const { data, error: err } = await supabase.from('profiles').update({ role: roleDrafts[uid], updated_at: new Date().toISOString() }).eq('id', uid).select('id, email, full_name, role, created_at, status').single()
     setSaving(false)
     if (err) { setError(err.message); return }
-    setUsers((cur) => cur.map((u) => u.id === data.id ? { ...u, ...data } : u))
-    setNotice(`Updated ${data.email}.`)
+    setUsers((cur) => cur.map((u) => u.id === data.id ? data : u))
+    setNotice(`Role updated: ${data.email}`)
   }
 
-  const setUserStatus = async (uid, newStatus, action) => {
-    if (!window.confirm(`${action} this account?`)) return
+  const suspendUser = async (uid, currentStatus) => {
+    const newStatus = currentStatus === 'suspended' ? 'active' : 'suspended'
+    if (!window.confirm(`${newStatus === 'suspended' ? 'Suspend' : 'Reactivate'} this account?`)) return
     setSaving(true); setError(''); setNotice('')
-    const { error: err } = await supabase.from('profiles')
-      .update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', uid)
-    if (err) { setSaving(false); setError(err.message); return }
+    const { error: err } = await supabase.from('profiles').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', uid)
+    setSaving(false)
+    if (err) { setError(err.message); return }
     setUsers((cur) => cur.map((u) => u.id === uid ? { ...u, status: newStatus } : u))
-    setSaving(false)
-    setNotice(`${action} successfully.`)
+    setNotice(`Account ${newStatus === 'suspended' ? 'suspended' : 'reactivated'}.`)
   }
 
-  const resolveDispute = async (report, outcome) => {
-    setSaving(true); setError(''); setNotice('')
-    const notes = reportNotes[report.id] ?? ''
-    const { error: reportError } = await supabase.rpc('review_user_report', {
-      p_report_id: report.id,
-      p_outcome: outcome,
-      p_reviewer_notes: notes,
-    })
-    setSaving(false)
-    if (reportError) { setError(reportError.message); return }
-    setDisputes((current) => current.map((item) => item.id === report.id
-      ? { ...item, status: outcome, reviewer_notes: notes }
-      : item))
-    if (outcome === 'confirmed_scam') {
-      setUsers((current) => current.map((item) => item.id === report.reported_user_id
-        ? { ...item, status: 'denied' }
-        : item))
-    }
-    setNotice(outcome === 'confirmed_scam'
-      ? 'Scam confirmed after investigation. The account has been disabled and records retained.'
-      : outcome === 'investigating' ? 'Report marked as under investigation.' : 'Report dismissed.')
-  }
+  const roleCounts = ALL_ROLES.reduce((acc, r) => ({ ...acc, [r]: users.filter((u) => u.role === r).length }), {})
+  const filtered   = users.filter((u) => !search || [u.full_name, u.email, u.role].some((f) => f?.toLowerCase().includes(search.toLowerCase())))
+  const pendingVerif = verifQueue.length
 
-  const filtered   = users
-  const pendingVerif = users.filter((u) => u.verification_status === 'pending').length
+  const ROLE_COLOURS = {
+    player: '#2F7DF0', coach: '#F5B301', agent: '#198754',
+    academy: '#6f42c1', super_admin: '#dc3545',
+  }
 
   const TABS = [
-    ['users',         'bi-people',        'Users'],
-    ['verification',  'bi-patch-check',   `Verification${pendingVerif > 0 ? ` (${pendingVerif})` : ''}`],
-    ['disputes',      'bi-exclamation-triangle', 'Disputes'],
-    ['duplicates',    'bi-files',         'Duplicate Files'],
-    ['flagged',       'bi-flag-fill',     'Fee-Flagged'],
+    ['users',        'bi-people',      `Users (${users.length})`],
+    ['verification', 'bi-patch-check', `Verify${pendingVerif > 0 ? ` (${pendingVerif})` : ''}`],
+    ['duplicates',   'bi-files',       'Duplicates'],
+    ['flagged',      'bi-flag-fill',   'Fee-Flagged'],
   ]
 
   return (
     <>
+      {/* Stat cards */}
       <div className="row g-3 mb-4">
-        <StatCard icon="bi-people"         label="Total accounts"   value={accountCount}       colour="var(--fc-gradient-primary)" />
-        <StatCard icon="bi-person-plus"    label="New today"        value={newToday}           colour={newToday > 0 ? 'linear-gradient(135deg,#198754,#20c997)' : 'linear-gradient(135deg,#6c757d,#adb5bd)'} />
-        <StatCard icon="bi-building"       label="Academies"        value={roleCounts.academy} colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
-        <StatCard icon="bi-person-arms-up" label="Players"          value={roleCounts.player}  colour="var(--fc-gradient-gold)" />
+        {[
+          { icon: 'bi-people',         label: 'Total users',  value: accountCount,           colour: 'var(--fc-gradient-primary)' },
+          { icon: 'bi-person-plus',    label: 'New today',    value: newToday,               colour: newToday > 0 ? 'linear-gradient(135deg,#198754,#20c997)' : 'linear-gradient(135deg,#6c757d,#adb5bd)' },
+          { icon: 'bi-person-arms-up', label: 'Players',      value: roleCounts.player ?? 0, colour: 'var(--fc-gradient-gold)' },
+          { icon: 'bi-building',       label: 'Academies',    value: roleCounts.academy ?? 0,colour: 'linear-gradient(135deg,#6f42c1,#9d63e8)' },
+          { icon: 'bi-binoculars',     label: 'Agents',       value: roleCounts.agent ?? 0,  colour: 'linear-gradient(135deg,#198754,#20c997)' },
+          { icon: 'bi-patch-check',    label: 'Pending verif',value: pendingVerif,            colour: pendingVerif > 0 ? 'linear-gradient(135deg,#fd7e14,#ffc107)' : 'linear-gradient(135deg,#6c757d,#adb5bd)' },
+        ].map(({ icon, label, value, colour }) => (
+          <div className="col-6 col-sm-4 col-xl-2" key={label}>
+            <div className="card p-3 text-center h-100">
+              <div className="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2"
+                style={{ width: 44, height: 44, background: colour, fontSize: '1.1rem', color: '#fff' }}>
+                <i className={`bi ${icon}`} />
+              </div>
+              <div style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--fc-font-heading)', lineHeight: 1, color: 'var(--fc-blue-700)' }}>{value ?? '0'}</div>
+              <div className="small text-muted mt-1">{label}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {error  && <div className="alert alert-danger"  role="alert">{error}</div>}
-      {notice && <div className="alert alert-success" role="status">{notice}</div>}
+      {/* Role breakdown bar */}
+      {users.length > 0 && (
+        <div className="card p-3 mb-4">
+          <div className="d-flex justify-content-between mb-2">
+            <span className="small fw-semibold text-muted">User distribution</span>
+            <span className="small text-muted">{users.length} total accounts</span>
+          </div>
+          <div className="d-flex rounded-pill overflow-hidden" style={{ height: 12 }}>
+            {ALL_ROLES.filter((r) => r !== 'super_admin').map((r) => {
+              const pct = users.length > 0 ? ((roleCounts[r] ?? 0) / users.length) * 100 : 0
+              return pct > 0 ? <div key={r} style={{ width: `${pct}%`, background: ROLE_COLOURS[r] }} title={`${ROLE_LABELS[r]}: ${roleCounts[r]}`} /> : null
+            })}
+          </div>
+          <div className="d-flex flex-wrap gap-3 mt-2">
+            {ALL_ROLES.filter((r) => r !== 'super_admin').map((r) => (
+              <span key={r} className="small d-flex align-items-center gap-1">
+                <span className="rounded-circle d-inline-block flex-shrink-0" style={{ width: 8, height: 8, background: ROLE_COLOURS[r] }} />
+                {ROLE_LABELS[r]}: <strong>{roleCounts[r] ?? 0}</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
-      <ul className="nav nav-tabs mb-4 flex-wrap" role="tablist">
+      {error  && <div className="alert alert-danger  d-flex gap-2" role="alert"><i className="bi bi-exclamation-circle-fill" />{error}</div>}
+      {notice && <div className="alert alert-success d-flex gap-2" role="status"><i className="bi bi-check-circle-fill" />{notice}</div>}
+
+      {/* Tabs */}
+      <ul className="nav nav-pills mb-4 flex-wrap gap-1" role="tablist">
         {TABS.map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
-            <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
+            <button
+              className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`}
+              type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
+              {tab === 'verification' && pendingVerif > 0 && (
+                <span className="badge text-bg-danger" style={{ fontSize: 10 }}>{pendingVerif}</span>
+              )}
             </button>
           </li>
         ))}
       </ul>
 
-      {/* Users table */}
+      {/* ── Users table ── */}
       {activeTab === 'users' && (
-        <section className="card p-4" aria-labelledby="admin-users-heading">
+        <div className="card p-4">
           <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-            <h2 className="h5 fw-bold mb-0" id="admin-users-heading" style={{ color: 'var(--fc-blue-700)' }}>User accounts</h2>
-            <input className="form-control form-control-sm" style={{ maxWidth: 320 }} type="search"
-              placeholder="Search all users by name, email, role or location…"
-              aria-label="Search all user accounts"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setUserPage(0) }} />
+            <h2 className="h5 fw-bold mb-0" style={{ color: 'var(--fc-blue-700)' }}>
+              <i className="bi bi-people me-2" />All User Accounts
+            </h2>
+            <div className="d-flex gap-2 align-items-center">
+              <input className="form-control form-control-sm" style={{ maxWidth: 260 }} type="search"
+                placeholder="Search name, email, role…" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <span className="small text-muted text-nowrap">{filtered.length} results</span>
+            </div>
           </div>
-          {loading ? <div className="py-4 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div> : (
+
+          {loading ? (
+            <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading accounts…</div>
+          ) : (
             <div className="table-responsive">
-              <table className="table table-hover align-middle mb-0">
-                <thead>
-                  <tr><th>Name</th><th>Email</th><th>Location</th><th>Role</th><th>Status</th><th>Verified</th><th>Joined</th><th><span className="visually-hidden">Actions</span></th></tr>
+              <table className="table table-hover align-middle mb-0" style={{ fontSize: 13 }}>
+                <thead className="table-light">
+                  <tr>
+                    <th>User</th>
+                    <th style={{ minWidth: 140 }}>Role</th>
+                    <th className="text-center">Status</th>
+                    <th className="text-center">Verified</th>
+                    <th className="text-nowrap">Joined</th>
+                    <th><span className="visually-hidden">Actions</span></th>
+                  </tr>
                 </thead>
                 <tbody>
                   {filtered.map((u) => (
-                    <tr key={u.id} className={u.status === 'suspended' ? 'table-danger' : ''}>
-                      <td className="fw-semibold">{u.full_name || <span className="text-muted fst-italic">Unnamed</span>}</td>
-                      <td className="small">{u.email}</td>
-                      <td className="small">{[u.region, u.country].filter(Boolean).join(', ') || <span className="text-muted">Not provided</span>}</td>
+                    <tr key={u.id} className={u.status === 'suspended' ? 'table-danger opacity-75' : ''}>
                       <td>
-                        <select aria-label={`Role for ${u.email}`} className="form-select form-select-sm" style={{ minWidth: 110 }}
-                          disabled={u.id === user.id || saving}
+                        <div className="d-flex align-items-center gap-2">
+                          <span className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                            style={{ width: 36, height: 36, background: ROLE_COLOURS[u.role] || 'var(--fc-gradient-primary)', color: u.role === 'coach' ? '#000' : '#fff', fontSize: 15 }}>
+                            <i className={`bi ${ROLE_ICONS[u.role] || 'bi-person'}`} />
+                          </span>
+                          <div>
+                            <div className="fw-semibold d-flex align-items-center gap-1">
+                              {u.full_name || <span className="text-muted fst-italic">Unnamed</span>}
+                              {u.id === user.id && <span className="badge text-bg-primary" style={{ fontSize: 9 }}>You</span>}
+                            </div>
+                            <div className="text-muted" style={{ fontSize: 11 }}>{u.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <select className="form-select form-select-sm" disabled={u.id === user.id || saving}
                           value={roleDrafts[u.id] ?? u.role}
                           onChange={(e) => setRoleDrafts((cur) => ({ ...cur, [u.id]: e.target.value }))}>
                           {ALL_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                         </select>
                       </td>
-                      <td><span className={`badge ${u.status === 'active' ? 'text-bg-success' : u.status === 'suspended' || u.status === 'denied' ? 'text-bg-danger' : 'text-bg-warning'}`}>{u.status ?? 'active'}</span></td>
-                      <td><VerificationBadge status={u.verification_status} role={u.role} label={u.verification_badge} /></td>
-                      <td className="small text-muted">{u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
+                      <td className="text-center">
+                        <span className={`badge ${u.status === 'active' ? 'text-bg-success' : u.status === 'suspended' ? 'text-bg-danger' : 'text-bg-warning'}`}>
+                          {u.status === 'active' ? 'Active' : u.status === 'suspended' ? 'Suspended' : u.status ?? 'active'}
+                        </span>
+                      </td>
+                      <td className="text-center"><VerificationBadge status={u.verification_status} /></td>
+                      <td className="text-muted" style={{ fontSize: 11 }}>
+                        {u.created_at ? new Date(u.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
+                      </td>
                       <td>
-                        <div className="d-flex gap-1 flex-wrap">
+                        <div className="d-flex gap-1 flex-nowrap">
                           <button className="btn btn-sm btn-outline-primary"
                             disabled={u.id === user.id || saving || (roleDrafts[u.id] ?? u.role) === u.role}
-                            onClick={() => saveRole(u.id)} type="button">Save role</button>
-                          {u.id !== user.id && u.status === 'pending' && <>
-                            <button className="btn btn-sm btn-success" disabled={saving}
-                              onClick={() => setUserStatus(u.id, 'active', 'Approve')} type="button">Approve</button>
-                            <button className="btn btn-sm btn-outline-danger" disabled={saving}
-                              onClick={() => setUserStatus(u.id, 'denied', 'Deny')} type="button">Deny</button>
-                          </>}
-                          {u.id !== user.id && u.status === 'active' && (
-                            <>
-                              <button className="btn btn-sm btn-outline-danger" disabled={saving}
-                                onClick={() => setUserStatus(u.id, 'suspended', 'Suspend')} type="button">Suspend</button>
-                              <button className="btn btn-sm btn-danger" disabled={saving}
-                                onClick={() => setUserStatus(u.id, 'denied', 'Deny')} type="button">Deny</button>
-                            </>
-                          )}
-                          {u.id !== user.id && ['suspended', 'denied'].includes(u.status) && (
-                            <button className="btn btn-sm btn-outline-success" disabled={saving}
-                              onClick={() => setUserStatus(u.id, 'active', 'Reactivate')} type="button">Reactivate</button>
+                            onClick={() => saveRole(u.id)} type="button">Save</button>
+                          {u.id !== user.id && (
+                            <button
+                              className={`btn btn-sm ${u.status === 'suspended' ? 'btn-success' : 'btn-outline-danger'}`}
+                              disabled={saving} onClick={() => suspendUser(u.id, u.status ?? 'active')} type="button">
+                              {u.status === 'suspended' ? 'Restore' : 'Suspend'}
+                            </button>
                           )}
                         </div>
                       </td>
@@ -1500,237 +1259,171 @@ function AdminDashboard({ supabase, user }) {
                   ))}
                 </tbody>
               </table>
-              {filtered.length === 0 && <p className="text-center text-muted py-4 mb-0">No accounts match your search.</p>}
+              {filtered.length === 0 && (
+                <div className="text-center py-5 text-muted">
+                  <i className="bi bi-search fs-2 d-block mb-2" style={{ opacity: .3 }} />
+                  <p className="mb-0">No accounts match <strong>"{search}"</strong></p>
+                </div>
+              )}
             </div>
           )}
-          <div className="d-flex justify-content-between align-items-center mt-3">
-            <span className="small text-muted">
-              Page {userPage + 1} of {Math.max(1, Math.ceil(matchingUserCount / USERS_PAGE_SIZE))}
-              {' · '}{matchingUserCount} matching · {accountCount} total accounts
-            </span>
-            <div className="btn-group btn-group-sm" role="group" aria-label="User list pages">
-              <button className="btn btn-outline-secondary" type="button" disabled={userPage === 0 || loading}
-                onClick={() => setUserPage((page) => Math.max(0, page - 1))}>Previous</button>
-              <button className="btn btn-outline-secondary" type="button" disabled={(userPage + 1) * USERS_PAGE_SIZE >= matchingUserCount || loading}
-                onClick={() => setUserPage((page) => page + 1)}>Next</button>
-            </div>
-          </div>
-        </section>
+        </div>
       )}
 
-      {/* Verification queue */}
+      {/* ── Verification Queue ── */}
       {activeTab === 'verification' && (
-        <section className="card p-4">
-          <h2 className="h5 fw-bold mb-4" style={{ color: 'var(--fc-blue-700)' }}>
-            Verification Queue
-            {verifQueue.length > 0 && <span className="badge text-bg-warning ms-2">{verifQueue.length} pending</span>}
-          </h2>
-          {verifQueue.length === 0 ? (
-            <p className="text-muted">No pending verification requests.</p>
+        <div className="card p-4">
+          <div className="d-flex align-items-center justify-content-between mb-4">
+            <h2 className="h5 fw-bold mb-0" style={{ color: 'var(--fc-blue-700)' }}>
+              <i className="bi bi-patch-check me-2" />Verification Queue
+            </h2>
+            {pendingVerif > 0 && <span className="badge text-bg-warning px-3 py-2">{pendingVerif} pending</span>}
+          </div>
+          {pendingVerif === 0 ? (
+            <div className="text-center py-5 text-muted">
+              <i className="bi bi-patch-check fs-1 d-block mb-2" style={{ color: '#198754', opacity: .4 }} />
+              <p className="fw-semibold mb-1">All clear!</p>
+              <p className="small">No pending verification requests.</p>
+            </div>
           ) : verifQueue.map((req) => (
-            <div key={req.id} className="card p-3 mb-3" style={{ borderLeft: '4px solid var(--fc-blue-500)' }}>
-              <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
-                <div>
-                  <div className="fw-bold">{req.profiles?.full_name || req.profiles?.email}</div>
-                  <div className="small text-muted">{req.profiles?.email} · <span className="text-capitalize">{req.role}</span></div>
-                  <div className="small text-muted">Submitted: {new Date(req.submitted_at).toLocaleDateString()}</div>
-                  {req.nin_number && <div className="small text-muted">NIN: {req.nin_number.slice(0,4)}*******</div>}
+            <div key={req.id} className="card p-4 mb-3" style={{ borderLeft: '4px solid var(--fc-blue-500)', background: 'rgba(47,125,240,.03)' }}>
+              <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                <div className="d-flex align-items-center gap-3">
+                  <span className="fc-icon-badge" style={{ width: 44, height: 44, background: 'var(--fc-gradient-primary)' }}>
+                    <i className={`bi ${ROLE_ICONS[req.role] || 'bi-person'}`} />
+                  </span>
+                  <div>
+                    <div className="fw-bold">{req.profiles?.full_name || req.profiles?.email}</div>
+                    <div className="small text-muted">{req.profiles?.email}</div>
+                    <div className="d-flex gap-2 mt-1 flex-wrap">
+                      <span className="badge text-bg-light border text-capitalize">{req.role}</span>
+                      <span className="small text-muted">
+                        Submitted {new Date(req.submitted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <span className="badge text-bg-warning">Pending</span>
+                <span className="badge text-bg-warning px-3 py-2">Pending Review</span>
               </div>
-              <div className="d-flex flex-wrap gap-2 mb-3">
-                {(req.evidenceLinks ?? []).map((link) => (
-                  <a key={link.label} className="btn btn-sm btn-outline-primary" href={link.url} target="_blank" rel="noopener noreferrer">
-                    <i className="bi bi-file-earmark-check me-1" />{link.label}
-                  </a>
-                ))}
-              </div>
-              <div className="mb-2">
-                <label className="form-label small fw-semibold mb-1" htmlFor={`note-${req.id}`}>Admin note (optional)</label>
-                <input
-                  id={`note-${req.id}`}
-                  className="form-control form-control-sm"
+              {req.nin_number && (
+                <div className="small text-muted mb-2">
+                  <i className="bi bi-person-badge me-1" />NIN on file: <code>{req.nin_number.slice(0,4)}*******</code>
+                </div>
+              )}
+              <div className="mb-3">
+                <label className="form-label small fw-semibold" htmlFor={`note-${req.id}`}>
+                  Admin note <span className="text-muted fw-normal">(optional)</span>
+                </label>
+                <input id={`note-${req.id}`} className="form-control form-control-sm"
                   placeholder="Reason for approval or rejection…"
                   value={verifNote[req.id] ?? ''}
-                  onChange={(e) => setVerifNote((n) => ({ ...n, [req.id]: e.target.value }))}
-                />
+                  onChange={(e) => setVerifNote((n) => ({ ...n, [req.id]: e.target.value }))} />
               </div>
-              <div className="d-flex gap-2">
-                <button className="btn btn-sm btn-success d-flex align-items-center gap-1" type="button"
+              <div className="d-flex gap-2 flex-wrap">
+                <button className="btn btn-success d-flex align-items-center gap-2" type="button"
                   disabled={saving} onClick={() => approveVerif(req)}>
-                  <i className="bi bi-patch-check-fill" />Approve — Mark Verified
+                  <i className="bi bi-patch-check-fill" />Approve & Verify
                 </button>
-                <button className="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" type="button"
+                <button className="btn btn-outline-danger d-flex align-items-center gap-2" type="button"
                   disabled={saving} onClick={() => rejectVerif(req)}>
                   <i className="bi bi-x-circle" />Reject
                 </button>
               </div>
             </div>
           ))}
-        </section>
+        </div>
       )}
 
-      {activeTab === 'verification' && (
-        <section className="card p-4 mt-4">
-          <h2 className="h5 fw-bold mb-4" style={{ color: 'var(--fc-blue-700)' }}>
-            Academy player ownership review
-            {rosterQueue.length > 0 && <span className="badge text-bg-warning ms-2">{rosterQueue.length} pending</span>}
-          </h2>
-          {rosterQueue.length === 0 ? <p className="text-muted mb-0">No academy player submissions are waiting for review.</p>
-            : rosterQueue.map((item) => (
-              <article key={item.id} className="card p-3 mb-3">
-                <div className="d-flex flex-wrap justify-content-between gap-2">
-                  <div>
-                    <h3 className="h6 fw-bold mb-1">{item.players?.display_name || 'Player submission'}</h3>
-                    <p className="small text-muted mb-2">
-                      {item.players?.position || 'Position not provided'} · {item.players?.age ?? 'Age not provided'} · {item.players?.nationality || item.players?.country || 'Nationality not provided'}
-                    </p>
-                    <p className="small text-muted mb-2">
-                      Submitted by {item.profiles?.full_name || item.profiles?.email || 'Academy'} on {new Date(item.submitted_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <span className="badge text-bg-warning align-self-start">Pending</span>
-                </div>
-                <div className="d-flex flex-wrap gap-2 mb-3">
-                  {(item.evidenceLinks ?? []).map((link) => (
-                    <a key={link.label} className="btn btn-sm btn-outline-primary" href={link.url} target="_blank" rel="noopener noreferrer">
-                      <i className="bi bi-file-earmark-check me-1" />{link.label}
-                    </a>
-                  ))}
-                </div>
-                <label className="form-label small fw-semibold" htmlFor={`note-${item.id}`}>Review note</label>
-                <input id={`note-${item.id}`} className="form-control form-control-sm mb-2"
-                  value={verifNote[item.id] ?? ''} onChange={(event) => setVerifNote((current) => ({ ...current, [item.id]: event.target.value }))} />
-                <div className="d-flex gap-2">
-                  <button className="btn btn-sm btn-success" type="button" disabled={saving || !(item.evidenceLinks?.length)}
-                    onClick={() => reviewAcademyPlayer(item, true)}>Approve ownership & publish</button>
-                  <button className="btn btn-sm btn-outline-danger" type="button" disabled={saving}
-                    onClick={() => reviewAcademyPlayer(item, false)}>Reject submission</button>
-                </div>
-              </article>
-            ))}
-        </section>
-      )}
-
-      {/* Duplicate files */}
+      {/* ── Duplicate Files ── */}
       {activeTab === 'duplicates' && (
-        <section className="card p-4">
-          <h2 className="h5 fw-bold mb-4" style={{ color: 'var(--fc-blue-700)' }}>Duplicate file detector</h2>
-          {duplicates.length === 0
-            ? <p className="text-muted">No duplicate uploads detected.</p>
-            : (
-              <div className="table-responsive">
-                <table className="table table-sm align-middle mb-0">
-                  <thead><tr><th>File hash (SHA-256)</th><th>Type</th><th>User</th><th>Uploaded</th><th>URL</th></tr></thead>
-                  <tbody>
-                    {duplicates.map((d) => (
-                      <tr key={d.id}>
-                        <td className="font-monospace small">{d.file_hash?.slice(0, 16)}…</td>
-                        <td className="small">{d.file_type}</td>
-                        <td className="small text-muted">{d.user_id?.slice(0, 8)}…</td>
-                        <td className="small text-muted">{new Date(d.created_at).toLocaleDateString()}</td>
-                        <td><a href={d.url} target="_blank" rel="noopener noreferrer" className="small">View</a></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-        </section>
-      )}
-
-      {/* Fee-flagged tryouts */}
-      {activeTab === 'flagged' && (
-        <section className="card p-4">
-          <h2 className="h5 fw-bold mb-4" style={{ color: 'var(--fc-blue-700)' }}>Fee-flagged tryouts</h2>
-          {flagged.length === 0
-            ? <p className="text-muted">No tryouts pending review.</p>
-            : flagged.map((opp) => (
-              <div key={opp.id} className="card p-3 mb-3" style={{ borderLeft: '4px solid var(--fc-gold-500)' }}>
-                <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
-                  <div>
-                    <h3 className="h6 fw-bold mb-1">{opp.title}</h3>
-                    <span className="badge text-bg-warning me-2">₦{(opp.fee_amount ?? 0).toLocaleString()}</span>
-                    <span className="small text-muted">{opp.region} · {opp.status}</span>
-                  </div>
-                  <div className="d-flex gap-2">
-                    <button className="btn btn-sm btn-success" type="button" disabled={saving} onClick={() => approveOpp(opp.id)}>
-                      <i className="bi bi-check-lg me-1" />Approve
-                    </button>
-                    <button className="btn btn-sm btn-danger" type="button" disabled={saving} onClick={() => rejectOpp(opp.id)}>
-                      <i className="bi bi-x-lg me-1" />Reject
-                    </button>
-                  </div>
-                </div>
-                {opp.fee_breakdown && <p className="small mb-1"><strong>Fee breakdown:</strong> {opp.fee_breakdown}</p>}
-                <p className="small text-muted mb-0" style={{ whiteSpace: 'pre-wrap', maxHeight: 100, overflow: 'hidden' }}>{opp.description}</p>
-              </div>
-            ))}
-        </section>
-      )}
-
-      {/* Disputes */}
-      {activeTab === 'disputes' && (
-        <section className="card p-4">
+        <div className="card p-4">
           <h2 className="h5 fw-bold mb-4" style={{ color: 'var(--fc-blue-700)' }}>
-            Disputes & Reports
-            {disputes.filter((d) => d.status === 'pending').length > 0 && (
-              <span className="badge text-bg-danger ms-2">{disputes.filter((d) => d.status === 'pending').length} open</span>
-            )}
+            <i className="bi bi-files me-2" />Duplicate File Detector
           </h2>
-          {disputes.length === 0 ? (
-            <p className="text-muted">No disputes or reports filed yet.</p>
-          ) : disputes.map((d) => (
-            <div key={d.id} className={`card p-3 mb-3 ${d.status === 'pending' ? 'border-danger' : ''}`}
-              style={{ borderLeft: `4px solid ${d.status === 'pending' ? '#dc3545' : d.status === 'actioned' ? '#198754' : '#6c757d'}` }}>
-              <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+          {duplicates.length === 0 ? (
+            <div className="text-center py-5 text-muted">
+              <i className="bi bi-files fs-1 d-block mb-2" style={{ opacity: .3 }} />
+              <p className="mb-0">No duplicate uploads detected.</p>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-sm align-middle mb-0">
+                <thead className="table-light">
+                  <tr><th>File hash (SHA-256)</th><th>Type</th><th>User</th><th>Uploaded</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {duplicates.map((d) => (
+                    <tr key={d.id}>
+                      <td className="font-monospace small text-danger">{d.file_hash?.slice(0, 16)}…</td>
+                      <td><span className="badge text-bg-light border small">{d.file_type}</span></td>
+                      <td className="small text-muted">{d.user_id?.slice(0, 8)}…</td>
+                      <td className="small text-muted">{new Date(d.created_at).toLocaleDateString()}</td>
+                      <td>
+                        <a href={d.url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-secondary">
+                          <i className="bi bi-box-arrow-up-right" />
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Fee-Flagged Tryouts ── */}
+      {activeTab === 'flagged' && (
+        <div className="card p-4">
+          <h2 className="h5 fw-bold mb-4" style={{ color: 'var(--fc-blue-700)' }}>
+            <i className="bi bi-flag-fill me-2 text-warning" />Fee-Flagged Tryouts
+          </h2>
+          {flagged.length === 0 ? (
+            <div className="text-center py-5 text-muted">
+              <i className="bi bi-flag fs-1 d-block mb-2" style={{ opacity: .3 }} />
+              <p className="mb-0">No tryouts pending review.</p>
+            </div>
+          ) : flagged.map((opp) => (
+            <div key={opp.id} className="card p-4 mb-3" style={{ borderLeft: '4px solid var(--fc-gold-500)' }}>
+              <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
                 <div>
-                  <div className="fw-bold small">Reported: {d.reported?.full_name || d.reported?.email || 'Unavailable account'}</div>
-                  <div className="small text-muted">Reported by: {d.reporter?.full_name || d.reporter?.email || 'Unknown user'}</div>
-                  <div className="small text-muted">
-                    Reason: <strong className="text-capitalize">{d.reason?.replace(/_/g, ' ')}</strong>
-                    {' · '}{new Date(d.created_at).toLocaleDateString()}
-                  </div>
-                  {d.details && <p className="small text-muted mt-1 mb-0">{d.details}</p>}
-                </div>
-                <span className={`badge ${d.status === 'pending' ? 'text-bg-danger' : d.status === 'actioned' ? 'text-bg-success' : 'text-bg-secondary'}`}>
-                  {d.status}
-                </span>
-              </div>
-              {d.reviewer_notes && <p className="small mt-2 mb-0"><strong>Investigation notes:</strong> {d.reviewer_notes}</p>}
-              {['pending', 'investigating'].includes(d.status) && (
-                <div className="mt-3">
-                  <label className="form-label small fw-semibold" htmlFor={`report-note-${d.id}`}>Investigation notes</label>
-                  <textarea id={`report-note-${d.id}`} className="form-control form-control-sm mb-2" rows="2"
-                    value={reportNotes[d.id] ?? ''} onChange={(event) => setReportNotes((current) => ({ ...current, [d.id]: event.target.value }))} />
+                  <h3 className="h6 fw-bold mb-2">{opp.title}</h3>
                   <div className="d-flex gap-2 flex-wrap">
-                    {d.status === 'pending' && <button className="btn btn-sm btn-outline-primary" type="button" disabled={saving}
-                      onClick={() => resolveDispute(d, 'investigating')}>Investigate</button>}
-                    <button className="btn btn-sm btn-success" type="button" disabled={saving || !reportNotes[d.id]?.trim()}
-                      onClick={() => resolveDispute(d, 'confirmed_scam')}>
-                      <i className="bi bi-shield-exclamation me-1" />Confirm scam & disable account
-                    </button>
-                    <button className="btn btn-sm btn-outline-secondary" type="button" disabled={saving || !reportNotes[d.id]?.trim()}
-                      onClick={() => resolveDispute(d, 'dismissed')}>
-                      <i className="bi bi-x-circle me-1" />Dismiss report
-                    </button>
+                    <span className="badge text-bg-danger">
+                      <i className="bi bi-cash me-1" />&#8358;{(opp.fee_amount ?? 0).toLocaleString()} fee flagged
+                    </span>
+                    {opp.region && <span className="badge text-bg-light border">{opp.region}</span>}
                   </div>
                 </div>
+                <div className="d-flex gap-2">
+                  <button className="btn btn-success btn-sm" type="button" onClick={() => approveOpp(opp.id)}>
+                    <i className="bi bi-check-lg me-1" />Approve
+                  </button>
+                  <button className="btn btn-danger btn-sm" type="button" onClick={() => rejectOpp(opp.id)}>
+                    <i className="bi bi-x-lg me-1" />Reject
+                  </button>
+                </div>
+              </div>
+              {opp.fee_breakdown && (
+                <div className="alert alert-warning py-2 small mb-2">
+                  <strong>Fee breakdown:</strong> {opp.fee_breakdown}
+                </div>
+              )}
+              {opp.description && (
+                <p className="small text-muted mb-0" style={{ maxHeight: 80, overflow: 'hidden' }}>{opp.description}</p>
               )}
             </div>
           ))}
-        </section>
+        </div>
       )}
     </>
   )
 }
 
-// â”€â”€â”€ Account details sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ΓöÇΓöÇΓöÇ Account details sidebar ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function AccountDetails({ supabase, user, profile, onProfileSaved }) {
   const [name,   setName]   = useState(profile?.full_name ?? '')
-  const [country, setCountry] = useState(profile?.country ?? '')
-  const [region, setRegion] = useState(profile?.region ?? '')
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState('')
   const [error,  setError]  = useState('')
@@ -1738,12 +1431,7 @@ function AccountDetails({ supabase, user, profile, onProfileSaved }) {
   const save = async (e) => {
     e.preventDefault()
     setSaving(true); setError(''); setNotice('')
-    const { data, error: err } = await supabase.from('profiles').update({
-      full_name: name.trim() || null,
-      country: country.trim() || null,
-      region: region.trim() || null,
-      updated_at: new Date().toISOString(),
-    }).eq('id', user.id).select('id, email, full_name, role, country, region').single()
+    const { data, error: err } = await supabase.from('profiles').update({ full_name: name.trim() || null, updated_at: new Date().toISOString() }).eq('id', user.id).select('id, email, full_name, role').single()
     setSaving(false)
     if (err) { setError(err.message); return }
     setNotice('Saved.'); onProfileSaved(data)
@@ -1760,27 +1448,16 @@ function AccountDetails({ supabase, user, profile, onProfileSaved }) {
           <input id="acct-name" className="form-control form-control-sm" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
-          <label className="form-label small fw-semibold" htmlFor="acct-country">Country</label>
-          <input id="acct-country" className="form-control form-control-sm" value={country} maxLength={100}
-            onChange={(e) => setCountry(e.target.value)} autoComplete="country-name" />
-        </div>
-        <div>
-          <label className="form-label small fw-semibold" htmlFor="acct-region">Region / city</label>
-          <input id="acct-region" className="form-control form-control-sm" value={region} maxLength={100}
-            onChange={(e) => setRegion(e.target.value)} autoComplete="address-level1" />
-          <div className="form-text">Optional, self-reported location. No GPS or precise location is collected.</div>
-        </div>
-        <div>
           <label className="form-label small fw-semibold">Email</label>
           <input className="form-control form-control-sm" readOnly value={profile?.email ?? user.email ?? ''} />
         </div>
-        <button className="btn btn-sm btn-primary" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+        <button className="btn btn-sm btn-primary" type="submit" disabled={saving}>{saving ? 'SavingΓÇª' : 'Save'}</button>
       </form>
     </section>
   )
 }
 
-// â”€â”€â”€ Main Dashboard shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ΓöÇΓöÇΓöÇ Main Dashboard shell ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function Dashboard({ supabase, user, onBack }) {
   const [profile,     setProfile]     = useState(null)
@@ -1794,18 +1471,10 @@ function Dashboard({ supabase, user, onBack }) {
   const [messages,    setMessages]    = useState([])
   const [newMsg,      setNewMsg]      = useState('')
   const [sending,     setSending]     = useState(false)
-  const [now,         setNow]         = useState(null)
-
-  useEffect(() => {
-    const updateNow = () => setNow(Date.now())
-    updateNow()
-    const timer = window.setInterval(updateNow, 60_000)
-    return () => window.clearInterval(timer)
-  }, [])
 
   useEffect(() => {
     let alive = true
-    supabase.from('profiles').select('id, email, full_name, role, created_at, status, sport, verification_status, verification_badge, country, region').eq('id', user.id).single()
+    supabase.from('profiles').select('id, email, full_name, role, created_at, status, sport, verification_status').eq('id', user.id).single()
       .then(({ data, error: err }) => {
         if (!alive) return
         if (err) setError(err.message)
@@ -1863,16 +1532,14 @@ function Dashboard({ supabase, user, onBack }) {
   const getOther = (conv) => conv.initiator?.id === user.id ? conv.recipient : conv.initiator
 
   function timeAgo(iso) {
-    if (!iso || now == null) return ''
-    const timestamp = Date.parse(iso)
-    if (!Number.isFinite(timestamp)) return ''
-    const s = Math.max(0, Math.floor((now - timestamp) / 1000))
+    if (!iso) return ''
+    const s = Math.floor((Date.now() - new Date(iso)) / 1000)
     if (s < 60) return 'just now'; if (s < 3600) return `${Math.floor(s/60)}m`
     if (s < 86400) return `${Math.floor(s/3600)}h`
     return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
   }
 
-  if (loading) return <div className="container py-5 text-center text-muted" role="status"><span className="spinner-border me-2" />Loading your dashboard…</div>
+  if (loading) return <div className="container py-5 text-center text-muted" role="status"><span className="spinner-border me-2" />Loading your dashboardΓÇª</div>
   if (error || !profile) return <div className="container py-5"><div className="alert alert-danger">{error || 'Could not load your profile.'}</div></div>
 
   const role      = profile.role
@@ -1903,7 +1570,7 @@ function Dashboard({ supabase, user, onBack }) {
           </h1>
           <div className="d-flex align-items-center gap-2 mt-1">
             <span className="text-muted small">{user.email}</span>
-            <VerificationBadge status={profile.verification_status} role={profile.role} label={profile.verification_badge} />
+            <VerificationBadge status={profile.verification_status} />
           </div>
         </div>
         <button className="btn btn-outline-primary btn-sm" onClick={onBack} type="button">
@@ -1934,7 +1601,7 @@ function Dashboard({ supabase, user, onBack }) {
         </li>
       </ul>
 
-      {/* â”€â”€ Main role content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ΓöÇΓöÇ Main role content ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
       {dashTab === 'main' && (
         <div className="row g-4 align-items-start">
           <div className="col-12 col-lg-8 col-xl-9">{roleContent()}</div>
@@ -1958,7 +1625,7 @@ function Dashboard({ supabase, user, onBack }) {
         </div>
       )}
 
-      {/* â”€â”€ Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ΓöÇΓöÇ Notifications ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
       {dashTab === 'notifications' && (
         <div className="row justify-content-center">
           <div className="col-12 col-md-8 col-lg-6">
@@ -1971,7 +1638,7 @@ function Dashboard({ supabase, user, onBack }) {
               )}
             </div>
             {notifLoad ? (
-              <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
+              <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />LoadingΓÇª</div>
             ) : notifs.length === 0 ? (
               <div className="text-center py-5 text-muted">
                 <i className="bi bi-bell-slash fs-2 d-block mb-2" />
@@ -1996,7 +1663,7 @@ function Dashboard({ supabase, user, onBack }) {
         </div>
       )}
 
-      {/* â”€â”€ Inbox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ΓöÇΓöÇ Inbox ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
       {dashTab === 'inbox' && (
         <div className="row g-0" style={{ minHeight: 500 }}>
           {/* Conversation list */}
@@ -2067,7 +1734,7 @@ function Dashboard({ supabase, user, onBack }) {
                 <div className="px-3 py-2 border-top">
                   <form onSubmit={sendMessage} className="d-flex gap-2">
                     <input className="form-control form-control-sm" type="text" value={newMsg}
-                      onChange={(e) => setNewMsg(e.target.value)} placeholder="Write a message…" maxLength={10000} required style={{ fontSize: 13 }} />
+                      onChange={(e) => setNewMsg(e.target.value)} placeholder="Write a messageΓÇª" maxLength={10000} required style={{ fontSize: 13 }} />
                     <button className="btn btn-primary btn-sm" type="submit" disabled={sending || !newMsg.trim()}>
                       {sending ? <span className="spinner-border spinner-border-sm" /> : <i className="bi bi-send-fill" />}
                     </button>

@@ -22,6 +22,7 @@ const ROLES = [
   { value: 'academy', label: 'Academy / Club',   icon: 'bi-building'         },
   { value: 'agent',   label: 'Agent / Scout',    icon: 'bi-binoculars'       },
   { value: 'coach',   label: 'Coach / Manager',  icon: 'bi-clipboard2-pulse' },
+  { value: 'sports_analyst', label: 'Sports Analyst', icon: 'bi-graph-up-arrow' },
 ]
 
 const SPORTS = BASKETBALL_ENABLED
@@ -73,6 +74,16 @@ const roleCards = [
     heroCopy: 'Land your next role.',
     copy: 'Browse coaching and management roles, apply with your verified profile, and recommend talented players directly to agents and clubs from your dashboard.',
     action: 'Register as a coach / manager',
+  },
+  {
+    accountRole: 'sports_analyst',
+    cardIcon: 'bi-graph-up-arrow',
+    heroIcon: 'bi-graph-up-arrow',
+    title: 'For Sports Analysts',
+    heroTitle: 'Sports Analysts',
+    heroCopy: 'Share your expertise.',
+    copy: 'Build a professional profile, add courses and achievements, recommend players, and share analysis with the SportBridge community.',
+    action: 'Register as a sports analyst',
   },
 ]
 
@@ -1014,7 +1025,7 @@ function App() {
             )}
           </div>
         ) : view === 'dashboard' && user ? (
-          <Dashboard supabase={supabase} user={user} onBack={() => setView('home')} />
+          <Dashboard supabase={supabase} user={user} onBack={() => setView('home')} onCommunity={() => setView('feed')} />
         ) : view === 'player' && selectedPlayerId ? (
           <PlayerProfile
             playerId={selectedPlayerId}
@@ -1059,9 +1070,9 @@ function App() {
 
                     {/* Sub-headline */}
                     <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '56ch' }}>
-                      SportBridge connects <strong style={{ color: '#fff' }}>Verified Free Players</strong> with{' '}
-                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Scouts</strong>{' '}
-                      <span>in Africa and across The World.</span>{' '}
+                      SportBridge connects <strong style={{ color: '#fff' }}>Verified Players</strong> with{' '}
+                      <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Managers</strong>{' '}
+                      <span> across The World.</span>{' '}
                       <span>Full CV + Full-Match Video + highlights + Stats + Secure Unlock</span>{' '}
                       <em>not just highlights.</em>
                     </p>
@@ -1313,7 +1324,7 @@ function App() {
                       type="button"
                       onClick={() => openSignup(role.accountRole)}
                     >
-                      {role.accountRole === 'academy' ? 'Academy / Club' : role.accountRole === 'agent' ? 'Agent / Scout' : role.accountRole === 'coach' ? 'Coach / Manager' : 'Player'}
+                      {role.title.replace('For ', '')}
                     </button>
                   </li>
                 ))}
