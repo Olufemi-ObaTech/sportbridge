@@ -1,6 +1,6 @@
 # SportBridge Supabase setup
 
-`schema.sql` is the complete initial Supabase schema for the Netlify app. It is designed to be re-runnable and creates the account/profile, academy, agent, coach, player/team, media, feed, jobs/applications, watchlists, access requests, conversations/messages, ratings/recommendations, reports/admin logs, saved searches, trials/try-outs, push subscription, and storage structures. Row-level security is enabled on all public tables.
+`schema.sql` is the complete initial Supabase schema for the Netlify app. It is designed to be re-runnable and creates the account/profile, academy, agent, coach, player/team, media, feed, jobs/applications, watchlists, access requests, conversations/messages, ratings/recommendations, reports/admin logs, saved searches, trials/try-outs, push subscription, and storage structures. It includes the `sports_analyst` account role and public community-feed media. Row-level security is enabled on all public tables.
 
 ## Apply the schema
 
@@ -28,7 +28,7 @@
 - `profiles.email`, phone, role, status, and private fields are not publicly readable. Profile owners can update allowed personal fields; admins can moderate accounts.
 - Player, club, agent, coach, feed, and job listings are visible only when explicitly public/active. Player profiles default to private until the owner opts in.
 - CVs, identity/license documents, and private notes belong in `private-documents`, which is not a public bucket. Store objects under `<auth-user-id>/<file-name>` and issue signed URLs only after authorization.
-- `public-media` is intentionally public for assets users choose to display publicly. Upload under `<auth-user-id>/<file-name>` and mark metadata `visibility = 'public'`.
+- `public-media` is intentionally public for assets users choose to display publicly, including community-feed photos and videos. Upload under `<auth-user-id>/<file-name>` and mark metadata `visibility = 'public'`.
 - `private-media` stores owner-only images/videos. It is not a public bucket; store objects under `<auth-user-id>/<file-name>`.
 - Never put CVs, identity documents, licenses, credentials, or private messages in `public-media`. Store documents in `private-documents`; the schema rejects document metadata that points to the public bucket.
 - Conversations/messages, applications, watchlists, saved searches, access requests, push tokens, and reports are restricted to their owners/participants or administrators as appropriate.
@@ -57,8 +57,9 @@ After confirming the base tables from `schema.sql` exist, run these files in ord
 
 1. `fix-public-badge-relationships.sql` creates the public badge view before its computed relationships, including the opportunity relationship. This order is required because the relationship functions return the view's row type.
 2. `trust-safety-upgrade.sql` creates the profile verification helper functions before the policies that call them, applies the trust and safety rules, and grants the player-list/profile columns selected by the frontend while RLS controls which rows are visible.
+3. `migrations/20261027000000_sports_analyst_support.sql` updates an existing project with the Sports Analyst role, coach-profile provisioning, manager job/recommendation permissions, and the community media upload limit. New projects should apply `schema.sql` and still run the badge and trust-safety upgrades above.
 
-Both scripts use transactions. If either reports an error, its transaction should be rolled back; fix the cause and rerun the complete file. The relationship patch adds missing profile badge/status columns on older installations, and the trust upgrade ensures `current_user_is_verified()`, `profile_is_active(uuid)`, and `current_user_is_admin()` exist before use. These files require the base application tables (including `profiles`, `players`, `opportunities`, `media_assets`, and `uploads`) and are not replacements for initial setup with `schema.sql`.
+The SQL upgrade scripts use transactions. If one reports an error, its transaction should be rolled back; fix the cause and rerun the complete file. The relationship patch adds missing profile badge/status columns on older installations, and the trust upgrade ensures `current_user_is_verified()`, `profile_is_active(uuid)`, and `current_user_is_admin()` exist before use. These files require the base application tables (including `profiles`, `players`, `opportunities`, `media_assets`, and `uploads`) and are not replacements for initial setup with `schema.sql`.
 
 The trust upgrade also adds `profiles.country` and `profiles.region` for older projects and grants authenticated profile owners the column-level update permission used by Account Details. The admin user list reads those same fields. After applying the upgrade, reload the admin dashboard; no location is collected automatically.
 

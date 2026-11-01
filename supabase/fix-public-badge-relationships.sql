@@ -4,7 +4,7 @@ begin;
 
 alter table public.profiles
   add column if not exists role text not null default 'player'
-    check (role in ('player','coach','agent','academy','super_admin')),
+    check (role in ('player','coach','sports_analyst','agent','academy','super_admin')),
   add column if not exists status text not null default 'active'
     check (status in ('pending','active','suspended','denied')),
   add column if not exists verification_status text not null default 'unverified'

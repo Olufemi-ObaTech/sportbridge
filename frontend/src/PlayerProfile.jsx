@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import DisputeForm from './DisputeForm.jsx'
+import ReportProfileButton from './ReportProfileButton.jsx'
 import VerifiedBadge from './VerifiedBadge.jsx'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -153,38 +153,51 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
   const [unlocking,     setUnlocking]     = useState(false)
   const [viewerVerified, setViewerVerified] = useState(false)
   const [unlockError,    setUnlockError]    = useState('')
-  const [showDispute,   setShowDispute]   = useState(false)
 
   useEffect(() => {
     if (!supabase || !playerId) { setLoading(false); return }
     let alive = true
 
+    const PLAYER_FIELDS = `id, display_name, position, secondary_position, age, country, nationality,
+      bio, is_public, sport, gender, foot, preferred_foot, dominant_hand,
+      height_cm, weight_kg, current_club, achievements, achievements_data,
+      linkedin, views_count, availability, region, age_group, stats,
+      primary_photo_path, profile_id`
+
     const load = async () => {
-      const [{ data: p, error: pe }, { data: ph }, { data: m }] = await Promise.all([
-        supabase.from('players')
-          .select(`id, display_name, position, secondary_position, age, country, nationality,
-                   bio, is_public, sport, gender, foot, preferred_foot, dominant_hand,
-                   height_cm, weight_kg, current_club, achievements, achievements_data,
-                   linkedin, views_count, availability, region, age_group, stats,
-                   primary_photo_path, profile_id,
-                   profile_badge:public_profile_badges(role, verification_status, verification_badge)`)
-          .eq('id', playerId)
-          .single(),
-        supabase.from('player_history')
-          .select('*')
-          .eq('player_id', playerId)
-          .order('sort_order'),
-        supabase.from('media_assets')
-          .select('*')
-          .eq('player_id', playerId)
-          .order('sort_order'),
-      ])
+      // Community section passes profile_id; PlayerSearch/directory passes players.id
+      // Try players.id first, fall back to players.profile_id
+      let { data: p, error: pe } = await supabase
+        .from('players').select(PLAYER_FIELDS).eq('id', playerId).maybeSingle()
+
+      if (!p && !pe) {
+        // Not found by players.id — try profile_id lookup
+        const res = await supabase
+          .from('players').select(PLAYER_FIELDS).eq('profile_id', playerId).maybeSingle()
+        p  = res.data
+        pe = res.error
+      }
 
       if (!alive) return
       if (pe) { setError(pe.message); setLoading(false); return }
+      if (!p) { setError('Player profile not found.'); setLoading(false); return }
+
+      // Fetch history, media and profile badge in parallel using resolved player id
+      const [{ data: ph }, { data: m }, { data: pb }] = await Promise.all([
+        supabase.from('player_history')
+          .select('*').eq('player_id', p.id).order('sort_order'),
+        supabase.from('media_assets')
+          .select('*').eq('player_id', p.id).order('sort_order'),
+        p.profile_id
+          ? supabase.from('profiles')
+              .select('role, verification_status').eq('id', p.profile_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ])
+
+      if (!alive) return
 
       setPlayer(p)
-      setProfile(p.profile_badge)
+      setProfile(pb ?? null)
       setHistory(ph ?? [])
       setMedia(m ?? [])
 
@@ -251,11 +264,6 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
     } finally {
       setUnlocking(false)
     }
-  }
-
-  const handleReport = () => {
-    if (!user) { onSignup?.(); return }
-    setShowDispute(true)
   }
 
   if (loading) return (
@@ -618,27 +626,13 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
 
           {/* Report / Dispute */}
           <div className="card p-3 mb-3">
-            {showDispute ? (
-              <div>
-                <h3 className="h6 fw-bold mb-3 text-danger"><i className="bi bi-flag-fill me-2" />File a Report</h3>
-                <DisputeForm
-                  supabase={supabase}
-                  user={user}
-                  reportedUserId={player.profile_id}
-                  reportedUserName={player.display_name}
-                  onClose={() => setShowDispute(false)}
-                  onSubmitted={() => { setTimeout(() => setShowDispute(false), 3000) }}
-                />
-              </div>
-            ) : (
-              <button
-                className="btn btn-outline-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
-                type="button" onClick={handleReport}
-              >
-                <i className="bi bi-flag-fill" aria-hidden="true" />
-                Report this profile
-              </button>
-            )}
+            <ReportProfileButton
+              supabase={supabase}
+              user={user}
+              reportedUserId={player.profile_id}
+              reportedName={player.display_name}
+              onSignup={onSignup}
+            />
           </div>
 
           {/* Verification status card */}

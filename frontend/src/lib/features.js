@@ -56,18 +56,52 @@ export const REGIONS = [
   'Middle East', 'Asia', 'Americas', 'Other',
 ]
 
-// ─── Staff roles for job posts ────────────────────────────────────────────────
+// ─── Staff / coaching roles (used in job posts AND coach/analyst dashboard dropdowns) ──
 export const STAFF_ROLES = [
+  // Head positions
   'Head Coach',
+  'First Team Manager',
+  'Caretaker Manager',
+  'Interim Manager',
+  'Player-Manager',
+
+  // Coaching staff
+  'Assistant Head Coach',
   'Assistant Coach',
   'Goalkeeping Coach',
-  'Fitness Coach / Physio',
-  'Team Manager',
-  'Interim Manager',
+  'Set-Piece Coach',
+  'Fitness Coach',
+  'Strength & Conditioning Coach',
+  'Sports Scientist',
+  'Physio / Sports Therapist',
+  'Team Doctor',
+
+  // Management & leadership
   'Sporting Director',
   'Technical Director',
+  'Director of Football',
+  'Academy Director',
+  'Head of Recruitment',
+  'Head of Player Development',
+  'Head of Analysis',
+
+  // Scouting & analysis
   'Scout',
-  'Analyst / Data Analyst',
+  'Chief Scout',
+  'Performance Analyst',
+  'Video Analyst',
+  'Data Analyst',
+  'Opposition Analyst',
+  'Recruitment Analyst',
+  'Tactical Analyst',
+
+  // Other
+  'Reserve Team Coach',
+  'U23 / U21 Coach',
+  'U18 Coach',
+  'Youth Academy Coach',
+  'Loan Manager',
+  'Player Liaison',
 ]
 
 // ─── Tryout fee watchdog ──────────────────────────────────────────────────────

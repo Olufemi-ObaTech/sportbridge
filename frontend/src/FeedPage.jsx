@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { containsContactInfo, containsFraudKeywords, MAX_PLAYER_TRAINING_MINUTES } from './lib/features'
+import { guardedUpload, validateImage, validateVideo } from './lib/uploadGuards'
 import VerifiedBadge from './VerifiedBadge.jsx'
 import FeeSafetyNotice from './FeeSafetyNotice.jsx'
 
@@ -24,11 +25,16 @@ function timeAgo(iso) {
 
 const ROLE_ICONS = {
   player: 'bi-person-arms-up', academy: 'bi-building',
-  agent: 'bi-binoculars', coach: 'bi-clipboard2-pulse', super_admin: 'bi-shield-check',
+  agent: 'bi-binoculars', coach: 'bi-clipboard2-pulse', sports_analyst: 'bi-graph-up-arrow',
+  super_admin: 'bi-shield-check',
+}
+const ROLE_LABELS = {
+  sports_analyst: 'Sports Analyst',
 }
 const ROLE_COLORS = {
   player: 'var(--fc-gradient-primary)', academy: 'linear-gradient(135deg,#6f42c1,#9d63e8)',
   agent: 'linear-gradient(135deg,#198754,#20c997)', coach: 'var(--fc-gradient-gold)',
+  sports_analyst: 'linear-gradient(135deg,#6f42c1,#9d63e8)',
   super_admin: 'linear-gradient(135deg,#dc3545,#e85d73)',
 }
 
@@ -138,7 +144,7 @@ function PostCard({ post, user, supabase, onDelete, onLikeToggle, onCommentAdded
                 />}
               </div>
               <div className="text-muted" style={{ fontSize: 11 }}>
-                {role !== 'player' && <span className="text-capitalize me-1">{role} · </span>}
+                {role !== 'player' && <span className="text-capitalize me-1">{ROLE_LABELS[role] ?? role} · </span>}
                 {timeAgo(post.created_at)}
                 {post.sport && <span className="ms-1">{post.sport === 'football' ? ' ⚽' : ' 🏀'}</span>}
               </div>
@@ -237,6 +243,7 @@ function ComposeBox({ user, supabase, onPosted }) {
   const [trainingLink, setTrainingLink] = useState('')
   const [trainingAt, setTrainingAt]     = useState('')
   const [trainingDuration, setTrainingDuration] = useState(String(MAX_PLAYER_TRAINING_MINUTES))
+  const [mediaFiles, setMediaFiles] = useState([])
   const [profile, setProfile]           = useState(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [profileError, setProfileError] = useState('')
@@ -244,9 +251,35 @@ function ComposeBox({ user, supabase, onPosted }) {
   const [error, setError]               = useState('')
   const textRef = useRef(null)
 
+  const pickMedia = (type) => (event) => {
+    const files = Array.from(event.target.files ?? [])
+    const next = [...mediaFiles]
+    let imageCount = next.filter((item) => item.type === 'image').length
+    let videoCount = next.filter((item) => item.type === 'video').length
+    const errors = []
+
+    for (const file of files) {
+      const currentCount = type === 'image' ? imageCount : videoCount
+      const validation = type === 'image'
+        ? validateImage(file, currentCount)
+        : validateVideo(file, currentCount)
+      if (!validation.ok) {
+        errors.push(`${file.name}: ${validation.error}`)
+        continue
+      }
+      next.push({ file, type })
+      if (type === 'image') imageCount++
+      else videoCount++
+    }
+
+    setMediaFiles(next)
+    if (errors.length) setError(errors.join(' '))
+    event.target.value = ''
+  }
+
   useEffect(() => {
     let alive = true
-    supabase.from('profiles').select('role, verification_status').eq('id', user.id).single()
+    supabase.from('profiles').select('full_name, role, verification_status').eq('id', user.id).single()
       .then(({ data, error: profileError }) => {
         if (!alive) return
         if (profileError) setProfileError(profileError.message)
@@ -257,12 +290,12 @@ function ComposeBox({ user, supabase, onPosted }) {
   }, [supabase, user.id])
 
   const canHostSessions = profile?.verification_status === 'verified'
-    && ['player', 'coach', 'academy'].includes(profile.role)
+    && ['player', 'coach', 'sports_analyst', 'academy'].includes(profile.role)
 
   const submit = async (e) => {
     e.preventDefault()
     const body = content.trim()
-    if (!body) return
+    if (!body && mediaFiles.length === 0) { setError('Write an update or attach a photo or video.'); return }
     if (body.length > 10000) { setError('Post must be under 10,000 characters.'); return }
     if (containsContactInfo(body)) { setError('Posts must not contain phone numbers or email addresses. Use the secure inbox instead.'); return }
     if (containsFraudKeywords(body)) { setError('Post contains language associated with payment scams. Remove those phrases.'); return }
@@ -279,12 +312,12 @@ function ComposeBox({ user, supabase, onPosted }) {
     }
 
     setBusy(true); setError('')
-    const { data, error: dbErr } = await supabase.from('feed_posts').insert({
+    const { data: draftPost, error: draftError } = await supabase.from('feed_posts').insert({
       author_id:     user.id,
       content:       body,
       sport:         sport || null,
-      visibility:    'public',
-      status:        'published',
+      visibility:    'private',
+      status:        'draft',
       is_live:       postType === 'live',
       live_link:     postType === 'live' ? liveLink.trim() : null,
       live_at:       postType === 'live' && liveAt ? new Date(liveAt).toISOString() : null,
@@ -293,12 +326,78 @@ function ComposeBox({ user, supabase, onPosted }) {
       training_at:   postType === 'training' && trainingAt ? new Date(trainingAt).toISOString() : null,
       training_duration_minutes: duration,
       media_urls:    [],
-    }).select('*').single()
+    }).select('*').maybeSingle()
+    if (draftError) { setBusy(false); setError(draftError.message); return }
+
+    const media = []
+    const uploadErrors = []
+    let imageCount = 0
+    let videoCount = 0
+    for (const item of mediaFiles) {
+      const currentCount = item.type === 'image' ? imageCount : videoCount
+      const result = await guardedUpload(
+        supabase,
+        item.file,
+        'public-media',
+        'community/',
+        item.type,
+        user.id,
+        currentCount,
+      )
+      if (!result.ok) {
+        uploadErrors.push(`${item.file.name}: ${result.error}`)
+        continue
+      }
+      if (item.type === 'image') imageCount++
+      else videoCount++
+      media.push({ type: item.type, url: result.url, hash: result.hash, title: item.file.name })
+    }
+
+    if (!body && media.length === 0) {
+      const { error: deleteError } = await supabase.from('feed_posts').delete().eq('id', draftPost.id).eq('author_id', user.id)
+      setBusy(false)
+      const cleanupMessage = deleteError ? ` The empty draft could not be removed: ${deleteError.message}` : ''
+      setError(`${uploadErrors.join(' ') || 'No media could be uploaded.'}${cleanupMessage}`)
+      return
+    }
+
+    const mediaUrls = media.map(({ type, url }) => ({ type, url }))
+    const { data, error: publishError } = await supabase.from('feed_posts')
+      .update({ media_urls: mediaUrls, visibility: 'public', status: 'published' })
+      .eq('id', draftPost.id)
+      .eq('author_id', user.id)
+      .select('*')
+      .maybeSingle()
+    if (publishError) {
+      setBusy(false)
+      setError(`Your post could not be published: ${publishError.message}. Its files are safely stored but may need to be attached again.`)
+      return
+    }
+
+    if (media.length) {
+      const { error: mediaError } = await supabase.from('media_assets').insert(media.map((item, index) => ({
+        owner_id: user.id,
+        feed_post_id: draftPost.id,
+        asset_type: item.type,
+        file_hash: item.hash,
+        storage_bucket: 'public-media',
+        storage_path: item.url,
+        title: item.title,
+        visibility: 'public',
+        sort_order: index,
+      })))
+      if (mediaError) uploadErrors.push(`Post is published, but its media details could not be saved: ${mediaError.message}`)
+    }
+
     setBusy(false)
-    if (dbErr) { setError(dbErr.message); return }
-    setContent(''); setSport(''); setPostType('update'); setLiveLink(''); setLiveAt(''); setTrainingLink(''); setTrainingAt(''); setTrainingDuration(String(MAX_PLAYER_TRAINING_MINUTES))
+    setContent(''); setSport(''); setPostType('update'); setLiveLink(''); setLiveAt(''); setTrainingLink(''); setTrainingAt(''); setTrainingDuration(String(MAX_PLAYER_TRAINING_MINUTES)); setMediaFiles([])
     textRef.current?.focus()
-    onPosted?.(data)
+    onPosted?.({
+      ...data,
+      author_profile: { full_name: profile?.full_name, role: profile?.role },
+      author_badge: { role: profile?.role, verification_status: profile?.verification_status },
+    })
+    setError(uploadErrors.length ? `Post published. ${uploadErrors.join(' ')}` : '')
   }
 
   return (
@@ -315,7 +414,7 @@ function ComposeBox({ user, supabase, onPosted }) {
             <button key={v} type="button"
               className={`btn btn-sm d-flex align-items-center gap-1 ${postType === v ? 'btn-primary' : 'btn-outline-secondary'}`}
               disabled={disabled} onClick={() => setPostType(v)}
-              title={disabled ? 'Verified players, coaches, and academies can host sessions.' : undefined}>
+              title={disabled ? 'Verified players, coaches, sports analysts, and academies can host sessions.' : undefined}>
               <i className={`bi ${icon}`} />{label}
             </button>
           ))}
@@ -336,6 +435,28 @@ function ComposeBox({ user, supabase, onPosted }) {
               'Share an update, highlight, opportunity or result…'
             }
             maxLength={10000} required style={{ fontSize: 14, resize: 'vertical' }} />
+
+          {postType === 'update' && (
+            <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+              <label className="btn btn-sm btn-outline-primary mb-0">
+                <i className="bi bi-image me-1" />Add photos
+                <input className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={pickMedia('image')} />
+              </label>
+              <label className="btn btn-sm btn-outline-primary mb-0">
+                <i className="bi bi-camera-video me-1" />Add videos
+                <input className="visually-hidden" type="file" accept="video/mp4,video/quicktime" multiple onChange={pickMedia('video')} />
+              </label>
+              <span className="small text-muted">Photos: JPEG, PNG or WebP (3 MB max). Videos: MP4 or MOV (100 MB max).</span>
+              {mediaFiles.map((item, index) => (
+                <span key={`${item.file.name}-${item.file.lastModified}-${index}`} className="badge text-bg-light border d-inline-flex align-items-center gap-1">
+                  <i className={`bi ${item.type === 'video' ? 'bi-camera-video' : 'bi-image'}`} />
+                  {item.file.name}
+                  <button type="button" className="btn-close ms-1" aria-label={`Remove ${item.file.name}`}
+                    onClick={() => setMediaFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))} />
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Live fields */}
           {postType === 'live' && (
@@ -383,7 +504,7 @@ function ComposeBox({ user, supabase, onPosted }) {
               <div id="training-duration-help" className="form-text">
                 {profile?.role === 'player'
                   ? `Player sessions are limited to ${MAX_PLAYER_TRAINING_MINUTES} minutes.`
-                  : 'Verified coaches and academies have no configured duration cap.'}
+                  : 'Verified coaches, sports analysts, and academies have no configured duration cap.'}
               </div>
             </div>
           )}
@@ -393,7 +514,7 @@ function ComposeBox({ user, supabase, onPosted }) {
           <div className="d-flex justify-content-between align-items-center">
             <span className="small text-muted">{content.length > 0 ? `${content.length}/10,000` : ''}</span>
             <button className="btn btn-primary btn-sm px-4 d-flex align-items-center gap-2"
-              type="submit" disabled={busy || !content.trim()}>
+              type="submit" disabled={busy || (!content.trim() && mediaFiles.length === 0)}>
               {busy ? <span className="spinner-border spinner-border-sm" /> : <i className="bi bi-send-fill" />}
               {postType === 'live' ? 'Go Live' : postType === 'training' ? 'Post Training' : 'Post'}
             </button>
@@ -497,7 +618,7 @@ export default function FeedPage({ supabase, user, onSignup }) {
       .then(({ data }) => { if (data) setLikedIds(new Set(data.map((r) => r.feed_post_id))) })
   }, [supabase, user])
 
-  const handlePosted = (p) => setPosts((prev) => [{ ...p, comments: [], author_profile: null }, ...prev])
+  const handlePosted = (p) => setPosts((prev) => [{ ...p, comments: [] }, ...prev])
   const handleDelete = (id) => setPosts((prev) => prev.filter((p) => p.id !== id))
   const handleLikeToggle = (id) => setLikedIds((prev) => { const n = new Set(prev); if (n.has(id)) { n.delete(id) } else { n.add(id) } return n })
   const handleCommentAdded = (id, c) => setPosts((prev) => prev.map((p) => p.id === id ? { ...p, comments_count: (p.comments_count || 0) + 1, comments: [...(p.comments || []), c] } : p))

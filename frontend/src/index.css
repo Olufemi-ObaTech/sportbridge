@@ -998,3 +998,15 @@ img[loading="lazy"] {
     padding-left: .75rem !important;
   }
 }
+
+/* ── Members Directory card hover ────────────────────────────────────────── */
+.fc-member-card:hover,
+.fc-member-card:focus-within {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(47, 125, 240, .15) !important;
+  outline: none;
+}
+.fc-member-card:focus {
+  outline: 2px solid var(--fc-blue-500);
+  outline-offset: 2px;
+}

@@ -542,7 +542,7 @@ function AgentVerifyForm({ supabase, user, onDone }) {
 }
 
 // ─── 4. Coach / Manager verification form ────────────────────────────────────
-function CoachVerifyForm({ supabase, user, onDone }) {
+function CoachVerifyForm({ supabase, user, onDone, role = 'coach' }) {
   const [method,    setMethod]   = useState('passport')  // 'passport' | 'fa'
   const [passport,  setPassport] = useState(null)        // passport scan
   const [faBody,    setFaBody]   = useState('')          // federation name
@@ -598,7 +598,7 @@ function CoachVerifyForm({ supabase, user, onDone }) {
 
     const { error: dbErr } = await supabase.from('verification_requests').insert({
       user_id:             user.id,
-      role:                'coach',
+      role,
       coach_passport_path: passportUrl,
       coach_fa_body:       method === 'fa' ? faBody.trim() : null,
       coach_licence_path:  faLetterUrl,
@@ -731,6 +731,7 @@ export default function VerifyForm({ supabase, user, role, verificationStatus, o
       academy: 'CAC Registered & Verified ✓',
       agent:   'FIFA Agent Verified ✓',
       coach:   'FA / Passport Verified ✓',
+      sports_analyst: 'FA / Passport Verified ✓',
     }
     return (
       <div className="alert alert-success d-flex gap-3 align-items-start">
@@ -765,6 +766,7 @@ export default function VerifyForm({ supabase, user, role, verificationStatus, o
     academy: 'Verified clubs appear at the top of searches and attract serious talent.',
     agent:   'A Verified Agent badge builds trust with players and families.',
     coach:   'Verified coaches get priority placement in job applications.',
+    sports_analyst: 'Verify your professional identity and share trusted analysis.',
   }
 
   return (
@@ -787,13 +789,13 @@ export default function VerifyForm({ supabase, user, role, verificationStatus, o
           <li>CV (optional)</li>
         </ul>}
         {role === 'agent'   && <ul className="small mb-0 ps-3"><li><strong>Option A:</strong> FIFA Agents ID + International Passport scan</li><li><strong>Option B:</strong> FA / Federation verification letter</li><li>CV (optional)</li></ul>}
-        {role === 'coach'   && <ul className="small mb-0 ps-3"><li><strong>Option A:</strong> International Passport scan</li><li><strong>Option B:</strong> FA / Federation verification letter</li><li>CV (optional)</li></ul>}
+        {(role === 'coach' || role === 'sports_analyst') && <ul className="small mb-0 ps-3"><li><strong>Option A:</strong> International Passport scan</li><li><strong>Option B:</strong> FA / Federation verification letter</li><li>CV (optional)</li></ul>}
       </div>
 
       {role === 'player'  && <PlayerVerifyForm  supabase={supabase} user={user} onDone={onDone} />}
       {role === 'academy' && <AcademyVerifyForm supabase={supabase} user={user} onDone={onDone} />}
       {role === 'agent'   && <AgentVerifyForm   supabase={supabase} user={user} onDone={onDone} />}
-      {role === 'coach'   && <CoachVerifyForm   supabase={supabase} user={user} onDone={onDone} />}
+      {(role === 'coach' || role === 'sports_analyst') && <CoachVerifyForm supabase={supabase} user={user} role={role} onDone={onDone} />}
     </div>
   )
 }

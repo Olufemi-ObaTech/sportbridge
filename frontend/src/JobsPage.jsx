@@ -281,7 +281,8 @@ export default function JobsPage({ supabase, user, onSignup }) {
             const club     = job.clubs
             const posterRole = job.poster_profile?.role
             const posterLabel = posterRole === 'agent' ? 'Agent / Scout'
-              : posterRole === 'coach' ? 'Coach / Manager'
+              : posterRole === 'sports_analyst' ? 'Sports Analyst'
+                : posterRole === 'coach' ? 'Coach / Manager'
                 : posterRole === 'academy' ? 'Academy / Club'
                   : 'SportBridge member'
 

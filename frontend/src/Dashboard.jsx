@@ -4,36 +4,41 @@ import PlayerUploadForm from './PlayerUploadForm.jsx'
 import TryoutForm from './TryoutForm.jsx'
 import VerifyForm, { CvOnlyForm } from './VerifyForm.jsx'
 import { blockContactInfo } from './lib/uploadGuards'
+import ReportProfileButton from './ReportProfileButton.jsx'
 import { FOOTBALL_POSITIONS, REGIONS, STAFF_ROLES } from './lib/features'
 
-// ΓöÇΓöÇΓöÇ constants ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ——— constants ————————————————————————————————————————————————————————————————
 
 const ROLE_LABELS = {
-  player:      'Player',
-  coach:       'Coach / Manager',
-  agent:       'Agent / Scout',
-  academy:     'Academy / Club',
-  super_admin: 'Super Admin',
+  player:         'Player',
+  coach:          'Coach / Manager',
+  agent:          'Agent / Scout',
+  academy:        'Academy / Club',
+  sports_analyst: 'Sports Analyst / Others',
+  super_admin:    'Super Admin',
 }
 
 const ROLE_ICONS = {
-  player:      'bi-person-arms-up',
-  coach:       'bi-clipboard2-pulse',
-  agent:       'bi-binoculars',
-  academy:     'bi-building',
-  super_admin: 'bi-shield-check',
+  player:         'bi-person-arms-up',
+  coach:          'bi-clipboard2-pulse',
+  agent:          'bi-binoculars',
+  academy:        'bi-building',
+  sports_analyst: 'bi-graph-up-arrow',
+  super_admin:    'bi-shield-check',
 }
 
-const ALL_ROLES = ['player', 'coach', 'agent', 'academy', 'super_admin']
+const ALL_ROLES = ['player', 'coach', 'agent', 'academy', 'sports_analyst', 'super_admin']
 
 const POSITIONS_FOOTBALL = FOOTBALL_POSITIONS
 const COUNTRIES = [
-  'Nigeria','Ghana','South Africa','Kenya','Egypt','Senegal',"C├┤te d'Ivoire",'Cameroon',
+  'Nigeria','Ghana','South Africa','Kenya','Egypt','Senegal',"Côte d'Ivoire",'Cameroon',
   'Morocco','England','France','Germany','Spain','Portugal','Italy','Brazil',
-  'Argentina','USA','Japan','South Korea','Saudi Arabia','Qatar','UAE','Other',
+  'Argentina','USA','Japan','South Korea','Saudi Arabia','Qatar','UAE',
+  'Netherlands','Belgium','Turkey','Australia','Serbia','Poland','Greece',
+  'Ukraine','Algeria','Mexico','Colombia','Norway','Iran','Portugal','Other',
 ]
 
-// ΓöÇΓöÇΓöÇ shared UI helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ——— shared UI helpers ————————————————————————————————————————————————————————
 
 function StatCard({ icon, label, value, colour }) {
   return (
@@ -46,7 +51,7 @@ function StatCard({ icon, label, value, colour }) {
           <i className={`bi ${icon}`} aria-hidden="true" />
         </span>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 800, fontFamily: 'var(--fc-font-heading)', lineHeight: 1 }}>{value ?? 'ΓÇö'}</div>
+          <div style={{ fontSize: 22, fontWeight: 800, fontFamily: 'var(--fc-font-heading)', lineHeight: 1 }}>{value ?? '—'}</div>
           <div className="small text-muted mt-1">{label}</div>
         </div>
       </div>
@@ -78,7 +83,7 @@ function Field({ label, col = 'col-12 col-md-6', hint, children }) {
   )
 }
 
-// ΓöÇΓöÇΓöÇ Verification badge ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ——— Verification badge ———————————————————————————————————————————————————————
 
 function VerificationBadge({ status }) {
   const map = {
@@ -96,7 +101,7 @@ function VerificationBadge({ status }) {
   )
 }
 
-// ΓöÇΓöÇΓöÇ Profile completeness bar ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ——— Profile completeness bar —————————————————————————————————————————————————
 
 function completenessScore(profile, roleData) {
   const checks = [
@@ -132,7 +137,92 @@ function CompletenessBar({ score }) {
   )
 }
 
-// ΓöÇΓöÇΓöÇ Player dashboard ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ——— Activity-to-Feed helper ——————————————————————————————————————————————————
+// Shown after any profile save — lets users share activity to the Community Feed.
+
+function ActivityFeedPost({ supabase, user, activityText, onDone }) {
+  const [caption,   setCaption]   = useState(activityText ?? '')
+  const [files,     setFiles]     = useState([])
+  const [posting,   setPosting]   = useState(false)
+  const [done,      setDone]      = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+
+  if (dismissed) return null
+  if (done) {
+    return (
+      <div className="alert alert-success d-flex align-items-center gap-2 mt-3" role="status">
+        <i className="bi bi-check-circle-fill" />Posted to your Community Feed!
+        <button className="btn btn-sm btn-link ms-auto p-0 text-success" type="button"
+          onClick={() => { setDone(false); setDismissed(true); onDone?.() }}>Dismiss</button>
+      </div>
+    )
+  }
+
+  const submitPost = async (e) => {
+    e.preventDefault()
+    if (!caption.trim()) return
+    setPosting(true)
+    const mediaUrls = []
+    for (const file of files) {
+      const ext  = file.name.split('.').pop()
+      const p    = `feed/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { data: up, error: ue } = await supabase.storage.from('uploads').upload(p, file, { upsert: false })
+      if (!ue && up) {
+        const { data: pub } = supabase.storage.from('uploads').getPublicUrl(up.path)
+        if (pub?.publicUrl) mediaUrls.push({ url: pub.publicUrl, type: file.type.startsWith('video') ? 'video' : 'image' })
+      }
+    }
+    await supabase.from('feed_posts').insert({
+      author_id:  user.id,
+      sport:      'football',
+      content:    caption.trim(),
+      media_urls: mediaUrls,
+      visibility: 'public',
+      status:     'published',
+    })
+    setPosting(false)
+    setDone(true)
+  }
+
+  return (
+    <div className="card p-4 mt-3" style={{ border: '1.5px solid var(--fc-blue-500)' }}>
+      <div className="d-flex align-items-center gap-2 mb-3">
+        <span className="fc-icon-badge flex-shrink-0" style={{ width: 36, height: 36, background: 'var(--fc-gradient-primary)', fontSize: '0.9rem' }}>
+          <i className="bi bi-megaphone-fill" />
+        </span>
+        <div>
+          <div className="fw-bold small">Share this update to your Community Feed?</div>
+          <div className="small text-muted">Your followers and the SportBridge community will see it.</div>
+        </div>
+        <button className="btn btn-link ms-auto p-0 text-muted" type="button" onClick={() => setDismissed(true)} aria-label="Dismiss">
+          <i className="bi bi-x-lg" />
+        </button>
+      </div>
+      <form onSubmit={submitPost} className="d-grid gap-3">
+        <textarea className="form-control" rows={3} value={caption}
+          onChange={(e) => setCaption(e.target.value)}
+          placeholder="Tell the community about this update…"
+          maxLength={2000} required />
+        <div>
+          <label className="form-label small fw-semibold" htmlFor="feed-media-input">
+            <i className="bi bi-images me-1" />Attach photos / video (optional)
+          </label>
+          <input id="feed-media-input" className="form-control form-control-sm" type="file"
+            accept="image/*,video/*" multiple onChange={(e) => setFiles(Array.from(e.target.files ?? []))} />
+          {files.length > 0 && <div className="small text-muted mt-1">{files.length} file(s) selected</div>}
+        </div>
+        <div className="d-flex gap-2">
+          <button className="btn btn-primary btn-sm px-4" type="submit" disabled={posting || !caption.trim()}>
+            {posting ? <><span className="spinner-border spinner-border-sm me-2" />Posting…</> : <><i className="bi bi-send me-2" />Post to Feed</>}
+          </button>
+          <button className="btn btn-link btn-sm text-muted" type="button" onClick={() => setDismissed(true)}>Skip</button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ——— Player dashboard —————————————————————————————————————————————————————————
 
 function PlayerDashboard({ supabase, user, profile }) {
   const [player,      setPlayer]   = useState(null)
@@ -141,7 +231,8 @@ function PlayerDashboard({ supabase, user, profile }) {
   const [notice,      setNotice]   = useState('')
   const [error,       setError]    = useState('')
   const [loading,     setLoading]  = useState(true)
-  const [activeTab,   setActiveTab]= useState('profile')  // 'profile' | 'uploads'
+  const [activeTab,   setActiveTab]= useState('profile')
+  const [feedPrompt,  setFeedPrompt]= useState('')  // 'profile' | 'uploads'
 
   useEffect(() => {
     let alive = true
@@ -221,7 +312,7 @@ function PlayerDashboard({ supabase, user, profile }) {
 
   const positions = POSITIONS_FOOTBALL
 
-  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />LoadingΓÇª</div>
+  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
 
   const score = completenessScore(profile, draft)
 
@@ -231,8 +322,8 @@ function PlayerDashboard({ supabase, user, profile }) {
 
       <div className="row g-3 mb-4">
         <StatCard icon="bi-eye"           label="Profile views"   value={player?.views_count ?? 0}  colour="var(--fc-gradient-primary)" />
-        <StatCard icon="bi-images"        label="Media items"     value="ΓÇö"                          colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
-        <StatCard icon="bi-bookmark-star" label="Watchlisted by"  value="ΓÇö"                          colour="var(--fc-gradient-gold)" />
+        <StatCard icon="bi-images"        label="Media items"     value="—"                          colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
+        <StatCard icon="bi-bookmark-star" label="Watchlisted by"  value="—"                          colour="var(--fc-gradient-gold)" />
         <StatCard icon="bi-globe2"        label="Visibility"      value={draft?.is_public ? 'Public' : 'Private'} colour={draft?.is_public ? 'linear-gradient(135deg,#198754,#20c997)' : 'linear-gradient(135deg,#6c757d,#adb5bd)'} />
       </div>
 
@@ -272,25 +363,25 @@ function PlayerDashboard({ supabase, user, profile }) {
               </Field>
               <Field label="Position">
                 <select className="form-select" value={draft.position} onChange={upd('position')}>
-                  <option value="">ΓÇö Select ΓÇö</option>
+                  <option value="">— Select —</option>
                   {positions.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               </Field>
               <Field label="Secondary position">
                 <select className="form-select" value={draft.secondary_position} onChange={upd('secondary_position')}>
-                  <option value="">ΓÇö None ΓÇö</option>
+                  <option value="">— None —</option>
                   {positions.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               </Field>
               <Field label="Gender">
                 <select className="form-select" value={draft.gender} onChange={upd('gender')}>
-                  <option value="">ΓÇö Select ΓÇö</option>
+                  <option value="">— Select —</option>
                   <option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
                 </select>
               </Field>
               <Field label="Preferred foot">
                 <select className="form-select" value={draft.foot} onChange={upd('foot')}>
-                  <option value="">ΓÇö Select ΓÇö</option>
+                  <option value="">— Select —</option>
                   <option value="right">Right</option><option value="left">Left</option><option value="both">Both</option>
                 </select>
               </Field>
@@ -299,30 +390,30 @@ function PlayerDashboard({ supabase, user, profile }) {
               <Field label="Weight (kg)"><input className="form-control" type="number" min="30" max="200" value={draft.weight_kg} onChange={upd('weight_kg')} placeholder="e.g. 75" /></Field>
               <Field label="Nationality">
                 <select className="form-select" value={draft.nationality} onChange={upd('nationality')}>
-                  <option value="">ΓÇö Select ΓÇö</option>
+                  <option value="">— Select —</option>
                   {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </Field>
               <Field label="Country (based in)">
                 <select className="form-select" value={draft.country} onChange={upd('country')}>
-                  <option value="">ΓÇö Select ΓÇö</option>
+                  <option value="">— Select —</option>
                   {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </Field>
               <Field label="Region">
                 <select className="form-select" value={draft.region ?? ''} onChange={upd('region')}>
-                  <option value="">ΓÇö Select ΓÇö</option>
+                  <option value="">— Select —</option>
                   {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </Field>
               <Field label="Current club"><input className="form-control" value={draft.current_club} onChange={upd('current_club')} placeholder="e.g. FC Academy Lagos" /></Field>
               <Field label="LinkedIn URL" col="col-12"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} placeholder="https://linkedin.com/in/yourname" /></Field>
               <Field label="About / Bio" col="col-12">
-                <textarea className="form-control" rows={4} value={draft.bio} onChange={upd('bio')} placeholder="Playing style, experience and goalsΓÇª" />
+                <textarea className="form-control" rows={4} value={draft.bio} onChange={upd('bio')} placeholder="Playing style, experience and goals…" />
                 {blockContactInfo(draft.bio) && <div className="small text-danger mt-1"><i className="bi bi-exclamation-circle me-1" />{blockContactInfo(draft.bio)}</div>}
               </Field>
               <Field label="Achievements" col="col-12">
-                <textarea className="form-control" rows={3} value={draft.achievements} onChange={upd('achievements')} placeholder="Honours, caps, notable clubsΓÇª" />
+                <textarea className="form-control" rows={3} value={draft.achievements} onChange={upd('achievements')} placeholder="Honours, caps, notable clubs…" />
               </Field>
               <div className="col-12">
                 <div className="form-check form-switch">
@@ -334,7 +425,7 @@ function PlayerDashboard({ supabase, user, profile }) {
             </FormRow>
           </SectionCard>
           <button className="btn btn-primary px-5" type="submit" disabled={saving}>
-            {saving ? <><span className="spinner-border spinner-border-sm me-2" />SavingΓÇª</> : <><i className="bi bi-check2 me-2" />Save profile</>}
+            {saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : <><i className="bi bi-check2 me-2" />Save profile</>}
           </button>
         </form>
       )}
@@ -350,11 +441,14 @@ function PlayerDashboard({ supabase, user, profile }) {
           <VerifyForm supabase={supabase} user={user} role="player" verificationStatus={profile?.verification_status} onDone={() => setNotice('Submitted for review.')} />
         </SectionCard>
       )}
+
+      {/* Report this account */}
+      {/* Report button: appears on other users' profiles, not own dashboard */}
     </>
   )
 }
 
-// ΓöÇΓöÇΓöÇ Coach dashboard ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ——— Coach dashboard ——————————————————————————————————————————————————————————
 
 function CoachDashboard({ supabase, user, profile }) {
   const [coach,      setCoach]      = useState(null)
@@ -364,6 +458,7 @@ function CoachDashboard({ supabase, user, profile }) {
   const [error,      setError]      = useState('')
   const [loading,    setLoading]    = useState(true)
   const [activeTab,  setActiveTab]  = useState('profile')
+  const [feedPrompt, setFeedPrompt] = useState('')
   const [recPlayers, setRecPlayers] = useState([])
   const [recSearch,  setRecSearch]  = useState('')
   const [recPlayer,  setRecPlayer]  = useState('')
@@ -432,11 +527,15 @@ function CoachDashboard({ supabase, user, profile }) {
     if (err) { setError(err.message); return }
     setCoach(data)
     setNotice('Coach profile saved.')
+    const feedText = draft.achievements?.trim()
+      ? `Coaching profile updated on SportBridge! ${draft.achievements.trim()}`
+      : `${draft.preferred_role || 'Coach'} profile updated — ${draft.experience_years || '?'} years experience.`
+    setFeedPrompt(feedText)
   }
 
-  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />LoadingΓÇª</div>
+  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
 
-  // ΓöÇΓöÇ Recommend player handler ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // —— Recommend player handler ——————————————————————————————————————————————
   const searchPlayers = async (q) => {
     setRecSearch(q)
     if (!q || q.length < 2 || !supabase) { setRecPlayers([]); return }
@@ -481,9 +580,9 @@ function CoachDashboard({ supabase, user, profile }) {
     <>
       <CompletenessBar score={completenessScore(profile, draft)} />
       <div className="row g-3 mb-4">
-        <StatCard icon="bi-briefcase" label="Applications sent" value="ΓÇö" colour="var(--fc-gradient-primary)" />
-        <StatCard icon="bi-star"      label="Shortlisted"        value="ΓÇö" colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
-        <StatCard icon="bi-trophy"    label="Hired"              value="ΓÇö" colour="linear-gradient(135deg,#198754,#20c997)" />
+        <StatCard icon="bi-briefcase" label="Applications sent" value="—" colour="var(--fc-gradient-primary)" />
+        <StatCard icon="bi-star"      label="Shortlisted"        value="—" colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
+        <StatCard icon="bi-trophy"    label="Hired"              value="—" colour="linear-gradient(135deg,#198754,#20c997)" />
         <StatCard icon="bi-eye"       label="Visibility"         value={draft?.is_public ? 'Public' : 'Private'} colour={draft?.is_public ? 'linear-gradient(135deg,#198754,#20c997)' : 'linear-gradient(135deg,#6c757d,#adb5bd)'} />
       </div>
       {error  && <div className="alert alert-danger"  role="alert">{error}</div>}
@@ -512,7 +611,7 @@ function CoachDashboard({ supabase, user, profile }) {
               </Field>
               <Field label="Preferred role">
                 <select className="form-select" value={draft.preferred_role} onChange={upd('preferred_role')}>
-                  <option value="">ΓÇö Select ΓÇö</option>
+                  <option value="">— Select —</option>
                   {STAFF_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </Field>
@@ -520,12 +619,12 @@ function CoachDashboard({ supabase, user, profile }) {
               <Field label="Current club"><input className="form-control" value={draft.current_club} onChange={upd('current_club')} /></Field>
               <Field label="Nationality">
                 <select className="form-select" value={draft.nationality} onChange={upd('nationality')}>
-                  <option value="">ΓÇö Select ΓÇö</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <option value="">— Select —</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </Field>
               <Field label="Gender">
                 <select className="form-select" value={draft.gender} onChange={upd('gender')}>
-                  <option value="">ΓÇö Select ΓÇö</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
+                  <option value="">— Select —</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
                 </select>
               </Field>
               <Field label="LinkedIn URL"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} /></Field>
@@ -552,17 +651,21 @@ function CoachDashboard({ supabase, user, profile }) {
             </FormRow>
           </SectionCard>
           <button className="btn btn-primary px-5" type="submit" disabled={saving}>
-            {saving ? <><span className="spinner-border spinner-border-sm me-2" />SavingΓÇª</> : <><i className="bi bi-check2 me-2" />Save profile</>}
+            {saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : <><i className="bi bi-check2 me-2" />Save profile</>}
           </button>
+          {feedPrompt && (
+            <ActivityFeedPost supabase={supabase} user={user}
+              activityText={feedPrompt} onDone={() => setFeedPrompt('')} />
+          )}
         </form>
       )}
 
-      {/* ΓöÇΓöÇ Recommend a Player to Agent / Club ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* —— Recommend a Player to Agent / Club ——————————————————————————— */}
       {activeTab === 'recommend' && (
         <SectionCard title="Recommend a Player">
           <p className="text-muted small mb-4">
             As a coach, you can recommend talented players directly to agents and clubs on SportBridge.
-            Your recommendation carries weight ΓÇö it shows alongside the player&apos;s profile.
+            Your recommendation carries weight — it shows alongside the player&apos;s profile.
           </p>
           {recDone ? (
             <div className="alert alert-success d-flex gap-2 align-items-center">
@@ -577,7 +680,7 @@ function CoachDashboard({ supabase, user, profile }) {
                 <input
                   className="form-control"
                   type="search"
-                  placeholder="Type player nameΓÇª"
+                  placeholder="Type player name…"
                   value={recSearch}
                   onChange={(e) => searchPlayers(e.target.value)}
                 />
@@ -621,7 +724,7 @@ function CoachDashboard({ supabase, user, profile }) {
               <div className="col-12">
                 <button className="btn btn-primary px-5" type="submit" disabled={recBusy || !recPlayer || !recTarget.trim()}>
                   {recBusy
-                    ? <><span className="spinner-border spinner-border-sm me-2" />SendingΓÇª</>
+                    ? <><span className="spinner-border spinner-border-sm me-2" />Sending…</>
                     : <><i className="bi bi-send-check me-2" />Send Recommendation</>}
                 </button>
               </div>
@@ -631,7 +734,7 @@ function CoachDashboard({ supabase, user, profile }) {
       )}
 
       {activeTab === 'cv' && (
-        <SectionCard title="Upload CV / R├⌐sum├⌐">
+        <SectionCard title="Upload CV / Résumé">
           <p className="text-muted small mb-3">Your CV is stored privately and only shared with clubs, academies and agents you directly apply to or approve.</p>
           <CvOnlyForm supabase={supabase} user={user} onDone={() => setNotice('CV uploaded successfully.')} />
         </SectionCard>
@@ -642,11 +745,13 @@ function CoachDashboard({ supabase, user, profile }) {
           <VerifyForm supabase={supabase} user={user} role="coach" verificationStatus={profile?.verification_status} onDone={() => setNotice('Submitted for review.')} />
         </SectionCard>
       )}
+
+      {/* Report this account */}
     </>
   )
 }
 
-// ΓöÇΓöÇΓöÇ Agent dashboard ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ——— Agent dashboard ——————————————————————————————————————————————————————————
 
 function AgentDashboard({ supabase, user, profile }) {
   const [agent,          setAgent]        = useState(null)
@@ -656,7 +761,8 @@ function AgentDashboard({ supabase, user, profile }) {
   const [error,          setError]        = useState('')
   const [loading,        setLoading]      = useState(true)
   const [watchlistCount, setWatchlistCount]= useState(null)
-  const [activeTab,      setActiveTab]    = useState('profile') // 'profile' | 'post-tryout'
+  const [activeTab,      setActiveTab]    = useState('profile')
+  const [feedPrompt,     setFeedPrompt]   = useState('') // 'profile' | 'post-tryout'
 
   useEffect(() => {
     let alive = true
@@ -713,17 +819,21 @@ function AgentDashboard({ supabase, user, profile }) {
     if (err) { setError(err.message); return }
     setAgent(data)
     setNotice('Agency profile saved.')
+    const feedText = draft.achievements?.trim()
+      ? `Agency profile updated on SportBridge! ${draft.achievements.trim()}`
+      : `${draft.agency_name || 'Our agency'} profile updated — active in ${draft.regions || 'multiple regions'}.`
+    setFeedPrompt(feedText)
   }
 
-  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />LoadingΓÇª</div>
+  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
 
   return (
     <>
       <div className="row g-3 mb-4">
-        <StatCard icon="bi-bookmark-star"   label="Watchlisted players"  value={watchlistCount ?? 'ΓÇö'} colour="var(--fc-gradient-primary)" />
-        <StatCard icon="bi-shield-check"    label="Access granted"       value="ΓÇö"                     colour="linear-gradient(135deg,#198754,#20c997)" />
-        <StatCard icon="bi-hourglass-split" label="Pending requests"     value="ΓÇö"                     colour="var(--fc-gradient-gold)" />
-        <StatCard icon="bi-star"            label="Avg. rating"          value="ΓÇö"                     colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
+        <StatCard icon="bi-bookmark-star"   label="Watchlisted players"  value={watchlistCount ?? '—'} colour="var(--fc-gradient-primary)" />
+        <StatCard icon="bi-shield-check"    label="Access granted"       value="—"                     colour="linear-gradient(135deg,#198754,#20c997)" />
+        <StatCard icon="bi-hourglass-split" label="Pending requests"     value="—"                     colour="var(--fc-gradient-gold)" />
+        <StatCard icon="bi-star"            label="Avg. rating"          value="—"                     colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
       </div>
 
       {error  && <div className="alert alert-danger"  role="alert">{error}</div>}
@@ -753,12 +863,12 @@ function AgentDashboard({ supabase, user, profile }) {
               <Field label="Years of experience"><input className="form-control" type="number" min="0" max="60" value={draft.experience_years} onChange={upd('experience_years')} /></Field>
               <Field label="Nationality">
                 <select className="form-select" value={draft.nationality} onChange={upd('nationality')}>
-                  <option value="">ΓÇö Select ΓÇö</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <option value="">— Select —</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </Field>
               <Field label="Gender">
                 <select className="form-select" value={draft.gender} onChange={upd('gender')}>
-                  <option value="">ΓÇö Select ΓÇö</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
+                  <option value="">— Select —</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
                 </select>
               </Field>
               <Field label="LinkedIn URL"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} /></Field>
@@ -778,19 +888,23 @@ function AgentDashboard({ supabase, user, profile }) {
             </FormRow>
           </SectionCard>
           <button className="btn btn-primary px-5" type="submit" disabled={saving}>
-            {saving ? <><span className="spinner-border spinner-border-sm me-2" />SavingΓÇª</> : <><i className="bi bi-check2 me-2" />Save profile</>}
+            {saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : <><i className="bi bi-check2 me-2" />Save profile</>}
           </button>
+          {feedPrompt && (
+            <ActivityFeedPost supabase={supabase} user={user}
+              activityText={feedPrompt} onDone={() => setFeedPrompt('')} />
+          )}
         </form>
       )}
 
-      {/* ΓöÇΓöÇ Demo Flow 3: Agent posts Tryout ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* —— Demo Flow 3: Agent posts Tryout ———————————————————————————————— */}
       {activeTab === 'post-tryout' && (
         <SectionCard title="Post a Tryout Opportunity">
           <TryoutForm supabase={supabase} user={user} onSaved={() => { setActiveTab('profile'); setNotice('Tryout posted.') }} />
         </SectionCard>
       )}
 
-      {/* ΓöÇΓöÇ Agent posts Player Position Needed ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* —— Agent posts Player Position Needed ————————————————————————————— */}
       {activeTab === 'post-position' && (
         <SectionCard title="Post Player Position Needed">
           <p className="text-muted small mb-4">
@@ -802,7 +916,7 @@ function AgentDashboard({ supabase, user, profile }) {
       )}
 
       {activeTab === 'cv' && (
-        <SectionCard title="Upload CV / R├⌐sum├⌐">
+        <SectionCard title="Upload CV / Résumé">
           <p className="text-muted small mb-3">Your CV is stored privately and only shared with parties you directly engage with through SportBridge.</p>
           <CvOnlyForm supabase={supabase} user={user} onDone={() => setNotice('CV uploaded successfully.')} />
         </SectionCard>
@@ -813,11 +927,12 @@ function AgentDashboard({ supabase, user, profile }) {
           <VerifyForm supabase={supabase} user={user} role="agent" verificationStatus={profile?.verification_status} onDone={() => setNotice('Submitted for review.')} />
         </SectionCard>
       )}
+
     </>
   )
 }
 
-// ΓöÇΓöÇΓöÇ Academy dashboard ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ——— Academy dashboard ————————————————————————————————————————————————————————
 
 function AcademyDashboard({ supabase, user, profile }) {
   const [academy, setAcademy] = useState(null)
@@ -828,7 +943,8 @@ function AcademyDashboard({ supabase, user, profile }) {
   const [notice,  setNotice]  = useState('')
   const [error,   setError]   = useState('')
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('profile') // 'profile' | 'post-job'
+  const [activeTab, setActiveTab] = useState('profile')
+  const [feedPrompt, setFeedPrompt] = useState('') // 'profile' | 'post-job'
 
   useEffect(() => {
     let alive = true
@@ -841,7 +957,7 @@ function AcademyDashboard({ supabase, user, profile }) {
         let clubData = null, playerCount = null, jobCount = null
         if (ac?.club_id) {
           const [{ data: cl }, { count: pc }, { count: jc }] = await Promise.all([
-            supabase.from('clubs').select('id, name, country, about, website, sports, status').eq('id', ac.club_id).single(),
+            supabase.from('clubs').select('id, name, country, about, website, sports, status').eq('id', ac.club_id).maybeSingle(),
             supabase.from('players').select('id', { count: 'exact', head: true }).eq('academy_id', ac.id),
             supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('posted_by', user.id).eq('status', 'open'),
           ])
@@ -889,18 +1005,20 @@ function AcademyDashboard({ supabase, user, profile }) {
     setSaving(false)
     if (ae) { setError(ae.message); return }
     setAcademy(data); setNotice('Academy profile saved.')
+    const feedText = draft.club_name ? `${draft.club_name} profile updated on SportBridge — ${draft.country || 'global'} club.` : 'Club profile updated on SportBridge!'
+    setFeedPrompt(feedText)
   }
 
-  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />LoadingΓÇª</div>
+  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
 
   return (
     <>
       <CompletenessBar score={completenessScore(profile, { ...draft, bio: draft?.about })} />
       <div className="row g-3 mb-4">
-        <StatCard icon="bi-people"         label="Players"         value={stats.players ?? 'ΓÇö'} colour="var(--fc-gradient-primary)" />
-        <StatCard icon="bi-briefcase"      label="Active jobs"     value={stats.jobs    ?? 'ΓÇö'} colour="var(--fc-gradient-gold)" />
-        <StatCard icon="bi-shield-check"   label="Access requests" value="ΓÇö"                    colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
-        <StatCard icon="bi-calendar-event" label="Active trials"   value="ΓÇö"                    colour="linear-gradient(135deg,#198754,#20c997)" />
+        <StatCard icon="bi-people"         label="Players"         value={stats.players ?? '—'} colour="var(--fc-gradient-primary)" />
+        <StatCard icon="bi-briefcase"      label="Active jobs"     value={stats.jobs    ?? '—'} colour="var(--fc-gradient-gold)" />
+        <StatCard icon="bi-shield-check"   label="Access requests" value="—"                    colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
+        <StatCard icon="bi-calendar-event" label="Active trials"   value="—"                    colour="linear-gradient(135deg,#198754,#20c997)" />
       </div>
 
       {error  && <div className="alert alert-danger"  role="alert">{error}</div>}
@@ -928,7 +1046,7 @@ function AcademyDashboard({ supabase, user, profile }) {
               <Field label="Year founded" col="col-12 col-md-4"><input className="form-control" type="number" min="1800" max={new Date().getFullYear()} value={draft.year_founded} onChange={upd('year_founded')} /></Field>
               <Field label="Country">
                 <select className="form-select" value={draft.country} onChange={upd('country')}>
-                  <option value="">ΓÇö Select ΓÇö</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <option value="">— Select —</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </Field>
               <Field label="State / Region"><input className="form-control" value={draft.state} onChange={upd('state')} /></Field>
@@ -954,12 +1072,16 @@ function AcademyDashboard({ supabase, user, profile }) {
             </FormRow>
           </SectionCard>
           <button className="btn btn-primary px-5" type="submit" disabled={saving}>
-            {saving ? <><span className="spinner-border spinner-border-sm me-2" />SavingΓÇª</> : <><i className="bi bi-check2 me-2" />Save profile</>}
+            {saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : <><i className="bi bi-check2 me-2" />Save profile</>}
           </button>
+          {feedPrompt && (
+            <ActivityFeedPost supabase={supabase} user={user}
+              activityText={feedPrompt} onDone={() => setFeedPrompt('')} />
+          )}
         </form>
       )}
 
-      {/* ΓöÇΓöÇ Demo Flow 1: Club posts Player / Staff job ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* —— Demo Flow 1: Club posts Player / Staff job —————————————————————— */}
       {activeTab === 'post-job' && (
         <SectionCard title="Post a Job">
           <JobPostForm supabase={supabase} user={user} onSaved={() => { setActiveTab('profile'); setStats((s) => ({ ...s, jobs: (s.jobs ?? 0) + 1 })); setNotice('Job posted.') }} />
@@ -967,7 +1089,7 @@ function AcademyDashboard({ supabase, user, profile }) {
       )}
 
       {activeTab === 'cv' && (
-        <SectionCard title="Upload CV / R├⌐sum├⌐">
+        <SectionCard title="Upload CV / Résumé">
           <p className="text-muted small mb-3">Upload your club&apos;s representative CV, portfolio, or company profile document. Stored privately.</p>
           <CvOnlyForm supabase={supabase} user={user} onDone={() => setNotice('CV uploaded successfully.')} />
         </SectionCard>
@@ -978,14 +1100,304 @@ function AcademyDashboard({ supabase, user, profile }) {
           <VerifyForm supabase={supabase} user={user} role="academy" verificationStatus={profile?.verification_status} onDone={() => setNotice('Submitted for review.')} />
         </SectionCard>
       )}
+
     </>
   )
 }
 
-// ΓöÇΓöÇΓöÇ Super Admin dashboard ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ——— Sports Analyst dashboard ——————————————————————————————————————————————————
+// Uses coach_profiles table (profiles.role = 'sports_analyst')
+
+function SportsAnalystDashboard({ supabase, user, profile }) {
+  const [analyst,    setAnalyst]    = useState(null)
+  const [draft,      setDraft]      = useState(null)
+  const [saving,     setSaving]     = useState(false)
+  const [notice,     setNotice]     = useState('')
+  const [error,      setError]      = useState('')
+  const [loading,    setLoading]    = useState(true)
+  const [activeTab,  setActiveTab]  = useState('profile')
+  const [feedPrompt, setFeedPrompt] = useState('')
+  const [recPlayers, setRecPlayers] = useState([])
+  const [recSearch,  setRecSearch]  = useState('')
+  const [recPlayer,  setRecPlayer]  = useState('')
+  const [recTarget,  setRecTarget]  = useState('')
+  const [recNote,    setRecNote]    = useState('')
+  const [recBusy,    setRecBusy]    = useState(false)
+  const [recDone,    setRecDone]    = useState('')
+
+  useEffect(() => {
+    let alive = true
+    supabase.from('coach_profiles')
+      .select('id, full_name, sport, preferred_role, experience_years, current_club, nationality, gender, about, achievements, badges, open_to_work, linkedin, is_public')
+      .eq('user_id', user.id).maybeSingle()
+      .then(({ data, error: err }) => {
+        if (!alive) return
+        if (err) setError(err.message)
+        const c = data ?? {}
+        setAnalyst(data)
+        setDraft({
+          full_name:        c.full_name        ?? profile.full_name ?? '',
+          sport:            c.sport            ?? 'football',
+          specialisation:   c.preferred_role   ?? '',
+          experience_years: c.experience_years != null ? String(c.experience_years) : '',
+          current_club:     c.current_club     ?? '',
+          nationality:      c.nationality      ?? '',
+          gender:           c.gender           ?? '',
+          about:            c.about            ?? '',
+          achievements:     c.achievements     ?? '',
+          badges:           Array.isArray(c.badges) ? c.badges.join(', ') : '',
+          open_to_work:     c.open_to_work     ?? true,
+          linkedin:         c.linkedin         ?? '',
+          is_public:        c.is_public        ?? false,
+        })
+        setLoading(false)
+      })
+    return () => { alive = false }
+  }, [supabase, user.id, profile.full_name])
+
+  const upd = (f) => (e) => setDraft((d) => ({ ...d, [f]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
+
+  const save = async (e) => {
+    e.preventDefault()
+    const ci = blockContactInfo(draft.about, 'About') || blockContactInfo(draft.achievements, 'Achievements')
+    if (ci) { setError(ci); return }
+    setSaving(true); setError(''); setNotice('')
+    const payload = {
+      user_id:          user.id,
+      full_name:        draft.full_name.trim()    || profile.full_name,
+      sport:            draft.sport,
+      preferred_role:   draft.specialisation      || null,
+      experience_years: draft.experience_years    ? Number(draft.experience_years) : null,
+      current_club:     draft.current_club.trim() || null,
+      nationality:      draft.nationality         || null,
+      gender:           draft.gender              || null,
+      about:            draft.about.trim()        || null,
+      achievements:     draft.achievements.trim() || null,
+      badges:           draft.badges ? draft.badges.split(',').map((b) => b.trim()).filter(Boolean) : [],
+      open_to_work:     draft.open_to_work,
+      linkedin:         draft.linkedin.trim()     || null,
+      is_public:        draft.is_public,
+      updated_at:       new Date().toISOString(),
+    }
+    const q = analyst ? supabase.from('coach_profiles').update(payload).eq('id', analyst.id) : supabase.from('coach_profiles').insert(payload)
+    const { data, error: err } = await q.select().single()
+    setSaving(false)
+    if (err) { setError(err.message); return }
+    setAnalyst(data)
+    setNotice('Analyst profile saved.')
+    const feedText = draft.achievements?.trim()
+      ? `Sports Analyst profile updated on SportBridge! ${draft.achievements.trim()}`
+      : `I have updated my Sports Analyst profile on SportBridge — specialising in ${draft.specialisation || 'performance analysis'}.`
+    setFeedPrompt(feedText)
+  }
+
+  const searchPlayers = async (q) => {
+    setRecSearch(q)
+    if (!q || q.length < 2 || !supabase) { setRecPlayers([]); return }
+    const { data } = await supabase.from('players').select('id, display_name, position, current_club').ilike('display_name', `%${q}%`).limit(8)
+    setRecPlayers(data ?? [])
+  }
+
+  const submitRecommendation = async (e) => {
+    e.preventDefault()
+    if (!recPlayer || !recTarget.trim()) return
+    setRecBusy(true)
+    const { data: agentData } = await supabase.from('agent_profiles').select('id, user_id, agency_name').ilike('agency_name', `%${recTarget}%`).limit(1).maybeSingle()
+    if (!agentData) {
+      setRecBusy(false)
+      setRecDone(`Recommendation noted. "${recTarget}" will be notified when they join SportBridge.`)
+      return
+    }
+    await supabase.from('agent_recommendations').insert({
+      recommender_user_id: user.id, agent_profile_id: agentData.id,
+      sport: 'football', player_id: recPlayer,
+      recommended_to_name: recTarget, note: recNote.trim() || null, status: 'pending',
+    })
+    setRecBusy(false)
+    setRecDone(`Player recommended to ${agentData.agency_name ?? recTarget} successfully.`)
+    setRecPlayer(''); setRecTarget(''); setRecNote(''); setRecSearch(''); setRecPlayers([])
+  }
+
+  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
+
+  const ANALYST_ROLES = [
+    'Performance Analyst','Video Analyst','Data Analyst','Recruitment Analyst',
+    'Tactical Analyst','Opposition Analyst','Head of Analysis',
+  ]
+
+  return (
+    <>
+      <CompletenessBar score={completenessScore(profile, draft)} />
+      <div className="row g-3 mb-4">
+        <StatCard icon="bi-graph-up-arrow" label="Reports filed"     value="—" colour="var(--fc-gradient-primary)" />
+        <StatCard icon="bi-camera-video"   label="Clips analysed"    value="—" colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
+        <StatCard icon="bi-people"         label="Players tracked"   value="—" colour="var(--fc-gradient-gold)" />
+        <StatCard icon="bi-eye"            label="Visibility"        value={draft?.is_public ? 'Public' : 'Private'} colour={draft?.is_public ? 'linear-gradient(135deg,#198754,#20c997)' : 'linear-gradient(135deg,#6c757d,#adb5bd)'} />
+      </div>
+
+      {error  && <div className="alert alert-danger"  role="alert">{error}</div>}
+      {notice && <div className="alert alert-success" role="status">{notice}</div>}
+
+      {/* Tab switcher */}
+      <ul className="nav nav-tabs mb-4" role="tablist">
+        {[
+          ['profile',      'bi-graph-up-arrow',    'Analyst Profile'],
+          ['recommend',    'bi-send-check',         'Recommend a Player'],
+          ['post-position','bi-briefcase-fill',     'Post Position Needed'],
+          ['cv',           'bi-file-earmark-person','Upload CV'],
+          ['verify',       'bi-patch-check',        'Get Verified'],
+        ].map(([tab, icon, label]) => (
+          <li className="nav-item" key={tab}>
+            <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`}
+              type="button" role="tab" onClick={() => setActiveTab(tab)}>
+              <i className={`bi ${icon}`} aria-hidden="true" />{label}
+              {tab === 'verify' && profile?.verification_status === 'verified' && (
+                <i className="bi bi-patch-check-fill text-success ms-1" aria-hidden="true" />
+              )}
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {/* Profile form */}
+      {activeTab === 'profile' && draft && (
+        <form onSubmit={save}>
+          <SectionCard title="Sports Analyst profile">
+            <FormRow>
+              <Field label="Full name"><input className="form-control" value={draft.full_name} onChange={upd('full_name')} /></Field>
+              <Field label="Sport">
+                <select className="form-select" value={draft.sport} onChange={upd('sport')}>
+                  <option value="football">Football</option><option value="basketball">Basketball</option>
+                </select>
+              </Field>
+              <Field label="Specialisation">
+                <select className="form-select" value={draft.specialisation} onChange={upd('specialisation')}>
+                  <option value="">— Select —</option>
+                  {ANALYST_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </Field>
+              <Field label="Years of experience"><input className="form-control" type="number" min="0" max="60" value={draft.experience_years} onChange={upd('experience_years')} /></Field>
+              <Field label="Current club / team"><input className="form-control" value={draft.current_club} onChange={upd('current_club')} /></Field>
+              <Field label="Nationality">
+                <select className="form-select" value={draft.nationality} onChange={upd('nationality')}>
+                  <option value="">— Select —</option>{COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </Field>
+              <Field label="Gender">
+                <select className="form-select" value={draft.gender} onChange={upd('gender')}>
+                  <option value="">— Select —</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
+                </select>
+              </Field>
+              <Field label="LinkedIn URL"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} /></Field>
+              <Field label="Software / Tools (comma-separated)" col="col-12">
+                <input className="form-control" value={draft.badges} onChange={upd('badges')} placeholder="e.g. Wyscout, StatsBomb, Tableau, Python" />
+              </Field>
+              <Field label="About" col="col-12">
+                <textarea className="form-control" rows={4} value={draft.about} onChange={upd('about')} placeholder="Your analysis methodology, experience and specialisation…" />
+                {blockContactInfo(draft.about) && <div className="small text-danger mt-1">{blockContactInfo(draft.about)}</div>}
+              </Field>
+              <Field label="Key achievements / publications" col="col-12">
+                <textarea className="form-control" rows={3} value={draft.achievements} onChange={upd('achievements')} placeholder="Reports published, clubs served, notable analysis work…" />
+              </Field>
+              <div className="col-12 d-flex gap-4 flex-wrap">
+                <div className="form-check form-switch">
+                  <input className="form-check-input" type="checkbox" id="analyst-open" checked={draft.open_to_work} onChange={upd('open_to_work')} />
+                  <label className="form-check-label fw-semibold" htmlFor="analyst-open">Open to work</label>
+                </div>
+                <div className="form-check form-switch">
+                  <input className="form-check-input" type="checkbox" id="analyst-public" checked={draft.is_public} onChange={upd('is_public')} />
+                  <label className="form-check-label fw-semibold" htmlFor="analyst-public">Public profile</label>
+                </div>
+              </div>
+            </FormRow>
+          </SectionCard>
+          <button className="btn btn-primary px-5" type="submit" disabled={saving}>
+            {saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : <><i className="bi bi-check2 me-2" />Save profile</>}
+          </button>
+          {feedPrompt && (
+            <ActivityFeedPost supabase={supabase} user={user} activityText={feedPrompt} onDone={() => setFeedPrompt('')} />
+          )}
+        </form>
+      )}
+
+      {/* Recommend a Player */}
+      {activeTab === 'recommend' && (
+        <SectionCard title="Recommend a Player">
+          <p className="text-muted small mb-4">
+            As an analyst, your data-backed recommendations carry weight. Recommend players you have tracked to agents and clubs.
+          </p>
+          {recDone ? (
+            <div className="alert alert-success d-flex gap-2 align-items-center">
+              <i className="bi bi-check-circle-fill" />{recDone}
+              <button className="btn btn-sm btn-outline-success ms-auto" type="button" onClick={() => setRecDone('')}>Recommend another</button>
+            </div>
+          ) : (
+            <form onSubmit={submitRecommendation} className="row g-3">
+              <div className="col-12">
+                <label className="form-label fw-semibold" style={{ fontSize: 13 }}>Search for player</label>
+                <input className="form-control" type="search" placeholder="Type player name…" value={recSearch} onChange={(e) => searchPlayers(e.target.value)} />
+                {recPlayers.length > 0 && (
+                  <ul className="list-group mt-1">
+                    {recPlayers.map((p) => (
+                      <li key={p.id} className={`list-group-item list-group-item-action d-flex align-items-center gap-2${recPlayer === p.id ? ' active' : ''}`}
+                        style={{ cursor: 'pointer' }} onClick={() => { setRecPlayer(p.id); setRecSearch(p.display_name); setRecPlayers([]) }}>
+                        <i className="bi bi-person-arms-up" /><span>{p.display_name}</span>
+                        {p.position && <span className="badge text-bg-primary ms-auto">{p.position}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="col-12">
+                <label className="form-label fw-semibold" style={{ fontSize: 13 }}>Recommend to (agent or club name)</label>
+                <input className="form-control" placeholder="e.g. Premier Football Agency" value={recTarget} onChange={(e) => setRecTarget(e.target.value)} required />
+              </div>
+              <div className="col-12">
+                <label className="form-label fw-semibold" style={{ fontSize: 13 }}>Your analysis note (optional)</label>
+                <textarea className="form-control" rows={3} placeholder="Key stats, strengths, match data…" value={recNote} onChange={(e) => setRecNote(e.target.value)} />
+              </div>
+              <div className="col-12">
+                <button className="btn btn-primary px-5" type="submit" disabled={recBusy || !recPlayer || !recTarget.trim()}>
+                  {recBusy ? <><span className="spinner-border spinner-border-sm me-2" />Sending…</> : <><i className="bi bi-send-check me-2" />Send Recommendation</>}
+                </button>
+              </div>
+            </form>
+          )}
+        </SectionCard>
+      )}
+
+      {/* Post Position Needed */}
+      {activeTab === 'post-position' && (
+        <SectionCard title="Post Player Position Needed">
+          <p className="text-muted small mb-4">Based on your analysis, post a specific player position needed on behalf of a club.</p>
+          <JobPostForm supabase={supabase} user={user} onSaved={() => { setActiveTab('profile'); setNotice('Position posted to job board.') }} />
+        </SectionCard>
+      )}
+
+      {/* Upload CV */}
+      {activeTab === 'cv' && (
+        <SectionCard title="Upload CV / Portfolio">
+          <p className="text-muted small mb-3">Upload your analyst CV, reports portfolio, or methodology document. Stored privately.</p>
+          <CvOnlyForm supabase={supabase} user={user} onDone={() => setNotice('CV uploaded successfully.')} />
+        </SectionCard>
+      )}
+
+      {/* Verification */}
+      {activeTab === 'verify' && (
+        <SectionCard title="Verification">
+          <VerifyForm supabase={supabase} user={user} role="coach" verificationStatus={profile?.verification_status} onDone={() => setNotice('Submitted for review.')} />
+        </SectionCard>
+      )}
+
+    </>
+  )
+}
+
+// ——— Super Admin dashboard ————————————————————————————————————————————————————
 
 function AdminDashboard({ supabase, user }) {
   const [users,        setUsers]       = useState([])
+  const [subRoles,     setSubRoles]    = useState({}) // profile_id -> preferred_role from coach/agent profiles
   const [accountCount, setAccountCount]= useState(0)
   const [newToday,     setNewToday]    = useState(0)
   const [roleDrafts,   setRoleDrafts]  = useState({})
@@ -999,23 +1411,77 @@ function AdminDashboard({ supabase, user }) {
   const [flagged,      setFlagged]     = useState([])
   const [verifQueue,   setVerifQueue]  = useState([])
   const [verifNote,    setVerifNote]   = useState({})
+  const [reportQueue,  setReportQueue] = useState([])
+  const [reportNote,   setReportNote]  = useState({})
 
   useEffect(() => {
     let alive = true
-    supabase.from('profiles')
-      .select('id, email, full_name, role, created_at, status, verification_status', { count: 'exact' })
-      .order('created_at', { ascending: false }).limit(300)
-      .then(({ data, count, error: err }) => {
-        if (!alive) return
-        if (err) setError(err.message)
-        const profiles = data ?? []
-        setUsers(profiles)
-        setAccountCount(count ?? profiles.length)
-        const todayStart = new Date(); todayStart.setHours(0,0,0,0)
-        setNewToday(profiles.filter((u) => u.created_at && new Date(u.created_at) >= todayStart).length)
-        setRoleDrafts(Object.fromEntries(profiles.map((u) => [u.id, u.role])))
-        setLoading(false)
+    Promise.all([
+      supabase.from('profiles')
+        .select('id, email, full_name, role, created_at, status, verification_status, sport', { count: 'exact' })
+        .order('created_at', { ascending: false }).limit(300),
+      // Fetch sub-roles + location for coaches/analysts
+      supabase.from('coach_profiles')
+        .select('user_id, preferred_role, full_name, nationality, current_club'),
+      // Fetch agency names + location for agents
+      supabase.from('agent_profiles')
+        .select('user_id, agency_name, nationality'),
+      // Fetch club names + location for academies
+      supabase.from('clubs')
+        .select('owner_id, name, country'),
+      // Fetch player locations
+      supabase.from('players')
+        .select('profile_id, country, nationality, current_club, position'),
+    ]).then(([
+      { data, count, error: err },
+      { data: coachData },
+      { data: agentData },
+      { data: clubData },
+      { data: playerData },
+    ]) => {
+      if (!alive) return
+      if (err) setError(err.message)
+      const profiles = data ?? []
+      setUsers(profiles)
+      setAccountCount(count ?? profiles.length)
+      const todayStart = new Date(); todayStart.setHours(0,0,0,0)
+      setNewToday(profiles.filter((u) => u.created_at && new Date(u.created_at) >= todayStart).length)
+      setRoleDrafts(Object.fromEntries(profiles.map((u) => [u.id, u.role])))
+      // Build sub-role + location lookup: profile_id -> { subRole, orgName, location, position }
+      const sub = {}
+      ;(coachData  ?? []).forEach((c) => {
+        sub[c.user_id] = {
+          subRole:  c.preferred_role,
+          name:     c.full_name,
+          orgName:  c.current_club,
+          location: c.nationality,
+        }
       })
+      ;(agentData  ?? []).forEach((a) => {
+        sub[a.user_id] = {
+          ...sub[a.user_id],
+          orgName:  a.agency_name,
+          location: sub[a.user_id]?.location || a.nationality,
+        }
+      })
+      ;(clubData   ?? []).forEach((cl) => {
+        sub[cl.owner_id] = {
+          ...sub[cl.owner_id],
+          orgName:  cl.name,
+          location: sub[cl.owner_id]?.location || cl.country,
+        }
+      })
+      ;(playerData ?? []).forEach((p) => {
+        sub[p.profile_id] = {
+          ...sub[p.profile_id],
+          location: p.country || p.nationality,
+          orgName:  p.current_club,
+          position: p.position,
+        }
+      })
+      setSubRoles(sub)
+      setLoading(false)
+    })
     return () => { alive = false }
   }, [supabase])
 
@@ -1036,7 +1502,16 @@ function AdminDashboard({ supabase, user }) {
         .eq('status', 'pending').order('submitted_at', { ascending: true }).limit(100)
         .then(({ data }) => setVerifQueue(data ?? []))
     }
-  }, [activeTab, supabase, duplicates.length, flagged.length, verifQueue.length])
+    if (activeTab === 'reports' && reportQueue.length === 0) {
+      supabase.from('reports')
+        .select(`id, reason, details, status, created_at,
+                 reporter:profiles!reporter_id(id, full_name, email, role),
+                 reported:profiles!reported_user_id(id, full_name, email, role),
+                 reviewer_notes, reviewed_at`)
+        .order('created_at', { ascending: false }).limit(200)
+        .then(({ data }) => setReportQueue(data ?? []))
+    }
+  }, [activeTab, supabase, duplicates.length, flagged.length, verifQueue.length, reportQueue.length])
 
   const approveOpp = async (id) => {
     await supabase.from('opportunities').update({ status: 'open', is_fee_flagged: false }).eq('id', id)
@@ -1094,84 +1569,328 @@ function AdminDashboard({ supabase, user }) {
     setNotice(`Account ${newStatus === 'suspended' ? 'suspended' : 'reactivated'}.`)
   }
 
-  const roleCounts = ALL_ROLES.reduce((acc, r) => ({ ...acc, [r]: users.filter((u) => u.role === r).length }), {})
-  const filtered   = users.filter((u) => !search || [u.full_name, u.email, u.role].some((f) => f?.toLowerCase().includes(search.toLowerCase())))
+  const updateReport = async (reportId, status, outcomeNote) => {
+    setSaving(true); setError(''); setNotice('')
+    const { error: err } = await supabase.from('reports')
+      .update({ status, reviewer_notes: outcomeNote || reportNote[reportId] || null, reviewed_at: new Date().toISOString(), reviewer_id: user.id })
+      .eq('id', reportId)
+    if (err) { setError(err.message); setSaving(false); return }
+    // If confirmed scam — set reported user to denied
+    if (status === 'confirmed_scam') {
+      const rep = reportQueue.find(r => r.id === reportId)
+      if (rep?.reported?.id) {
+        await supabase.from('profiles').update({ status: 'denied', updated_at: new Date().toISOString() }).eq('id', rep.reported.id)
+        setUsers(cur => cur.map(u => u.id === rep.reported.id ? { ...u, status: 'denied' } : u))
+      }
+    }
+
+    // Notify the reporter about the outcome
+    const rep = reportQueue.find(r => r.id === reportId)
+    if (rep?.reporter?.id) {
+      const outcomeMsg = status === 'confirmed_scam'
+        ? `Your report about ${rep.reported?.full_name || 'a user'} has been reviewed. The reported account has been actioned.`
+        : status === 'dismissed'
+        ? `Your report about ${rep.reported?.full_name || 'a user'} has been reviewed. No further action was taken at this time.`
+        : `Your report about ${rep.reported?.full_name || 'a user'} is now under active investigation by our team.`
+
+      const toNotify = [
+        // Reporter notification
+        {
+          user_id:           rep.reporter.id,
+          notification_type: 'report_update',
+          data: { message: outcomeMsg, report_id: reportId, status },
+        },
+      ]
+
+      // Also notify the reported user if scam confirmed or dismissed
+      if (rep.reported?.id && status === 'confirmed_scam') {
+        toNotify.push({
+          user_id:           rep.reported.id,
+          notification_type: 'account_actioned',
+          data: { message: 'Your SportBridge account has been reviewed and action has been taken due to a verified report. Contact support if you believe this is an error.' },
+        })
+      } else if (rep.reported?.id && status === 'dismissed') {
+        toNotify.push({
+          user_id:           rep.reported.id,
+          notification_type: 'report_dismissed',
+          data: { message: 'A report filed against your profile has been reviewed and dismissed. No action has been taken against your account.' },
+        })
+      }
+
+      try {
+        await supabase.from('notifications').insert(toNotify)
+      } catch { /* non-critical */ }
+    }
+
+    setReportQueue(q => q.map(r => r.id === reportId ? { ...r, status } : r))
+    setSaving(false)
+    setNotice(`Report ${status === 'dismissed' ? 'dismissed' : status === 'confirmed_scam' ? 'confirmed — account denied' : 'updated'}.`)
+  }
+
+    const roleCounts = ALL_ROLES.reduce((acc, r) => ({ ...acc, [r]: users.filter((u) => u.role === r).length }), {})
+  const filtered = users.filter((u) => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    const sub = subRoles[u.id]
+    return [u.full_name, u.email, u.role, ROLE_LABELS[u.role], sub?.subRole, sub?.orgName]
+      .some((f) => f?.toLowerCase().includes(q))
+  })
   const pendingVerif = verifQueue.length
 
   const ROLE_COLOURS = {
     player: '#2F7DF0', coach: '#F5B301', agent: '#198754',
-    academy: '#6f42c1', super_admin: '#dc3545',
+    academy: '#6f42c1', sports_analyst: '#fd7e14', super_admin: '#dc3545',
   }
 
   const TABS = [
     ['users',        'bi-people',      `Users (${users.length})`],
     ['verification', 'bi-patch-check', `Verify${pendingVerif > 0 ? ` (${pendingVerif})` : ''}`],
+    ['reports',      'bi-flag-fill',   `Reports${reportQueue.length > 0 ? ` (${reportQueue.length})` : ''}`],
     ['duplicates',   'bi-files',       'Duplicates'],
-    ['flagged',      'bi-flag-fill',   'Fee-Flagged'],
+    ['flagged',      'bi-exclamation-triangle-fill', 'Fee-Flagged'],
   ]
 
   return (
     <>
-      {/* Stat cards */}
+      {/* ══ SPORTBRIDGE ADMIN CONTROL PANEL ══════════════════════════════ */}
+
+      {/* Pending alert banner */}
+      {pendingVerif > 0 && (
+        <div className="alert alert-danger d-flex align-items-center gap-3 mb-4 fw-semibold" role="alert">
+          <i className="bi bi-bell-fill fs-5 flex-shrink-0" />
+          <span>{pendingVerif} verification request{pendingVerif > 1 ? 's' : ''} pending your review</span>
+          <button className="btn btn-sm btn-danger ms-auto" type="button" onClick={() => setActiveTab('verification')}>
+            Review now
+          </button>
+        </div>
+      )}
+
+      {error  && <div className="alert alert-danger  d-flex gap-2 mb-3"><i className="bi bi-exclamation-circle-fill"/>{error}</div>}
+      {notice && <div className="alert alert-success d-flex gap-2 mb-3"><i className="bi bi-check-circle-fill"/>{notice}</div>}
+
+      {/* ── Gradient stat cards ── */}
       <div className="row g-3 mb-4">
         {[
-          { icon: 'bi-people',         label: 'Total users',  value: accountCount,           colour: 'var(--fc-gradient-primary)' },
-          { icon: 'bi-person-plus',    label: 'New today',    value: newToday,               colour: newToday > 0 ? 'linear-gradient(135deg,#198754,#20c997)' : 'linear-gradient(135deg,#6c757d,#adb5bd)' },
-          { icon: 'bi-person-arms-up', label: 'Players',      value: roleCounts.player ?? 0, colour: 'var(--fc-gradient-gold)' },
-          { icon: 'bi-building',       label: 'Academies',    value: roleCounts.academy ?? 0,colour: 'linear-gradient(135deg,#6f42c1,#9d63e8)' },
-          { icon: 'bi-binoculars',     label: 'Agents',       value: roleCounts.agent ?? 0,  colour: 'linear-gradient(135deg,#198754,#20c997)' },
-          { icon: 'bi-patch-check',    label: 'Pending verif',value: pendingVerif,            colour: pendingVerif > 0 ? 'linear-gradient(135deg,#fd7e14,#ffc107)' : 'linear-gradient(135deg,#6c757d,#adb5bd)' },
-        ].map(({ icon, label, value, colour }) => (
-          <div className="col-6 col-sm-4 col-xl-2" key={label}>
-            <div className="card p-3 text-center h-100">
-              <div className="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2"
-                style={{ width: 44, height: 44, background: colour, fontSize: '1.1rem', color: '#fff' }}>
-                <i className={`bi ${icon}`} />
+          { icon:'bi-people-fill',     label:'Total Members',     value:accountCount,             sub:`${users.filter(u=>u.status==='active').length} active`,  g:'linear-gradient(135deg,#2F7DF0,#0056d2)' },
+          { icon:'bi-person-plus-fill',label:'New Today',         value:newToday,                 sub:newToday>0?'joined today':'no new signups',                  g:newToday>0?'linear-gradient(135deg,#198754,#20c997)':'linear-gradient(135deg,#6c757d,#adb5bd)' },
+          { icon:'bi-person-arms-up',  label:'Players',           value:roleCounts.player??0,     sub:`${users.filter(u=>u.role==='player'&&u.verification_status==='verified').length} verified`, g:'linear-gradient(135deg,#f5b301,#e67e00)' },
+          { icon:'bi-building',        label:'Clubs & Academies', value:roleCounts.academy??0,    sub:`${roleCounts.academy??0} clubs`,                          g:'linear-gradient(135deg,#6f42c1,#9d63e8)' },
+          { icon:'bi-binoculars-fill', label:'Agents & Scouts',   value:roleCounts.agent??0,      sub:`${users.filter(u=>u.role==='agent'&&u.verification_status==='verified').length} verified`,  g:'linear-gradient(135deg,#0dcaf0,#0d8fa4)' },
+          { icon:'bi-clipboard2-pulse',label:'Coaches',           value:roleCounts.coach??0,      sub:`${roleCounts.coach??0} coaches`,                          g:'linear-gradient(135deg,#20c997,#158f6e)' },
+          { icon:'bi-graph-up-arrow',  label:'Sports Analysts',   value:roleCounts.sports_analyst??0, sub:`${roleCounts.sports_analyst??0} analysts`,           g:'linear-gradient(135deg,#fd7e14,#dc6800)' },
+          { icon:'bi-patch-check-fill',label:'Pending Review',    value:pendingVerif,             sub:pendingVerif>0?'needs attention':'all clear',                 g:pendingVerif>0?'linear-gradient(135deg,#dc3545,#a71d2a)':'linear-gradient(135deg,#6c757d,#adb5bd)', pulse:pendingVerif>0 },
+        ].map(({ icon, label, value, sub, g, pulse }) => (
+          <div className="col-6 col-sm-4 col-xl-3" key={label}>
+            <div className="rounded-3 p-3 text-white h-100 d-flex flex-column position-relative overflow-hidden"
+              style={{ background:g, boxShadow:'0 4px 20px rgba(0,0,0,.18)', minHeight:110 }}>
+              <i className={`bi ${icon} position-absolute`}
+                style={{ fontSize:64, opacity:.1, right:-10, bottom:-10, transform:'rotate(-10deg)' }} aria-hidden="true" />
+              <div className="d-flex align-items-center justify-content-between mb-2">
+                <div className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                  style={{ width:38, height:38, background:'rgba(255,255,255,.22)', fontSize:'1rem' }}>
+                  <i className={`bi ${icon}`} aria-hidden="true" />
+                </div>
+                {pulse && <span className="badge rounded-circle" style={{ background:'rgba(255,255,255,.35)', fontSize:9 }}>!</span>}
               </div>
-              <div style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--fc-font-heading)', lineHeight: 1, color: 'var(--fc-blue-700)' }}>{value ?? '0'}</div>
-              <div className="small text-muted mt-1">{label}</div>
+              <div style={{ fontSize:30, fontWeight:800, fontFamily:'var(--fc-font-heading)', lineHeight:1 }}>{value??0}</div>
+              <div style={{ fontSize:12, fontWeight:600, opacity:.9, marginTop:2 }}>{label}</div>
+              <div style={{ fontSize:10, opacity:.7, marginTop:2 }}>{sub}</div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Role breakdown bar */}
-      {users.length > 0 && (
-        <div className="card p-3 mb-4">
-          <div className="d-flex justify-content-between mb-2">
-            <span className="small fw-semibold text-muted">User distribution</span>
-            <span className="small text-muted">{users.length} total accounts</span>
-          </div>
-          <div className="d-flex rounded-pill overflow-hidden" style={{ height: 12 }}>
-            {ALL_ROLES.filter((r) => r !== 'super_admin').map((r) => {
-              const pct = users.length > 0 ? ((roleCounts[r] ?? 0) / users.length) * 100 : 0
-              return pct > 0 ? <div key={r} style={{ width: `${pct}%`, background: ROLE_COLOURS[r] }} title={`${ROLE_LABELS[r]}: ${roleCounts[r]}`} /> : null
+      {/* ── Analytics row (dark cards) ── */}
+      <div className="row g-3 mb-4">
+
+        {/* Role distribution bar chart */}
+        <div className="col-12 col-lg-4">
+          <div className="card h-100 p-4"
+            style={{ background:'linear-gradient(160deg,#0f172a,#1e293b)', border:'none' }}>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h2 className="h6 fw-bold mb-0 text-white">
+                <i className="bi bi-bar-chart-fill me-2 text-primary" />User distribution
+              </h2>
+              <span className="small" style={{ color:'#94a3b8' }}>{users.length} total</span>
+            </div>
+            {users.length === 0 ? (
+              <p className="small text-center py-2" style={{ color:'#64748b' }}>No data yet</p>
+            ) : [
+              { role:'player',         label:'Players',    colour:'#2F7DF0' },
+              { role:'coach',          label:'Coaches',    colour:'#F5B301' },
+              { role:'agent',          label:'Agents',     colour:'#198754' },
+              { role:'academy',        label:'Clubs',      colour:'#6f42c1' },
+              { role:'sports_analyst', label:'Analysts',   colour:'#fd7e14' },
+            ].map(({ role, label, colour }) => {
+              const count = roleCounts[role] ?? 0
+              const pct   = users.length > 0 ? Math.round((count/users.length)*100) : 0
+              return (
+                <div key={role} className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="rounded-circle d-inline-block flex-shrink-0" style={{ width:10, height:10, background:colour }} />
+                      <span style={{ fontSize:13, color:'#cbd5e1' }}>{label}</span>
+                    </div>
+                    <div className="d-flex gap-2">
+                      <span style={{ fontSize:14, fontWeight:700, color:'#f1f5f9' }}>{count}</span>
+                      <span style={{ fontSize:11, color:'#64748b', minWidth:30, textAlign:'right' }}>{pct}%</span>
+                    </div>
+                  </div>
+                  <div className="rounded-pill overflow-hidden" style={{ height:7, background:'rgba(255,255,255,.08)' }}>
+                    <div className="rounded-pill h-100" style={{ width:`${pct}%`, background:colour, transition:'width .6s ease' }} />
+                  </div>
+                </div>
+              )
             })}
           </div>
-          <div className="d-flex flex-wrap gap-3 mt-2">
-            {ALL_ROLES.filter((r) => r !== 'super_admin').map((r) => (
-              <span key={r} className="small d-flex align-items-center gap-1">
-                <span className="rounded-circle d-inline-block flex-shrink-0" style={{ width: 8, height: 8, background: ROLE_COLOURS[r] }} />
-                {ROLE_LABELS[r]}: <strong>{roleCounts[r] ?? 0}</strong>
-              </span>
-            ))}
+        </div>
+
+        {/* Verification status */}
+        <div className="col-12 col-lg-4">
+          <div className="card h-100 p-4"
+            style={{ background:'linear-gradient(160deg,#0f172a,#1e293b)', border:'none' }}>
+            <h2 className="h6 fw-bold mb-3 text-white">
+              <i className="bi bi-shield-check me-2 text-success" />Verification status
+            </h2>
+            {[
+              { label:'Verified',   key:'verified',   colour:'#198754', icon:'bi-patch-check-fill' },
+              { label:'Pending',    key:'pending',    colour:'#f5b301', icon:'bi-hourglass-split'   },
+              { label:'Rejected',   key:'rejected',   colour:'#dc3545', icon:'bi-x-circle-fill'     },
+              { label:'Unverified', key:'unverified', colour:'#64748b', icon:'bi-patch-question'    },
+            ].map(({ label, key, colour, icon }) => {
+              const count = users.filter(u => (u.verification_status ?? 'unverified') === key).length
+              const pct = users.length > 0 ? Math.round((count/users.length)*100) : 0
+              return (
+                <div key={key} className="mb-3">
+                  <div className="d-flex align-items-center justify-content-between mb-1">
+                    <div className="d-flex align-items-center gap-2">
+                      <div className="d-inline-flex align-items-center justify-content-center rounded flex-shrink-0"
+                        style={{ width:30, height:30, background:colour+'22', color:colour }}>
+                        <i className={`bi ${icon}`} style={{ fontSize:13 }} />
+                      </div>
+                      <span style={{ fontSize:13, color:'#cbd5e1' }}>{label}</span>
+                    </div>
+                    <div className="d-flex align-items-center gap-2">
+                      <span style={{ fontSize:20, fontWeight:800, color:colour, fontFamily:'var(--fc-font-heading)', lineHeight:1 }}>{count}</span>
+                      <span style={{ fontSize:11, color:'#64748b', minWidth:32, textAlign:'right' }}>{pct}%</span>
+                    </div>
+                  </div>
+                  <div className="rounded-pill overflow-hidden" style={{ height:6, background:'rgba(255,255,255,.08)' }}>
+                    <div className="rounded-pill h-100" style={{ width:`${pct}%`, background:colour, transition:'width .6s ease' }} />
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
-      )}
 
-      {error  && <div className="alert alert-danger  d-flex gap-2" role="alert"><i className="bi bi-exclamation-circle-fill" />{error}</div>}
-      {notice && <div className="alert alert-success d-flex gap-2" role="status"><i className="bi bi-check-circle-fill" />{notice}</div>}
+        {/* Staff Roles Breakdown — replaces Latest members */}
+        <div className="col-12 col-lg-4" style={{ alignSelf:'start' }}>
+          <div className="card p-4"
+            style={{ background:'linear-gradient(160deg,#0f172a,#1e293b)', border:'none' }}>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h2 className="h6 fw-bold mb-0 text-white">
+                <i className="bi bi-diagram-3-fill me-2 text-warning" />Staff Roles Breakdown
+              </h2>
+              <span className="small" style={{ color:'#94a3b8' }}>
+                {users.filter(u=>u.role==='coach'||u.role==='sports_analyst').length} staff
+              </span>
+            </div>
 
-      {/* Tabs */}
+            {/* All roles — no scroll, all visible */}
+            <div>
+              {[
+                {
+                  group: 'Head positions', colour: '#2F7DF0',
+                  roles: ['Head Coach','First Team Manager','Caretaker Manager','Interim Manager','Player-Manager'],
+                },
+                {
+                  group: 'Coaching staff', colour: '#20c997',
+                  roles: ['Assistant Head Coach','Assistant Coach','Goalkeeping Coach','Set-Piece Coach','Fitness Coach','Strength & Conditioning Coach','Sports Scientist','Physio / Sports Therapist','Team Doctor'],
+                },
+                {
+                  group: 'Management & leadership', colour: '#f5b301',
+                  roles: ['Sporting Director','Technical Director','Director of Football','Academy Director','Head of Recruitment','Head of Player Development','Head of Analysis'],
+                },
+                {
+                  group: 'Scouting & analysis', colour: '#0dcaf0',
+                  roles: ['Scout','Chief Scout','Performance Analyst','Video Analyst','Data Analyst','Opposition Analyst','Recruitment Analyst','Tactical Analyst'],
+                },
+                {
+                  group: 'Other roles', colour: '#fd7e14',
+                  roles: ['Reserve Team Coach','U23 / U21 Coach','U18 Coach','Youth Academy Coach','Loan Manager','Player Liaison'],
+                },
+              ].map(({ group, colour, roles }) => {
+                const groupTotal = roles.reduce((sum, r) =>
+                  sum + Object.values(subRoles).filter(s => s?.subRole === r).length, 0)
+                return (
+                  <div key={group} className="mb-3">
+                    {/* Group header */}
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <span className="d-flex align-items-center gap-1">
+                        <span className="rounded-circle d-inline-block flex-shrink-0"
+                          style={{ width:7, height:7, background:colour }} />
+                        <span style={{ fontSize:9, color:colour, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.8px' }}>
+                          {group}
+                        </span>
+                      </span>
+                      {groupTotal > 0 && (
+                        <span className="badge rounded-pill px-2"
+                          style={{ background:colour+'33', color:colour, fontSize:9, border:`1px solid ${colour}55` }}>
+                          {groupTotal}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Individual roles */}
+                    {roles.map(roleName => {
+                      const count = Object.values(subRoles).filter(s => s?.subRole === roleName).length
+                      const hasStaff = count > 0
+                      return (
+                        <div key={roleName}
+                          className="d-flex justify-content-between align-items-center px-2"
+                          style={{
+                            height: 22,
+                            borderRadius: 4,
+                            background: hasStaff ? colour + '18' : 'transparent',
+                            marginBottom: 1,
+                          }}>
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: hasStaff ? 700 : 400,
+                            color: hasStaff ? '#f1f5f9' : '#475569',
+                          }}>
+                            {roleName}
+                          </span>
+                          {hasStaff ? (
+                            <span className="badge rounded-pill px-2"
+                              style={{ background: colour, color: colour === '#f5b301' ? '#000' : '#fff', fontSize: 10, minWidth: 22 }}>
+                              {count}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 10, color: '#334155' }}>—</span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Tab navigation ── */}
       <ul className="nav nav-pills mb-4 flex-wrap gap-1" role="tablist">
         {TABS.map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button
-              className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`}
+              className={`nav-link d-flex align-items-center gap-2${activeTab===tab?' active':''}`}
               type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
-              {tab === 'verification' && pendingVerif > 0 && (
-                <span className="badge text-bg-danger" style={{ fontSize: 10 }}>{pendingVerif}</span>
+              {tab==='verification' && pendingVerif>0 && (
+                <span className="badge text-bg-danger" style={{ fontSize:10 }}>{pendingVerif}</span>
               )}
             </button>
           </li>
@@ -1179,78 +1898,127 @@ function AdminDashboard({ supabase, user }) {
       </ul>
 
       {/* ── Users table ── */}
-      {activeTab === 'users' && (
+      {activeTab==='users' && (
         <div className="card p-4">
           <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-            <h2 className="h5 fw-bold mb-0" style={{ color: 'var(--fc-blue-700)' }}>
-              <i className="bi bi-people me-2" />All User Accounts
+            <h2 className="h5 fw-bold mb-0" style={{ color:'var(--fc-blue-700)' }}>
+              <i className="bi bi-people me-2" />All Accounts
             </h2>
             <div className="d-flex gap-2 align-items-center">
-              <input className="form-control form-control-sm" style={{ maxWidth: 260 }} type="search"
-                placeholder="Search name, email, role…" value={search} onChange={(e) => setSearch(e.target.value)} />
-              <span className="small text-muted text-nowrap">{filtered.length} results</span>
+              <input className="form-control form-control-sm" style={{ maxWidth:280 }} type="search"
+                placeholder="Search name, email, role…" value={search} onChange={e => setSearch(e.target.value)} />
+              <span className="small text-muted text-nowrap">{filtered.length} of {users.length}</span>
             </div>
           </div>
-
           {loading ? (
             <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading accounts…</div>
           ) : (
             <div className="table-responsive">
-              <table className="table table-hover align-middle mb-0" style={{ fontSize: 13 }}>
-                <thead className="table-light">
+              <table className="table table-hover align-middle mb-0" style={{ fontSize:13 }}>
+                <thead className="table-dark">
                   <tr>
-                    <th>User</th>
-                    <th style={{ minWidth: 140 }}>Role</th>
-                    <th className="text-center">Status</th>
-                    <th className="text-center">Verified</th>
-                    <th className="text-nowrap">Joined</th>
-                    <th><span className="visually-hidden">Actions</span></th>
+                    <th style={{ minWidth:240 }}>Member</th>
+                    <th style={{ minWidth:180 }}>Role / Position</th>
+                    <th style={{ minWidth:120 }}>Location</th>
+                    <th className="text-center" style={{ minWidth:70 }}>Sport</th>
+                    <th className="text-center" style={{ minWidth:90 }}>Account</th>
+                    <th className="text-center" style={{ minWidth:130 }}>Verification</th>
+                    <th style={{ minWidth:90 }}>Joined</th>
+                    <th style={{ minWidth:130 }}><span className="visually-hidden">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((u) => (
-                    <tr key={u.id} className={u.status === 'suspended' ? 'table-danger opacity-75' : ''}>
+                  {filtered.map(u => (
+                    <tr key={u.id} className={u.status==='suspended'?'table-danger opacity-75':''}>
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <span className="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
-                            style={{ width: 36, height: 36, background: ROLE_COLOURS[u.role] || 'var(--fc-gradient-primary)', color: u.role === 'coach' ? '#000' : '#fff', fontSize: 15 }}>
-                            <i className={`bi ${ROLE_ICONS[u.role] || 'bi-person'}`} />
+                            style={{ width:36, height:36, background:ROLE_COLOURS[u.role]||'var(--fc-gradient-primary)', color:u.role==='coach'?'#000':'#fff', fontSize:14 }}>
+                            <i className={`bi ${ROLE_ICONS[u.role]||'bi-person'}`} />
                           </span>
                           <div>
                             <div className="fw-semibold d-flex align-items-center gap-1">
-                              {u.full_name || <span className="text-muted fst-italic">Unnamed</span>}
-                              {u.id === user.id && <span className="badge text-bg-primary" style={{ fontSize: 9 }}>You</span>}
+                              {u.full_name||subRoles[u.id]?.name||<span className="text-muted fst-italic">Unnamed</span>}
+                              {u.id===user.id && <span className="badge text-bg-primary" style={{ fontSize:9 }}>You</span>}
                             </div>
-                            <div className="text-muted" style={{ fontSize: 11 }}>{u.email}</div>
+                            <div className="text-muted" style={{ fontSize:11 }}>{u.email}</div>
+                            {subRoles[u.id]?.orgName && (
+                              <div className="text-muted fst-italic" style={{ fontSize:10 }}>{subRoles[u.id].orgName}</div>
+                            )}
                           </div>
                         </div>
                       </td>
                       <td>
-                        <select className="form-select form-select-sm" disabled={u.id === user.id || saving}
-                          value={roleDrafts[u.id] ?? u.role}
-                          onChange={(e) => setRoleDrafts((cur) => ({ ...cur, [u.id]: e.target.value }))}>
-                          {ALL_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-                        </select>
+                        <div className="mb-1">
+                          <select className="form-select form-select-sm" disabled={u.id===user.id||saving}
+                            value={roleDrafts[u.id]??u.role}
+                            onChange={e => setRoleDrafts(cur => ({...cur,[u.id]:e.target.value}))}>
+                            {ALL_ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                          </select>
+                        </div>
+                        {/* Show specific sub-role (e.g. Goalkeeping Coach, Sporting Director) */}
+                        {subRoles[u.id]?.subRole && (
+                          <span className="badge text-bg-light border fw-normal" style={{ fontSize:10 }}>
+                            {subRoles[u.id].subRole}
+                          </span>
+                        )}
+                        {/* Show player position */}
+                        {!subRoles[u.id]?.subRole && subRoles[u.id]?.position && (
+                          <span className="badge text-bg-light border fw-normal" style={{ fontSize:10 }}>
+                            {subRoles[u.id].position}
+                          </span>
+                        )}
+                      </td>
+                      {/* Location column */}
+                      <td>
+                        {subRoles[u.id]?.location ? (
+                          <div className="d-flex align-items-center gap-1">
+                            <i className="bi bi-geo-alt text-muted" style={{ fontSize:11 }} />
+                            <span className="small text-muted">{subRoles[u.id].location}</span>
+                          </div>
+                        ) : (
+                          <span className="small text-muted">—</span>
+                        )}
+                      </td>
+                      {/* Sport column */}
+                      <td className="text-center">
+                        {u.sport ? (
+                          <span className="badge text-bg-light border" style={{ fontSize:10 }}>
+                            <i className={`bi ${u.sport==='football'?'bi-dribbble':'bi-circle'} me-1`} />
+                            {u.sport}
+                          </span>
+                        ) : <span className="small text-muted">—</span>}
                       </td>
                       <td className="text-center">
-                        <span className={`badge ${u.status === 'active' ? 'text-bg-success' : u.status === 'suspended' ? 'text-bg-danger' : 'text-bg-warning'}`}>
-                          {u.status === 'active' ? 'Active' : u.status === 'suspended' ? 'Suspended' : u.status ?? 'active'}
-                        </span>
+                        <div className="d-flex flex-column align-items-center gap-1">
+                          <span className={`badge ${u.status==='active'?'text-bg-success':u.status==='suspended'?'text-bg-danger':'text-bg-warning'}`}>
+                            {u.status==='active'?'Active':u.status==='suspended'?'Suspended':u.status??'active'}
+                          </span>
+                        </div>
                       </td>
                       <td className="text-center"><VerificationBadge status={u.verification_status} /></td>
-                      <td className="text-muted" style={{ fontSize: 11 }}>
-                        {u.created_at ? new Date(u.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
+                      <td className="text-muted" style={{ fontSize:11 }}>
+                        {u.created_at?new Date(u.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}):'—'}
                       </td>
                       <td>
-                        <div className="d-flex gap-1 flex-nowrap">
+                        <div className="d-flex gap-1 flex-nowrap align-items-center">
                           <button className="btn btn-sm btn-outline-primary"
-                            disabled={u.id === user.id || saving || (roleDrafts[u.id] ?? u.role) === u.role}
-                            onClick={() => saveRole(u.id)} type="button">Save</button>
-                          {u.id !== user.id && (
+                            disabled={u.id===user.id||saving||(roleDrafts[u.id]??u.role)===u.role}
+                            onClick={() => saveRole(u.id)} type="button">
+                            <i className="bi bi-check2 me-1" />Save
+                          </button>
+                          {u.id!==user.id && (
                             <button
-                              className={`btn btn-sm ${u.status === 'suspended' ? 'btn-success' : 'btn-outline-danger'}`}
-                              disabled={saving} onClick={() => suspendUser(u.id, u.status ?? 'active')} type="button">
-                              {u.status === 'suspended' ? 'Restore' : 'Suspend'}
+                              className={`btn btn-sm ${u.status==='suspended'?'btn-success':'btn-outline-danger'}`}
+                              disabled={saving}
+                              onClick={() => suspendUser(u.id,u.status??'active')}
+                              type="button"
+                              title={u.status==='suspended'?'Restore account':'Suspend account'}
+                            >
+                              {u.status==='suspended'
+                                ? <><i className="bi bi-arrow-clockwise me-1" />Restore</>
+                                : <><i className="bi bi-slash-circle me-1" />Suspend</>
+                              }
                             </button>
                           )}
                         </div>
@@ -1259,9 +2027,9 @@ function AdminDashboard({ supabase, user }) {
                   ))}
                 </tbody>
               </table>
-              {filtered.length === 0 && (
+              {filtered.length===0 && (
                 <div className="text-center py-5 text-muted">
-                  <i className="bi bi-search fs-2 d-block mb-2" style={{ opacity: .3 }} />
+                  <i className="bi bi-search fs-2 d-block mb-2" style={{ opacity:.3 }} />
                   <p className="mb-0">No accounts match <strong>"{search}"</strong></p>
                 </div>
               )}
@@ -1271,34 +2039,35 @@ function AdminDashboard({ supabase, user }) {
       )}
 
       {/* ── Verification Queue ── */}
-      {activeTab === 'verification' && (
+      {activeTab==='verification' && (
         <div className="card p-4">
           <div className="d-flex align-items-center justify-content-between mb-4">
-            <h2 className="h5 fw-bold mb-0" style={{ color: 'var(--fc-blue-700)' }}>
+            <h2 className="h5 fw-bold mb-0" style={{ color:'var(--fc-blue-700)' }}>
               <i className="bi bi-patch-check me-2" />Verification Queue
             </h2>
-            {pendingVerif > 0 && <span className="badge text-bg-warning px-3 py-2">{pendingVerif} pending</span>}
+            {pendingVerif>0 && <span className="badge text-bg-warning px-3 py-2">{pendingVerif} pending</span>}
           </div>
-          {pendingVerif === 0 ? (
+          {pendingVerif===0 ? (
             <div className="text-center py-5 text-muted">
-              <i className="bi bi-patch-check fs-1 d-block mb-2" style={{ color: '#198754', opacity: .4 }} />
+              <i className="bi bi-patch-check fs-1 d-block mb-2" style={{ color:'#198754', opacity:.4 }} />
               <p className="fw-semibold mb-1">All clear!</p>
               <p className="small">No pending verification requests.</p>
             </div>
-          ) : verifQueue.map((req) => (
-            <div key={req.id} className="card p-4 mb-3" style={{ borderLeft: '4px solid var(--fc-blue-500)', background: 'rgba(47,125,240,.03)' }}>
+          ) : verifQueue.map(req => (
+            <div key={req.id} className="card p-4 mb-3"
+              style={{ borderLeft:'4px solid var(--fc-blue-500)', background:'rgba(47,125,240,.03)' }}>
               <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
                 <div className="d-flex align-items-center gap-3">
-                  <span className="fc-icon-badge" style={{ width: 44, height: 44, background: 'var(--fc-gradient-primary)' }}>
-                    <i className={`bi ${ROLE_ICONS[req.role] || 'bi-person'}`} />
+                  <span className="fc-icon-badge" style={{ width:44, height:44, background:'var(--fc-gradient-primary)' }}>
+                    <i className={`bi ${ROLE_ICONS[req.role]||'bi-person'}`} />
                   </span>
                   <div>
-                    <div className="fw-bold">{req.profiles?.full_name || req.profiles?.email}</div>
+                    <div className="fw-bold">{req.profiles?.full_name||req.profiles?.email}</div>
                     <div className="small text-muted">{req.profiles?.email}</div>
                     <div className="d-flex gap-2 mt-1 flex-wrap">
                       <span className="badge text-bg-light border text-capitalize">{req.role}</span>
                       <span className="small text-muted">
-                        Submitted {new Date(req.submitted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                        Submitted {new Date(req.submitted_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
                       </span>
                     </div>
                   </div>
@@ -1316,8 +2085,8 @@ function AdminDashboard({ supabase, user }) {
                 </label>
                 <input id={`note-${req.id}`} className="form-control form-control-sm"
                   placeholder="Reason for approval or rejection…"
-                  value={verifNote[req.id] ?? ''}
-                  onChange={(e) => setVerifNote((n) => ({ ...n, [req.id]: e.target.value }))} />
+                  value={verifNote[req.id]??''}
+                  onChange={e => setVerifNote(n => ({...n,[req.id]:e.target.value}))} />
               </div>
               <div className="d-flex gap-2 flex-wrap">
                 <button className="btn btn-success d-flex align-items-center gap-2" type="button"
@@ -1334,35 +2103,349 @@ function AdminDashboard({ supabase, user }) {
         </div>
       )}
 
-      {/* ── Duplicate Files ── */}
-      {activeTab === 'duplicates' && (
+      {/* ── Reports & Disputes Queue ── */}
+      {activeTab==='reports' && (
         <div className="card p-4">
-          <h2 className="h5 fw-bold mb-4" style={{ color: 'var(--fc-blue-700)' }}>
+          <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+            <h2 className="h5 fw-bold mb-0" style={{ color:'var(--fc-blue-700)' }}>
+              <i className="bi bi-flag-fill me-2 text-danger" />Reports & Disputes
+            </h2>
+            <div className="d-flex gap-2">
+              <span className="badge text-bg-danger px-3 py-2">
+                {reportQueue.filter(r=>r.status==='pending').length} pending
+              </span>
+              <span className="badge text-bg-warning px-3 py-2">
+                {reportQueue.filter(r=>r.status==='investigating').length} investigating
+              </span>
+            </div>
+          </div>
+
+          {/* Filter tabs */}
+          <ul className="nav nav-pills mb-4 gap-1 flex-wrap">
+            {[['all','All'],['pending','Pending'],['investigating','Investigating'],['confirmed_scam','Scam confirmed'],['dismissed','Dismissed']].map(([s,l])=>(
+              <li key={s}>
+                <button
+                  className={`btn btn-sm ${reportFilter===s?'btn-primary':'btn-outline-secondary'}`}
+                  type="button" onClick={()=>setReportFilter(s)}>
+                  {l} ({s==='all'?reportQueue.length:reportQueue.filter(r=>r.status===s).length})
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {reportQueue.filter(r=>reportFilter==='all'||r.status===reportFilter).length===0 ? (
+            <div className="text-center py-5 text-muted">
+              <i className="bi bi-shield-check fs-1 d-block mb-2" style={{color:'#198754',opacity:.4}} />
+              <p className="fw-semibold mb-1">No {reportFilter==='all'?'':reportFilter} reports.</p>
+            </div>
+          ) : reportQueue
+              .filter(r=>reportFilter==='all'||r.status===reportFilter)
+              .map(rep=>(
+            <div key={rep.id} className="card p-4 mb-3"
+              style={{borderLeft:`4px solid ${rep.status==='confirmed_scam'?'#dc3545':rep.status==='dismissed'?'#6c757d':rep.status==='investigating'?'#f5b301':'#2F7DF0'}`,
+                background:rep.status==='confirmed_scam'?'rgba(220,53,69,.04)':rep.status==='dismissed'?'rgba(108,117,125,.04)':'rgba(47,125,240,.03)'}}>
+
+              {/* Report header */}
+              <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                  <div className="d-flex align-items-center gap-2 mb-1">
+                    <span className={`badge ${
+                      rep.status==='confirmed_scam'?'text-bg-danger':
+                      rep.status==='dismissed'?'text-bg-secondary':
+                      rep.status==='investigating'?'text-bg-warning':
+                      'text-bg-primary'}`}>
+                      {rep.status?.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
+                    </span>
+                    <span className="badge text-bg-light border text-capitalize">
+                      {rep.reason?.replace(/_/g,' ')}
+                    </span>
+                  </div>
+                  <div className="small text-muted">
+                    Reported {rep.created_at?new Date(rep.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}):'—'}
+                  </div>
+                </div>
+                {rep.reviewed_at && (
+                  <div className="small text-muted">
+                    Reviewed {new Date(rep.reviewed_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
+                  </div>
+                )}
+              </div>
+
+              {/* Reporter + Reported */}
+              <div className="row g-3 mb-3">
+                <div className="col-12 col-sm-6">
+                  <div className="p-3 rounded" style={{background:'rgba(0,0,0,.04)'}}>
+                    <div className="small text-muted fw-semibold mb-1">
+                      <i className="bi bi-person me-1" />Reporter
+                    </div>
+                    <div className="fw-semibold">{rep.reporter?.full_name||'Unknown'}</div>
+                    <div className="small text-muted">{rep.reporter?.email}</div>
+                    <span className="badge text-bg-light border mt-1" style={{fontSize:10}}>
+                      {ROLE_LABELS[rep.reporter?.role]||rep.reporter?.role||'—'}
+                    </span>
+                  </div>
+                </div>
+                <div className="col-12 col-sm-6">
+                  <div className="p-3 rounded" style={{background:'rgba(220,53,69,.06)'}}>
+                    <div className="small text-danger fw-semibold mb-1">
+                      <i className="bi bi-flag me-1" />Reported Profile
+                    </div>
+                    <div className="fw-semibold">{rep.reported?.full_name||'Unknown'}</div>
+                    <div className="small text-muted">{rep.reported?.email}</div>
+                    <span className="badge text-bg-light border mt-1" style={{fontSize:10}}>
+                      {ROLE_LABELS[rep.reported?.role]||rep.reported?.role||'—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Details */}
+              {rep.details && (
+                <div className="mb-3">
+                  <div className="small fw-semibold text-muted mb-1">Details</div>
+                  <p className="small mb-0" style={{whiteSpace:'pre-wrap'}}>{rep.details}</p>
+                </div>
+              )}
+
+              {/* Reviewer notes */}
+              {rep.reviewer_notes && (
+                <div className="alert alert-light py-2 small mb-3">
+                  <i className="bi bi-chat-square-text me-1" />
+                  <strong>Admin note:</strong> {rep.reviewer_notes}
+                </div>
+              )}
+
+              {/* Actions — only show if not already resolved */}
+              {!['confirmed_scam','dismissed'].includes(rep.status) && (
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold" htmlFor={`report-note-${rep.id}`}>
+                    Investigation note <span className="text-muted fw-normal">(optional)</span>
+                  </label>
+                  <input id={`report-note-${rep.id}`} className="form-control form-control-sm"
+                    placeholder="Add investigation notes…"
+                    value={reportNote[rep.id]??''}
+                    onChange={e=>setReportNote(n=>({...n,[rep.id]:e.target.value}))} />
+                </div>
+              )}
+
+              {!['confirmed_scam','dismissed'].includes(rep.status) && (
+                <div className="d-flex gap-2 flex-wrap">
+                  {rep.status==='pending' && (
+                    <button className="btn btn-warning btn-sm d-flex align-items-center gap-2" type="button"
+                      disabled={saving} onClick={()=>updateReport(rep.id,'investigating')}>
+                      <i className="bi bi-search" />Start investigation
+                    </button>
+                  )}
+                  <button className="btn btn-danger btn-sm d-flex align-items-center gap-2" type="button"
+                    disabled={saving}
+                    onClick={()=>{ if(window.confirm('Confirm as scam/fraud? This will DENY the reported account.')) updateReport(rep.id,'confirmed_scam') }}>
+                    <i className="bi bi-shield-x" />Confirm scam & deny account
+                  </button>
+                  <button className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" type="button"
+                    disabled={saving} onClick={()=>updateReport(rep.id,'dismissed')}>
+                    <i className="bi bi-x-circle" />Dismiss report
+                  </button>
+                </div>
+              )}
+
+              {rep.status==='confirmed_scam' && (
+                <div className="alert alert-danger py-2 mb-0 d-flex align-items-center gap-2">
+                  <i className="bi bi-shield-x-fill" />Account denied. Scam confirmed.
+                </div>
+              )}
+              {rep.status==='dismissed' && (
+                <div className="alert alert-secondary py-2 mb-0 d-flex align-items-center gap-2">
+                  <i className="bi bi-check-circle" />Report dismissed. No action taken.
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Reports & Disputes Queue ── */}
+      {activeTab==='reports' && (
+        <div className="card p-4">
+          <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+            <h2 className="h5 fw-bold mb-0" style={{ color:'var(--fc-blue-700)' }}>
+              <i className="bi bi-flag-fill me-2 text-danger" />Reports & Disputes
+            </h2>
+            <div className="d-flex gap-2">
+              <span className="badge text-bg-danger px-3 py-2">
+                {reportQueue.filter(r=>r.status==='pending').length} pending
+              </span>
+              <span className="badge text-bg-warning px-3 py-2">
+                {reportQueue.filter(r=>r.status==='investigating').length} investigating
+              </span>
+            </div>
+          </div>
+
+          {/* Filter tabs */}
+          <ul className="nav nav-pills mb-4 gap-1 flex-wrap">
+            {[['all','All'],['pending','Pending'],['investigating','Investigating'],['confirmed_scam','Scam confirmed'],['dismissed','Dismissed']].map(([s,l])=>(
+              <li key={s}>
+                <button
+                  className={`btn btn-sm ${reportFilter===s?'btn-primary':'btn-outline-secondary'}`}
+                  type="button" onClick={()=>setReportFilter(s)}>
+                  {l} ({s==='all'?reportQueue.length:reportQueue.filter(r=>r.status===s).length})
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {reportQueue.filter(r=>reportFilter==='all'||r.status===reportFilter).length===0 ? (
+            <div className="text-center py-5 text-muted">
+              <i className="bi bi-shield-check fs-1 d-block mb-2" style={{color:'#198754',opacity:.4}} />
+              <p className="fw-semibold mb-1">No {reportFilter==='all'?'':reportFilter} reports.</p>
+            </div>
+          ) : reportQueue
+              .filter(r=>reportFilter==='all'||r.status===reportFilter)
+              .map(rep=>(
+            <div key={rep.id} className="card p-4 mb-3"
+              style={{borderLeft:`4px solid ${rep.status==='confirmed_scam'?'#dc3545':rep.status==='dismissed'?'#6c757d':rep.status==='investigating'?'#f5b301':'#2F7DF0'}`,
+                background:rep.status==='confirmed_scam'?'rgba(220,53,69,.04)':rep.status==='dismissed'?'rgba(108,117,125,.04)':'rgba(47,125,240,.03)'}}>
+
+              {/* Report header */}
+              <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                  <div className="d-flex align-items-center gap-2 mb-1">
+                    <span className={`badge ${
+                      rep.status==='confirmed_scam'?'text-bg-danger':
+                      rep.status==='dismissed'?'text-bg-secondary':
+                      rep.status==='investigating'?'text-bg-warning':
+                      'text-bg-primary'}`}>
+                      {rep.status?.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
+                    </span>
+                    <span className="badge text-bg-light border text-capitalize">
+                      {rep.reason?.replace(/_/g,' ')}
+                    </span>
+                  </div>
+                  <div className="small text-muted">
+                    Reported {rep.created_at?new Date(rep.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}):'—'}
+                  </div>
+                </div>
+                {rep.reviewed_at && (
+                  <div className="small text-muted">
+                    Reviewed {new Date(rep.reviewed_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
+                  </div>
+                )}
+              </div>
+
+              {/* Reporter + Reported */}
+              <div className="row g-3 mb-3">
+                <div className="col-12 col-sm-6">
+                  <div className="p-3 rounded" style={{background:'rgba(0,0,0,.04)'}}>
+                    <div className="small text-muted fw-semibold mb-1">
+                      <i className="bi bi-person me-1" />Reporter
+                    </div>
+                    <div className="fw-semibold">{rep.reporter?.full_name||'Unknown'}</div>
+                    <div className="small text-muted">{rep.reporter?.email}</div>
+                    <span className="badge text-bg-light border mt-1" style={{fontSize:10}}>
+                      {ROLE_LABELS[rep.reporter?.role]||rep.reporter?.role||'—'}
+                    </span>
+                  </div>
+                </div>
+                <div className="col-12 col-sm-6">
+                  <div className="p-3 rounded" style={{background:'rgba(220,53,69,.06)'}}>
+                    <div className="small text-danger fw-semibold mb-1">
+                      <i className="bi bi-flag me-1" />Reported Profile
+                    </div>
+                    <div className="fw-semibold">{rep.reported?.full_name||'Unknown'}</div>
+                    <div className="small text-muted">{rep.reported?.email}</div>
+                    <span className="badge text-bg-light border mt-1" style={{fontSize:10}}>
+                      {ROLE_LABELS[rep.reported?.role]||rep.reported?.role||'—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Details */}
+              {rep.details && (
+                <div className="mb-3">
+                  <div className="small fw-semibold text-muted mb-1">Details</div>
+                  <p className="small mb-0" style={{whiteSpace:'pre-wrap'}}>{rep.details}</p>
+                </div>
+              )}
+
+              {/* Reviewer notes */}
+              {rep.reviewer_notes && (
+                <div className="alert alert-light py-2 small mb-3">
+                  <i className="bi bi-chat-square-text me-1" />
+                  <strong>Admin note:</strong> {rep.reviewer_notes}
+                </div>
+              )}
+
+              {/* Actions — only show if not already resolved */}
+              {!['confirmed_scam','dismissed'].includes(rep.status) && (
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold" htmlFor={`report-note-${rep.id}`}>
+                    Investigation note <span className="text-muted fw-normal">(optional)</span>
+                  </label>
+                  <input id={`report-note-${rep.id}`} className="form-control form-control-sm"
+                    placeholder="Add investigation notes…"
+                    value={reportNote[rep.id]??''}
+                    onChange={e=>setReportNote(n=>({...n,[rep.id]:e.target.value}))} />
+                </div>
+              )}
+
+              {!['confirmed_scam','dismissed'].includes(rep.status) && (
+                <div className="d-flex gap-2 flex-wrap">
+                  {rep.status==='pending' && (
+                    <button className="btn btn-warning btn-sm d-flex align-items-center gap-2" type="button"
+                      disabled={saving} onClick={()=>updateReport(rep.id,'investigating')}>
+                      <i className="bi bi-search" />Start investigation
+                    </button>
+                  )}
+                  <button className="btn btn-danger btn-sm d-flex align-items-center gap-2" type="button"
+                    disabled={saving}
+                    onClick={()=>{ if(window.confirm('Confirm as scam/fraud? This will DENY the reported account.')) updateReport(rep.id,'confirmed_scam') }}>
+                    <i className="bi bi-shield-x" />Confirm scam & deny account
+                  </button>
+                  <button className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" type="button"
+                    disabled={saving} onClick={()=>updateReport(rep.id,'dismissed')}>
+                    <i className="bi bi-x-circle" />Dismiss report
+                  </button>
+                </div>
+              )}
+
+              {rep.status==='confirmed_scam' && (
+                <div className="alert alert-danger py-2 mb-0 d-flex align-items-center gap-2">
+                  <i className="bi bi-shield-x-fill" />Account denied. Scam confirmed.
+                </div>
+              )}
+              {rep.status==='dismissed' && (
+                <div className="alert alert-secondary py-2 mb-0 d-flex align-items-center gap-2">
+                  <i className="bi bi-check-circle" />Report dismissed. No action taken.
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Duplicate Files ── */}
+      {activeTab==='duplicates' && (
+        <div className="card p-4">
+          <h2 className="h5 fw-bold mb-4" style={{ color:'var(--fc-blue-700)' }}>
             <i className="bi bi-files me-2" />Duplicate File Detector
           </h2>
-          {duplicates.length === 0 ? (
+          {duplicates.length===0 ? (
             <div className="text-center py-5 text-muted">
-              <i className="bi bi-files fs-1 d-block mb-2" style={{ opacity: .3 }} />
+              <i className="bi bi-files fs-1 d-block mb-2" style={{ opacity:.3 }} />
               <p className="mb-0">No duplicate uploads detected.</p>
             </div>
           ) : (
             <div className="table-responsive">
               <table className="table table-sm align-middle mb-0">
-                <thead className="table-light">
-                  <tr><th>File hash (SHA-256)</th><th>Type</th><th>User</th><th>Uploaded</th><th></th></tr>
-                </thead>
+                <thead className="table-dark"><tr><th>SHA-256</th><th>Type</th><th>User</th><th>Uploaded</th><th></th></tr></thead>
                 <tbody>
-                  {duplicates.map((d) => (
+                  {duplicates.map(d => (
                     <tr key={d.id}>
-                      <td className="font-monospace small text-danger">{d.file_hash?.slice(0, 16)}…</td>
+                      <td className="font-monospace small text-danger">{d.file_hash?.slice(0,16)}…</td>
                       <td><span className="badge text-bg-light border small">{d.file_type}</span></td>
-                      <td className="small text-muted">{d.user_id?.slice(0, 8)}…</td>
+                      <td className="small text-muted">{d.user_id?.slice(0,8)}…</td>
                       <td className="small text-muted">{new Date(d.created_at).toLocaleDateString()}</td>
-                      <td>
-                        <a href={d.url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-secondary">
-                          <i className="bi bi-box-arrow-up-right" />
-                        </a>
-                      </td>
+                      <td><a href={d.url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-secondary"><i className="bi bi-box-arrow-up-right" /></a></td>
                     </tr>
                   ))}
                 </tbody>
@@ -1373,45 +2456,33 @@ function AdminDashboard({ supabase, user }) {
       )}
 
       {/* ── Fee-Flagged Tryouts ── */}
-      {activeTab === 'flagged' && (
+      {activeTab==='flagged' && (
         <div className="card p-4">
-          <h2 className="h5 fw-bold mb-4" style={{ color: 'var(--fc-blue-700)' }}>
+          <h2 className="h5 fw-bold mb-4" style={{ color:'var(--fc-blue-700)' }}>
             <i className="bi bi-flag-fill me-2 text-warning" />Fee-Flagged Tryouts
           </h2>
-          {flagged.length === 0 ? (
+          {flagged.length===0 ? (
             <div className="text-center py-5 text-muted">
-              <i className="bi bi-flag fs-1 d-block mb-2" style={{ opacity: .3 }} />
+              <i className="bi bi-flag fs-1 d-block mb-2" style={{ opacity:.3 }} />
               <p className="mb-0">No tryouts pending review.</p>
             </div>
-          ) : flagged.map((opp) => (
-            <div key={opp.id} className="card p-4 mb-3" style={{ borderLeft: '4px solid var(--fc-gold-500)' }}>
+          ) : flagged.map(opp => (
+            <div key={opp.id} className="card p-4 mb-3" style={{ borderLeft:'4px solid var(--fc-gold-500)' }}>
               <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
                 <div>
                   <h3 className="h6 fw-bold mb-2">{opp.title}</h3>
                   <div className="d-flex gap-2 flex-wrap">
-                    <span className="badge text-bg-danger">
-                      <i className="bi bi-cash me-1" />&#8358;{(opp.fee_amount ?? 0).toLocaleString()} fee flagged
-                    </span>
+                    <span className="badge text-bg-danger"><i className="bi bi-cash me-1" />&#8358;{(opp.fee_amount??0).toLocaleString()} flagged</span>
                     {opp.region && <span className="badge text-bg-light border">{opp.region}</span>}
                   </div>
                 </div>
                 <div className="d-flex gap-2">
-                  <button className="btn btn-success btn-sm" type="button" onClick={() => approveOpp(opp.id)}>
-                    <i className="bi bi-check-lg me-1" />Approve
-                  </button>
-                  <button className="btn btn-danger btn-sm" type="button" onClick={() => rejectOpp(opp.id)}>
-                    <i className="bi bi-x-lg me-1" />Reject
-                  </button>
+                  <button className="btn btn-success btn-sm" type="button" onClick={() => approveOpp(opp.id)}><i className="bi bi-check-lg me-1" />Approve</button>
+                  <button className="btn btn-danger btn-sm"  type="button" onClick={() => rejectOpp(opp.id)}><i className="bi bi-x-lg me-1" />Reject</button>
                 </div>
               </div>
-              {opp.fee_breakdown && (
-                <div className="alert alert-warning py-2 small mb-2">
-                  <strong>Fee breakdown:</strong> {opp.fee_breakdown}
-                </div>
-              )}
-              {opp.description && (
-                <p className="small text-muted mb-0" style={{ maxHeight: 80, overflow: 'hidden' }}>{opp.description}</p>
-              )}
+              {opp.fee_breakdown && <div className="alert alert-warning py-2 small mb-2"><strong>Fee breakdown:</strong> {opp.fee_breakdown}</div>}
+              {opp.description && <p className="small text-muted mb-0" style={{ maxHeight:80, overflow:'hidden' }}>{opp.description}</p>}
             </div>
           ))}
         </div>
@@ -1420,13 +2491,14 @@ function AdminDashboard({ supabase, user }) {
   )
 }
 
-// ΓöÇΓöÇΓöÇ Account details sidebar ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ——— Account details sidebar ——————————————————————————————————————————————————
 
 function AccountDetails({ supabase, user, profile, onProfileSaved }) {
-  const [name,   setName]   = useState(profile?.full_name ?? '')
-  const [saving, setSaving] = useState(false)
-  const [notice, setNotice] = useState('')
-  const [error,  setError]  = useState('')
+  const [name,      setName]      = useState(profile?.full_name ?? '')
+  const [saving,    setSaving]    = useState(false)
+  const [notice,    setNotice]    = useState('')
+  const [error,     setError]     = useState('')
+  const [open,      setOpen]      = useState(false)   // collapsed by default
 
   const save = async (e) => {
     e.preventDefault()
@@ -1438,26 +2510,55 @@ function AccountDetails({ supabase, user, profile, onProfileSaved }) {
   }
 
   return (
-    <section className="card p-4 mb-3">
-      <h2 className="h6 fw-bold mb-3">Account details</h2>
-      {error  && <div className="alert alert-danger  py-2 small" role="alert">{error}</div>}
-      {notice && <div className="alert alert-success py-2 small" role="status">{notice}</div>}
-      <form onSubmit={save} className="d-grid gap-3">
-        <div>
-          <label className="form-label small fw-semibold" htmlFor="acct-name">Display name</label>
-          <input id="acct-name" className="form-control form-control-sm" value={name} onChange={(e) => setName(e.target.value)} />
+    <section className="card mb-3" style={{ overflow:'hidden' }}>
+      {/* ── Collapsible header ── */}
+      <button
+        type="button"
+        className="w-100 text-start p-3 d-flex align-items-center justify-content-between border-0 bg-transparent"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        style={{ cursor:'pointer' }}
+      >
+        <div className="d-flex align-items-center gap-2">
+          <span className="d-inline-flex align-items-center justify-content-center rounded-circle"
+            style={{ width:32, height:32, background:'var(--fc-gradient-primary)', color:'#fff', fontSize:13, flexShrink:0 }}>
+            <i className="bi bi-person-fill" />
+          </span>
+          <div>
+            <div className="fw-bold small" style={{ color:'var(--fc-blue-700)' }}>
+              {profile?.full_name || user.email?.split('@')[0] || 'My account'}
+            </div>
+            <div className="text-muted" style={{ fontSize:10 }}>{profile?.email ?? user.email ?? ''}</div>
+          </div>
         </div>
-        <div>
-          <label className="form-label small fw-semibold">Email</label>
-          <input className="form-control form-control-sm" readOnly value={profile?.email ?? user.email ?? ''} />
+        <i className={`bi ${open ? 'bi-chevron-up' : 'bi-chevron-down'} text-muted`} style={{ fontSize:12 }} />
+      </button>
+
+      {/* ── Collapsible body ── */}
+      {open && (
+        <div className="px-3 pb-3 border-top pt-3">
+          {error  && <div className="alert alert-danger  py-2 small mb-2" role="alert">{error}</div>}
+          {notice && <div className="alert alert-success py-2 small mb-2" role="status">{notice}</div>}
+          <form onSubmit={save} className="d-grid gap-2">
+            <div>
+              <label className="form-label small fw-semibold mb-1" htmlFor="acct-name">Display name</label>
+              <input id="acct-name" className="form-control form-control-sm" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div>
+              <label className="form-label small fw-semibold mb-1">Email</label>
+              <input className="form-control form-control-sm" readOnly value={profile?.email ?? user.email ?? ''} />
+            </div>
+            <button className="btn btn-sm btn-primary" type="submit" disabled={saving}>
+              {saving ? 'Saving…' : 'Save changes'}
+            </button>
+          </form>
         </div>
-        <button className="btn btn-sm btn-primary" type="submit" disabled={saving}>{saving ? 'SavingΓÇª' : 'Save'}</button>
-      </form>
+      )}
     </section>
   )
 }
 
-// ΓöÇΓöÇΓöÇ Main Dashboard shell ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ——— Main Dashboard shell —————————————————————————————————————————————————————
 
 function Dashboard({ supabase, user, onBack }) {
   const [profile,     setProfile]     = useState(null)
@@ -1531,15 +2632,22 @@ function Dashboard({ supabase, user, onBack }) {
 
   const getOther = (conv) => conv.initiator?.id === user.id ? conv.recipient : conv.initiator
 
+  // "now" is kept in state (updated in an effect) so render stays pure — no Date.now() or ref reads during render.
+  const [now, setNow] = useState(0)
+  useEffect(() => {
+    setNow(Date.now())
+    const id = setInterval(() => setNow(Date.now()), 60000)
+    return () => clearInterval(id)
+  }, [])
   function timeAgo(iso) {
     if (!iso) return ''
-    const s = Math.floor((Date.now() - new Date(iso)) / 1000)
+    const s = now ? Math.floor((now - new Date(iso)) / 1000) : 0
     if (s < 60) return 'just now'; if (s < 3600) return `${Math.floor(s/60)}m`
     if (s < 86400) return `${Math.floor(s/3600)}h`
     return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
   }
 
-  if (loading) return <div className="container py-5 text-center text-muted" role="status"><span className="spinner-border me-2" />Loading your dashboardΓÇª</div>
+  if (loading) return <div className="container py-5 text-center text-muted" role="status"><span className="spinner-border me-2" />Loading your dashboard…</div>
   if (error || !profile) return <div className="container py-5"><div className="alert alert-danger">{error || 'Could not load your profile.'}</div></div>
 
   const role      = profile.role
@@ -1548,12 +2656,13 @@ function Dashboard({ supabase, user, onBack }) {
   const unreadCount = notifs.filter((n) => !n.read_at).length
 
   const roleContent = () => {
-    if (role === 'super_admin') return <AdminDashboard   supabase={supabase} user={user} />
-    if (role === 'player')      return <PlayerDashboard  supabase={supabase} user={user} profile={profile} />
-    if (role === 'coach')       return <CoachDashboard   supabase={supabase} user={user} profile={profile} />
-    if (role === 'agent')       return <AgentDashboard   supabase={supabase} user={user} profile={profile} />
-    if (role === 'academy')     return <AcademyDashboard supabase={supabase} user={user} profile={profile} />
-    return <div className="alert alert-warning">Unknown role <strong>{role}</strong>.</div>
+    if (role === 'super_admin')    return <AdminDashboard        supabase={supabase} user={user} />
+    if (role === 'player')         return <PlayerDashboard       supabase={supabase} user={user} profile={profile} />
+    if (role === 'coach')          return <CoachDashboard        supabase={supabase} user={user} profile={profile} />
+    if (role === 'agent')          return <AgentDashboard        supabase={supabase} user={user} profile={profile} />
+    if (role === 'academy')        return <AcademyDashboard      supabase={supabase} user={user} profile={profile} />
+    if (role === 'sports_analyst') return <SportsAnalystDashboard supabase={supabase} user={user} profile={profile} />
+    return <div className="alert alert-warning">Unknown role <strong>{role}</strong>. Please contact support.</div>
   }
 
   return (
@@ -1566,7 +2675,7 @@ function Dashboard({ supabase, user, onBack }) {
             <span className="fc-icon-badge" style={{ width: 40, height: 40, fontSize: '1rem', flexShrink: 0 }}>
               <i className={`bi ${roleIcon}`} aria-hidden="true" />
             </span>
-            {role === 'super_admin' ? 'Admin dashboard' : `${roleLabel} dashboard`}
+            {role === 'super_admin' ? 'Admin Control Panel' : `${roleLabel} dashboard`}
           </h1>
           <div className="d-flex align-items-center gap-2 mt-1">
             <span className="text-muted small">{user.email}</span>
@@ -1601,31 +2710,53 @@ function Dashboard({ supabase, user, onBack }) {
         </li>
       </ul>
 
-      {/* ΓöÇΓöÇ Main role content ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* —— Main role content ——————————————————————————— */}
       {dashTab === 'main' && (
-        <div className="row g-4 align-items-start">
-          <div className="col-12 col-lg-8 col-xl-9">{roleContent()}</div>
-          <div className="col-12 col-lg-4 col-xl-3">
-            <AccountDetails supabase={supabase} user={user} profile={profile} onProfileSaved={(u) => setProfile((p) => ({ ...p, ...u }))} />
-            <div className="card p-4">
-              <h2 className="h6 fw-bold mb-3">Quick links</h2>
-              <ul className="list-unstyled small mb-0 d-grid gap-2">
-                {role !== 'super_admin' && (<>
-                  <li><a href="#players" className="text-decoration-none"><i className="bi bi-person-lines-fill me-2 text-primary" />Player directory</a></li>
-                  <li><button className="btn btn-link p-0 small text-start" type="button" onClick={() => setDashTab('inbox')}><i className="bi bi-chat-dots me-2 text-primary" />Inbox</button></li>
-                </>)}
-                <li>
-                  <button className="btn btn-link p-0 text-danger small" type="button" onClick={() => supabase.auth.signOut()}>
-                    <i className="bi bi-box-arrow-right me-2" />Sign out
+        role === 'super_admin' ? (
+          // Admin gets full-width — no sidebar wasting space
+          <div className="row g-0">
+            <div className="col-12">
+              {/* Admin account strip — compact collapsible at top */}
+              <div className="d-flex flex-wrap align-items-center gap-3 mb-4 p-3 rounded-3"
+                style={{ background:'var(--bs-secondary-bg)', border:'1px solid var(--bs-border-color)' }}>
+                <AccountDetails supabase={supabase} user={user} profile={profile}
+                  onProfileSaved={(u) => setProfile((p) => ({ ...p, ...u }))} />
+                <div className="ms-auto d-flex gap-2 align-items-center flex-wrap">
+                  <span className="badge text-bg-danger px-3 py-2">
+                    <i className="bi bi-shield-check me-1" />Super Admin
+                  </span>
+                  <button className="btn btn-sm btn-outline-danger" type="button" onClick={() => supabase.auth.signOut()}>
+                    <i className="bi bi-box-arrow-right me-1" />Sign out
                   </button>
-                </li>
-              </ul>
+                </div>
+              </div>
+              {roleContent()}
             </div>
           </div>
-        </div>
+        ) : (
+          // All other roles — keep sidebar
+          <div className="row g-4 align-items-start">
+            <div className="col-12 col-lg-8 col-xl-9">{roleContent()}</div>
+            <div className="col-12 col-lg-4 col-xl-3">
+              <AccountDetails supabase={supabase} user={user} profile={profile} onProfileSaved={(u) => setProfile((p) => ({ ...p, ...u }))} />
+              <div className="card p-4">
+                <h2 className="h6 fw-bold mb-3">Quick links</h2>
+                <ul className="list-unstyled small mb-0 d-grid gap-2">
+                  <li><a href="#players" className="text-decoration-none"><i className="bi bi-person-lines-fill me-2 text-primary" />Player directory</a></li>
+                  <li><button className="btn btn-link p-0 small text-start" type="button" onClick={() => setDashTab('inbox')}><i className="bi bi-chat-dots me-2 text-primary" />Inbox</button></li>
+                  <li>
+                    <button className="btn btn-link p-0 text-danger small" type="button" onClick={() => supabase.auth.signOut()}>
+                      <i className="bi bi-box-arrow-right me-2" />Sign out
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )
       )}
 
-      {/* ΓöÇΓöÇ Notifications ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* —— Notifications ——————————————————————————————————— */}
       {dashTab === 'notifications' && (
         <div className="row justify-content-center">
           <div className="col-12 col-md-8 col-lg-6">
@@ -1638,7 +2769,7 @@ function Dashboard({ supabase, user, onBack }) {
               )}
             </div>
             {notifLoad ? (
-              <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />LoadingΓÇª</div>
+              <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
             ) : notifs.length === 0 ? (
               <div className="text-center py-5 text-muted">
                 <i className="bi bi-bell-slash fs-2 d-block mb-2" />
@@ -1663,7 +2794,7 @@ function Dashboard({ supabase, user, onBack }) {
         </div>
       )}
 
-      {/* ΓöÇΓöÇ Inbox ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* —— Inbox ——————————————————————————————————————————— */}
       {dashTab === 'inbox' && (
         <div className="row g-0" style={{ minHeight: 500 }}>
           {/* Conversation list */}
@@ -1734,7 +2865,7 @@ function Dashboard({ supabase, user, onBack }) {
                 <div className="px-3 py-2 border-top">
                   <form onSubmit={sendMessage} className="d-flex gap-2">
                     <input className="form-control form-control-sm" type="text" value={newMsg}
-                      onChange={(e) => setNewMsg(e.target.value)} placeholder="Write a messageΓÇª" maxLength={10000} required style={{ fontSize: 13 }} />
+                      onChange={(e) => setNewMsg(e.target.value)} placeholder="Write a message…" maxLength={10000} required style={{ fontSize: 13 }} />
                     <button className="btn btn-primary btn-sm" type="submit" disabled={sending || !newMsg.trim()}>
                       {sending ? <span className="spinner-border spinner-border-sm" /> : <i className="bi bi-send-fill" />}
                     </button>

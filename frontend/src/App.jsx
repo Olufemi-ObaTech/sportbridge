@@ -3,6 +3,7 @@ import './Auth.css'
 import Dashboard from './Dashboard.jsx'
 import FeedPage from './FeedPage.jsx'
 import InboxPage from './InboxPage.jsx'
+import MembersDirectory from './MembersDirectory.jsx'
 import PaymentPage from './PaymentPage.jsx'
 import PlayerProfile from './PlayerProfile.jsx'
 import PlayerSearch from './PlayerSearch.jsx'
@@ -95,7 +96,7 @@ const worldClocks = [
   ['Qatar',    'Asia/Qatar'      ],
 ]
 
-// ΓöÇΓöÇΓöÇ password strength ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ——— password strength ————————————————————————————————————————————————————————
 
 function passwordStrength(pw) {
   if (!pw) return 0
@@ -111,7 +112,345 @@ function passwordStrength(pw) {
 const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong']
 const strengthClass = ['', 'weak', 'fair', 'good', 'strong']
 
-// ΓöÇΓöÇΓöÇ AuthModal ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── CommunityProfilesSection — visible to ALL users (including guests) ───────
+// Replaces the old "Scout the next generation / Player Directory" section.
+// Shows profiles from ALL roles pulled from Supabase, with role tabs.
+// Players tab also shows the full PlayerSearch component below the cards.
+
+const PROFILE_ROLE_META = {
+  player:         { icon: 'bi-person-arms-up',  label: 'Player',         colour: '#2F7DF0' },
+  coach:          { icon: 'bi-clipboard2-pulse', label: 'Coach',          colour: '#F5B301' },
+  agent:          { icon: 'bi-binoculars',       label: 'Agent / Scout',  colour: '#198754' },
+  academy:        { icon: 'bi-building',         label: 'Club / Academy', colour: '#6f42c1' },
+  sports_analyst: { icon: 'bi-graph-up-arrow',   label: 'Sports Analyst', colour: '#fd7e14' },
+}
+
+function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberClick }) {
+  const [profiles,   setProfiles]   = useState([])
+  const [players,    setPlayers]    = useState([])
+  const [coaches,    setCoaches]    = useState([])
+  const [agents,     setAgents]     = useState([])
+  const [academies,  setAcademies]  = useState([])
+  const [analysts,   setAnalysts]   = useState([])
+  const [activeRole, setActiveRole] = useState('all')
+  const [loading,    setLoading]    = useState(true)
+
+  useEffect(() => {
+    if (!supabase) { setLoading(false); return }
+
+    Promise.all([
+      // All active profiles (for the "All" tab cards)
+      supabase.from('profiles')
+        .select('id, full_name, role, verification_status, created_at, sport')
+        .neq('role', 'super_admin')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(48),
+
+      // Public players with position/country
+      supabase.from('players')
+        .select('id, display_name, position, country, nationality, is_public, views_count, profile_id, current_club')
+        .eq('is_public', true)
+        .order('views_count', { ascending: false })
+        .limit(48),
+
+      // Public coaches
+      supabase.from('coach_profiles')
+        .select('id, full_name, preferred_role, nationality, current_club, is_public, user_id')
+        .eq('is_public', true)
+        .limit(24),
+
+      // Public agents
+      supabase.from('agent_profiles')
+        .select('id, agency_name, nationality, experience_years, is_public, user_id')
+        .eq('is_public', true)
+        .limit(24),
+
+      // Public academies via clubs
+      supabase.from('clubs')
+        .select('id, name, country, verified_badge, owner_id')
+        .eq('status', 'active')
+        .limit(24),
+    ]).then(([
+      { data: prof },
+      { data: play },
+      { data: coa },
+      { data: ag },
+      { data: acad },
+    ]) => {
+      setProfiles(prof ?? [])
+      setPlayers(play ?? [])
+      setCoaches(coa ?? [])
+      setAgents(ag ?? [])
+      setAcademies(acad ?? [])
+
+      // Extract analysts from profiles (role = sports_analyst)
+      setAnalysts((prof ?? []).filter((p) => p.role === 'sports_analyst'))
+      setLoading(false)
+    }).catch(() => {
+      // If any table doesn't exist yet, fail gracefully
+      setLoading(false)
+    })
+  }, [supabase])
+
+  const roleTabs = [
+    { key: 'all',            label: 'All members',  count: profiles.length },
+    { key: 'player',         label: 'Players',      count: players.length },
+    { key: 'coach',          label: 'Coaches',      count: coaches.length },
+    { key: 'agent',          label: 'Agents',       count: agents.length },
+    { key: 'academy',        label: 'Clubs',        count: academies.length },
+    { key: 'sports_analyst', label: 'Analysts',     count: analysts.length },
+  ]
+
+  const profileMap = Object.fromEntries((profiles ?? []).map((p) => [p.id, p]))
+  const playerMap  = Object.fromEntries((players  ?? []).map((p) => [p.profile_id, p]))
+
+  const meta = (role) => PROFILE_ROLE_META[role] ?? { icon: 'bi-person', label: role ?? 'Member', colour: '#6c757d' }
+
+  // Build cards for each tab
+  const getCards = () => {
+    switch (activeRole) {
+      case 'player':
+        return players.slice(0, 12).map((p) => ({
+          id:       p.id,
+          name:     p.display_name,
+          sub1:     p.position,
+          sub2:     p.country || p.nationality,
+          sub3:     p.current_club || null,
+          role:     'player',
+          verified: profileMap[p.profile_id]?.verification_status === 'verified',
+          onClick:  onPlayerClick ? () => onPlayerClick(p.profile_id) : null,
+          cta:      'View profile →',
+        }))
+
+      case 'coach':
+        return coaches.slice(0, 12).map((c) => ({
+          id:       c.id,
+          name:     c.full_name,
+          sub1:     c.preferred_role || 'Coach / Manager',
+          sub2:     c.nationality,
+          sub3:     c.current_club || null,
+          role:     'coach',
+          verified: profileMap[c.user_id]?.verification_status === 'verified',
+          onClick:  onMemberClick ? () => onMemberClick('coach', c) : null,
+          cta:      'View profile →',
+        }))
+
+      case 'agent':
+        return agents.slice(0, 12).map((a) => ({
+          id:       a.id,
+          name:     a.agency_name || 'Agent',
+          sub1:     `${a.experience_years ?? '?'} yrs experience`,
+          sub2:     a.nationality,
+          sub3:     null,
+          role:     'agent',
+          verified: profileMap[a.user_id]?.verification_status === 'verified',
+          onClick:  onMemberClick ? () => onMemberClick('agent', a) : null,
+          cta:      'View profile →',
+        }))
+
+      case 'academy':
+        return academies.slice(0, 12).map((ac) => ({
+          id:       ac.id,
+          name:     ac.name,
+          sub1:     ac.country,
+          sub2:     null,
+          sub3:     null,
+          role:     'academy',
+          verified: ac.verified_badge,
+          onClick:  onMemberClick ? () => onMemberClick('academy', ac) : null,
+          cta:      'View profile →',
+        }))
+
+      case 'sports_analyst':
+        return analysts.slice(0, 12).map((a) => ({
+          id:       a.id,
+          name:     a.full_name || 'Analyst',
+          sub1:     'Sports Analyst',
+          sub2:     null,
+          sub3:     null,
+          role:     'sports_analyst',
+          verified: a.verification_status === 'verified',
+          onClick:  onMemberClick ? () => onMemberClick('sports_analyst', a) : null,
+          cta:      'View profile →',
+        }))
+
+      default: // 'all'
+        return profiles.slice(0, 12).map((p) => {
+          const pl = playerMap[p.id]
+          const isPlayer = p.role === 'player'
+          return {
+            id:       p.id,
+            name:     p.full_name || 'Member',
+            sub1:     pl?.position ?? (p.role === 'coach' ? 'Coach / Manager' : null),
+            sub2:     pl?.country  ?? null,
+            sub3:     pl?.current_club ?? null,
+            role:     p.role,
+            verified: p.verification_status === 'verified',
+            // Players: open full player profile. Others: navigate to Members Directory
+            // (we don't pass the item for profiles rows since they lack user_id field)
+            onClick:  isPlayer && onPlayerClick
+                        ? () => onPlayerClick(p.id)
+                        : (onMemberClick ? () => onMemberClick(null, null) : null),
+            cta:      isPlayer ? 'View profile →' : 'View in directory →',
+          }
+        })
+    }
+  }
+
+  const cards = getCards()
+
+  if (!supabase) return null
+
+  return (
+    <>
+      {/* ── Section header ── */}
+      <div className="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
+        <div>
+          <span className="text-uppercase small fw-semibold text-muted">Who's on SportBridge</span>
+          <h2 id="directory-heading" className="h3 fw-bold mb-0" style={{ color: 'var(--fc-blue-700)' }}>
+            Meet the community
+          </h2>
+          <p className="text-muted mb-0">
+            Verified players, coaches, agents, clubs and analysts from around the world.
+          </p>
+        </div>
+        <div className="d-flex gap-2 flex-wrap">
+          <button className="btn btn-outline-primary btn-sm" type="button" onClick={onMemberClick}>
+            <i className="bi bi-people me-1" />Browse directory
+          </button>
+          <button className="btn btn-primary btn-sm" type="button" onClick={() => onSignup('player')}>
+            <i className="bi bi-person-plus me-1" />Join free
+          </button>
+        </div>
+      </div>
+
+      {/* ── Role filter tabs ── */}
+      <ul className="nav nav-pills mb-4 flex-wrap gap-1" role="tablist" aria-label="Filter community by role">
+        {roleTabs.map(({ key, label, count }) => (
+          <li className="nav-item" key={key}>
+            <button
+              className={`nav-link py-1 px-3 d-flex align-items-center gap-1${activeRole === key ? ' active' : ''}`}
+              type="button" role="tab"
+              aria-selected={activeRole === key}
+              onClick={() => setActiveRole(key)}
+              style={{ fontSize: 13 }}
+            >
+              {label}
+              {count > 0 && (
+                <span className={`badge rounded-pill ms-1 ${activeRole === key ? 'bg-white text-primary' : 'text-bg-secondary'}`}
+                  style={{ fontSize: 10 }}>
+                  {count}
+                </span>
+              )}
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {/* ── Profile cards ── */}
+      {loading ? (
+        <div className="py-5 text-center text-muted">
+          <span className="spinner-border spinner-border-sm me-2" />Loading community profiles…
+        </div>
+      ) : cards.length === 0 ? (
+        <div className="text-center py-5 text-muted">
+          <i className="bi bi-people fs-1 d-block mb-3" style={{ opacity: 0.25 }} />
+          <p className="fw-semibold mb-1">No {activeRole === 'all' ? '' : activeRole} profiles yet</p>
+          <p className="small mb-3">Be the first to join SportBridge!</p>
+          <button className="btn btn-primary btn-sm" type="button"
+            onClick={() => onSignup(activeRole === 'all' ? 'player' : activeRole)}>
+            <i className="bi bi-person-plus me-2" />Join free
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3 mb-4">
+            {cards.map((card) => {
+              const m = meta(card.role)
+              return (
+                <div className="col" key={card.id}>
+                  <div
+                    className={`card h-100 text-center p-3${card.onClick ? ' fc-profile-card-hover' : ''}`}
+                    style={{
+                      border: 'none',
+                      boxShadow: '0 1px 6px rgba(0,0,0,.08)',
+                      cursor: card.onClick ? 'pointer' : 'default',
+                      transition: 'transform .15s, box-shadow .15s',
+                    }}
+                    onClick={card.onClick || undefined}
+                    role={card.onClick ? 'button' : undefined}
+                    tabIndex={card.onClick ? 0 : undefined}
+                    onKeyDown={card.onClick ? (e) => e.key === 'Enter' && card.onClick() : undefined}
+                  >
+                    {/* Role avatar */}
+                    <div className="d-flex align-items-center justify-content-center rounded-circle mx-auto mb-2"
+                      style={{ width: 52, height: 52, background: m.colour, color: '#fff', fontSize: '1.25rem', flexShrink: 0 }}>
+                      <i className={`bi ${m.icon}`} aria-hidden="true" />
+                    </div>
+
+                    {/* Name + verified badge */}
+                    <div className="fw-semibold lh-sm text-truncate" style={{ fontSize: 13, color: 'var(--fc-blue-700)' }}>
+                      {card.name}
+                      {card.verified && (
+                        <i className="bi bi-patch-check-fill text-primary ms-1" style={{ fontSize: 11 }} aria-label="Verified" />
+                      )}
+                    </div>
+
+                    {/* Sub info */}
+                    {card.sub1 && <div className="small text-muted text-truncate mt-1">{card.sub1}</div>}
+                    {card.sub2 && <div className="small text-muted text-truncate">{card.sub2}</div>}
+                    {card.sub3 && <div className="small text-muted text-truncate fst-italic">{card.sub3}</div>}
+
+                    {/* Role badge */}
+                    <span className="badge mt-2" style={{ background: m.colour, color: '#fff', fontSize: 10 }}>
+                      {m.label}
+                    </span>
+
+                    {/* Action hint */}
+                    {card.onClick && (
+                      <div className="small text-primary mt-1" style={{ fontSize: 11 }}>
+                        {card.cta || 'View profile →'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* View all in Members Directory */}
+          <div className="text-center mt-2 mb-4">
+            <button
+              className="btn btn-outline-primary btn-sm"
+              type="button"
+              onClick={onMemberClick}
+            >
+              <i className="bi bi-people me-2" />View all members in directory
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* ── Full player search (always visible below cards) ── */}
+      <div className="border-top pt-4">
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div>
+            <span className="text-uppercase small fw-semibold text-muted">Advanced search</span>
+            <h3 className="h5 fw-bold mb-0" style={{ color: 'var(--fc-blue-700)' }}>Search all players</h3>
+            <p className="text-muted small mb-0">Filter by position, age group, region and foot.</p>
+          </div>
+        </div>
+        <PlayerSearch
+          supabase={supabase}
+          onPlayerClick={(id) => { if (onPlayerClick) { onPlayerClick(id); window.scrollTo(0, 0) } }}
+        />
+      </div>
+    </>
+  )
+}
+
+// ─── AuthModal ───────────────────────────────────────────────────———————————————————————————————————————————————————————————————
 
 function AuthModal({ onClose, initialMode, initialRole }) {
   const [mode, setMode]               = useState(initialMode)   // 'signin' | 'signup' | 'forgot' | 'confirmed' | 'reset-sent'
@@ -154,7 +493,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
     setMode(next)
   }
 
-  // ΓöÇΓöÇ sign in ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // —— sign in ——————————————————————————————————————————————————————————————————
   const handleSignIn = async (e) => {
     e.preventDefault()
     if (!supabase) {
@@ -178,11 +517,11 @@ function AuthModal({ onClose, initialMode, initialRole }) {
       setBusy(false)
     }
 
-    // Success ΓÇö onAuthStateChange fires SIGNED_IN and closes modal automatically
+    // Success — onAuthStateChange fires SIGNED_IN and closes modal automatically
     // The parent App's onAuthStateChange handler calls setAuthOpen(false)
   }
 
-  // ΓöÇΓöÇ sign up ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // —— sign up ——————————————————————————————————————————————————————————————————
   const handleSignUp = async (e) => {
     e.preventDefault()
     if (!supabase) {
@@ -235,14 +574,14 @@ function AuthModal({ onClose, initialMode, initialRole }) {
     }
 
     if (!data.session) {
-      // Email confirmation required ΓÇö show the check inbox screen
+      // Email confirmation required — show the check inbox screen
       setConfirmedEmail(email)
       setMode('confirmed')
     }
-    // session exists ΓåÆ auto-confirmed, onAuthStateChange fires SIGNED_IN ΓåÆ dashboard
+    // session exists → auto-confirmed, onAuthStateChange fires SIGNED_IN → dashboard
   }
 
-  // ΓöÇΓöÇ forgot password ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // —— forgot password ———————————————————————————————————————————————————————————
   const handleForgot = async (e) => {
     e.preventDefault()
     if (!supabase) {
@@ -270,11 +609,11 @@ function AuthModal({ onClose, initialMode, initialRole }) {
     }
   }
 
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ───  ────────────────────────────────────────────────────────────—————————————————————————————————————————————————————————————————————————
 
   const panelContent = () => {
 
-    // ΓöÇΓöÇ email confirmed screen ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // —— email confirmed screen ———————————————————————————————————————————————
     if (mode === 'confirmed') {
       return (
         <div className="auth-confirm">
@@ -332,7 +671,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
       )
     }
 
-    // ΓöÇΓöÇ password reset sent ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // —— password reset sent ——————————————————————————————————————————————————
     if (mode === 'reset-sent') {
       return (
         <div className="auth-confirm">
@@ -354,7 +693,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
       )
     }
 
-    // ΓöÇΓöÇ forgot password form ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // —— forgot password form —————————————————————————————————————————————————
     if (mode === 'forgot') {
       return (
         <>
@@ -390,7 +729,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
       )
     }
 
-    // ΓöÇΓöÇ sign in form ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // —— sign in form —————————————————————————————————————————————————————————
     if (mode === 'signin') {
       return (
         <>
@@ -465,7 +804,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
       )
     }
 
-    // ΓöÇΓöÇ sign up form ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // —— sign up form —————————————————————————————————————————————————————————
     return (
       <>
         <p className="eyebrow">Join the network</p>
@@ -507,7 +846,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
             </div>
           </div>
 
-          {/* Sport picker ΓÇö basketball hidden until flag is enabled */}
+          {/* Sport picker — basketball hidden until flag is enabled */}
           <div>
             <p className="auth-label" style={{ marginBottom: 8 }}>
               <span>Primary sport</span>
@@ -656,11 +995,12 @@ function AuthModal({ onClose, initialMode, initialRole }) {
   )
 }
 
-// ΓöÇΓöÇΓöÇ App ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── App ─────────────────────────────────────────────────────────—————————————————————————————————————————————————————————————————————
 
 function App() {
   const [view,            setView]            = useState('home')
   const [selectedPlayerId,setSelectedPlayerId]= useState(null)
+  const [selectedMember,  setSelectedMember]  = useState(null) // { type, item } for Members Directory
   const [user,            setUser]            = useState(null)
   const [accountStatus,   setAccountStatus]   = useState(null)
   const [statusCheckKey,  setStatusCheckKey]  = useState(0)
@@ -745,7 +1085,7 @@ function App() {
     return () => window.clearInterval(t)
   }, [])
 
-  // Auth state ΓÇö restore session on mount and subscribe to future changes.
+  // Auth state — restore session on mount and subscribe to future changes.
   // eslint-disable-next-line react/set-state-in-effect -- getSession is async external I/O; setState here is correct.
   useEffect(() => {
     if (!supabase) return
@@ -795,7 +1135,7 @@ function App() {
         Skip to main content
       </a>
 
-      {/* ΓöÇΓöÇ Navbar ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* —— Navbar ——————————————————————————————————————————————————————————— */}
       <nav className="navbar navbar-expand-lg sticky-top shadow-sm" data-bs-theme="dark" id="home">
         <div className="container">
           <a className="navbar-brand" href="#home" aria-label="SportBridge home">
@@ -859,6 +1199,10 @@ function App() {
                   <li><button className="dropdown-item d-flex align-items-center gap-2" type="button"
                     onClick={() => { setView('feed'); setMenuOpen(false); closeDropdownMenus(); window.scrollTo(0,0) }}>
                     <i className="bi bi-newspaper text-primary" />Community Feed</button></li>
+                  <li><hr className="dropdown-divider" /></li>
+                  <li><button className="dropdown-item d-flex align-items-center gap-2" type="button"
+                    onClick={() => { setView('members'); setMenuOpen(false); closeDropdownMenus(); window.scrollTo(0,0) }}>
+                    <i className="bi bi-people text-primary" />Members Directory</button></li>
                 </ul>
               </li>
             </ul>
@@ -1005,7 +1349,7 @@ function App() {
         </div>
       </nav>
 
-      {/* ΓöÇΓöÇ Main content ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* —— Main content ————————————————————————————————————————————————————— */}
       <main id="main-content" className="flex-grow-1">
         {user && accountStatus !== 'active' ? (
           <div className="container py-5">
@@ -1042,6 +1386,14 @@ function App() {
           <FeedPage supabase={supabase} user={user} onSignup={openSignup} />
         ) : view === 'inbox' ? (
           <InboxPage supabase={supabase} user={user} onSignup={openSignup} />
+        ) : view === 'members' ? (
+          <MembersDirectory
+            supabase={supabase}
+            user={user}
+            onSignup={openSignup}
+            initialSelection={selectedMember}
+            onBack={() => { setSelectedMember(null); setView('home'); window.scrollTo(0,0) }}
+          />
         ) : view === 'pricing' ? (
           <PaymentPage user={user} onSignup={openSignup} onBack={() => setView('home')} />
         ) : (
@@ -1049,7 +1401,7 @@ function App() {
             {/* spacer */}
             <div className="container py-4" aria-hidden="true" />
 
-            {/* ΓöÇΓöÇ Hero ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+            {/* —— Hero ———————————————————————————————————————————————————— */}
             <section className="fc-hero px-3 px-md-5 py-5 mb-0" aria-labelledby="home-heading">
               <img src={worldCupBallImage} alt="" className="fc-hero-ball d-none d-md-block" />
               <div className="container py-4">
@@ -1072,8 +1424,8 @@ function App() {
                     <p className="lead fc-animate-in fc-delay-2" style={{ color: 'rgba(247,249,248,.84)', maxWidth: '56ch' }}>
                       SportBridge connects <strong style={{ color: '#fff' }}>Verified Players</strong> with{' '}
                       <strong style={{ color: '#fff' }}>Verified Clubs, Academies, Agents &amp; Managers</strong>{' '}
-                      <span> across The World.</span>{' '}
-                      <span>Full CV + Full-Match Video + highlights + Stats + Secure Unlock</span>{' '}
+                      <span>across The World.</span>{' '}
+                      <span>Full CV + Full-Match Video + Highlights + Stats + Secure Unlock —</span>{' '}
                       <em>not just highlights.</em>
                     </p>
 
@@ -1159,7 +1511,7 @@ function App() {
               </div>
             </section>
 
-            {/* ΓöÇΓöÇ Problem / Solution bar (answers "why not WhatsApp/Instagram") ΓöÇΓöÇ */}
+            {/* —— Problem / Solution bar (answers "why not WhatsApp/Instagram") —— */}
             <div className="mb-5" style={{ background: 'var(--fc-navy-900)', borderBottom: '1px solid rgba(245,179,1,.15)' }}>
               <div className="container">
                 <div className="row g-0">
@@ -1203,13 +1555,13 @@ function App() {
             </div>
 
             <div className="container">
-              {/* ΓöÇΓöÇ Role cards ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+              {/* —— Role cards —————————————————————————————————————————— */}
               <div className="text-center mb-5" id="roles">
                 <h2 className="h3 fw-bold" style={{ color: 'var(--fc-blue-700)' }}>One platform, every side of the game</h2>
                 <p className="text-muted">Purpose-built tools for players, clubs, agents, scouts, coaches and sporting directors alike.</p>
               </div>
 
-              <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 pb-5">
+              <div className="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4 pb-5">
                 {roleCards.map((role) => (
                   <div className="col" key={role.accountRole}>
                     <div className="card h-100 p-4" style={{ border: 'none' }}>
@@ -1230,7 +1582,7 @@ function App() {
                 ))}
               </div>
 
-              {/* ΓöÇΓöÇ Visual showcase ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+              {/* —— Visual showcase ————————————————————————————————————— */}
               <section className="mb-5" aria-labelledby="sportbridge-visuals-title">
                 <div className="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
                   <div>
@@ -1255,7 +1607,10 @@ function App() {
                 )}
               </section>
 
-              {/* ΓöÇΓöÇ CTA band ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+              {/* ── Meet the community — public profiles ──────────────────── */}
+              {/* Moved below as the main directory section */}
+
+              {/* —— CTA band ———————————————————————————————————————————— */}
               <div className="rounded-4 p-5 mb-5 text-center fc-band-photo">
                 <h2 className="h3 fw-bold text-white mb-2">Ready to make your next move?</h2>
                 <p className="mb-4" style={{ color: 'rgba(255,255,255,.85)' }}>
@@ -1267,27 +1622,20 @@ function App() {
               </div>
             </div>
 
-            {/* ΓöÇΓöÇ Directory ΓÇö powered by PlayerSearch ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+            {/* ── Who's on SportBridge — replaces old Player Directory header ── */}
             <section className="container py-5" id="players" aria-labelledby="directory-heading">
-              <div className="mb-4">
-                <span className="text-uppercase small fw-semibold text-muted">Scout the next generation</span>
-                <h2 className="h3 fw-bold mb-1" id="directory-heading" style={{ color: 'var(--fc-blue-700)' }}>
-                  Player Directory
-                </h2>
-                <p className="text-muted mb-0">
-                  Search verified free players by position, age group, region and foot — find your next signing in seconds.
-                </p>
-              </div>
-              <PlayerSearch
+              <CommunityProfilesSection
                 supabase={supabase}
+                onSignup={openSignup}
                 onPlayerClick={(id) => { setSelectedPlayerId(id); setView('player'); window.scrollTo(0, 0) }}
+                onMemberClick={(type, item) => { setSelectedMember(type && item ? { type, item } : null); setView('members'); window.scrollTo(0, 0) }}
               />
             </section>
           </>
         )}
       </main>
 
-      {/* ΓöÇΓöÇ Footer ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* —— Footer ——————————————————————————————————————————————————————————— */}
       <footer
         className="mt-auto py-5"
         style={{ background: 'linear-gradient(160deg, var(--fc-navy-800) 0%, var(--fc-blue-900) 100%)', color: 'rgba(247,249,248,.82)' }}
@@ -1311,6 +1659,7 @@ function App() {
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('jobs'); window.scrollTo(0,0) }}>Jobs</button></li>
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('tryouts'); window.scrollTo(0,0) }}>Tryouts</button></li>
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('feed'); window.scrollTo(0,0) }}>Feed</button></li>
+                <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('members'); window.scrollTo(0,0) }}>Members Directory</button></li>
                 <li><button className="btn btn-link link-light link-underline-opacity-0 p-0 small" type="button" onClick={() => { setView('pricing'); window.scrollTo(0,0) }}>Pricing</button></li>
               </ul>
             </div>
@@ -1357,7 +1706,7 @@ function App() {
         </div>
       </footer>
 
-      {/* ΓöÇΓöÇ Auth modal ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
+      {/* —— Auth modal ——————————————————————————————————————————————————————— */}
       {authOpen && (
         <AuthModal
           key={`${authInitMode}-${authInitRole}`}

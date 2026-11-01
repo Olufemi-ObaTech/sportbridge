@@ -1,1 +1,17 @@
-{}
+{
+  "img/basketball.jpg": {
+    "file": "assets/basketball-DFjB1oHv.jpg",
+    "src": "img/basketball.jpg"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-C9AeCxXV.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-Debttq3I.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}

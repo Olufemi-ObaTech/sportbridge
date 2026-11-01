@@ -56,7 +56,7 @@ const BLANK = {
 export default function JobPostForm({ supabase, user, profile, onVerify, onSaved }) {
   const [form,      setForm]      = useState(() => ({
     ...BLANK,
-    jobType: profile?.role === 'coach' ? 'seeking_job' : 'player_needed',
+    jobType: ['coach', 'sports_analyst'].includes(profile?.role) ? 'seeking_job' : 'player_needed',
   }))
   const [images,    setImages]    = useState([])
   const [clubCv,    setClubCv]    = useState(null)
@@ -197,7 +197,7 @@ export default function JobPostForm({ supabase, user, profile, onVerify, onSaved
       if (dbErr) { setError(dbErr.message); setSaving(false); return }
 
       setNotice('Job posted successfully! It will appear in the job board shortly.')
-      setForm({ ...BLANK, jobType: profile.role === 'coach' ? 'seeking_job' : 'player_needed' })
+      setForm({ ...BLANK, jobType: ['coach', 'sports_analyst'].includes(profile.role) ? 'seeking_job' : 'player_needed' })
       setImages([])
       setClubCv(null)
       onSaved?.()

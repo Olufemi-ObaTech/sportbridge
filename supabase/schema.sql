@@ -4,7 +4,7 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text unique,
   full_name text,
-  role text default 'player' check (role in ('player','coach','agent','academy','super_admin')),
+  role text default 'player' check (role in ('player','coach','sports_analyst','agent','academy','super_admin')),
   created_at timestamptz default now()
 );
 
@@ -63,7 +63,7 @@ begin
     new.email,
     coalesce(new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name'),
     case
-      when new.raw_user_meta_data ->> 'role' in ('player', 'coach', 'agent', 'academy')
+      when new.raw_user_meta_data ->> 'role' in ('player', 'coach', 'sports_analyst', 'agent', 'academy')
         then new.raw_user_meta_data ->> 'role'
       else 'player'
     end
@@ -834,7 +834,7 @@ as $$
       and p_duration_minutes > 0
       and (
         (role = 'player' and p_duration_minutes <= 30)
-        or role in ('coach', 'academy')
+        or role in ('coach', 'sports_analyst', 'academy')
       )
   );
 $$;
@@ -952,7 +952,7 @@ declare
   new_club_id uuid;
 begin
   selected_role := case
-    when new.raw_user_meta_data ->> 'role' in ('player','coach','agent','academy')
+    when new.raw_user_meta_data ->> 'role' in ('player','coach','sports_analyst','agent','academy')
       then new.raw_user_meta_data ->> 'role'
     else 'player'
   end;
@@ -972,7 +972,7 @@ begin
       insert into public.players (profile_id, display_name, sport, is_public, status)
       values (new.id, display_name, selected_sport, false, 'active');
     end if;
-  elsif selected_role = 'coach' then
+  elsif selected_role in ('coach','sports_analyst') then
     insert into public.coach_profiles (user_id, sport, full_name)
     values (new.id, selected_sport, display_name)
     on conflict (user_id) do nothing;
@@ -1128,7 +1128,7 @@ on conflict (user_id) do nothing;
 insert into public.coach_profiles (user_id, sport, full_name)
 select profile.id, coalesce(profile.sport, 'football'), profile.full_name
 from public.profiles as profile
-where profile.role = 'coach'
+where profile.role in ('coach','sports_analyst')
 on conflict (user_id) do nothing;
 
 alter table public.academy_profiles enable row level security;
@@ -1293,7 +1293,7 @@ create policy "jobs owner insert" on public.jobs for insert to authenticated
         and (
           (role = 'academy' and job_type in ('player_needed','staff_needed'))
           or (role = 'agent' and job_type = 'player_needed')
-          or (role = 'coach' and job_type = 'seeking_job')
+          or (role in ('coach','sports_analyst') and job_type = 'seeking_job')
         )
     )
     and (club_id is null or exists (select 1 from public.clubs where clubs.id = club_id and owner_id = (select auth.uid())))
@@ -1310,7 +1310,7 @@ create policy "jobs owner update" on public.jobs for update to authenticated
           and (
             (role = 'academy' and job_type in ('player_needed','staff_needed'))
             or (role = 'agent' and job_type = 'player_needed')
-            or (role = 'coach' and job_type = 'seeking_job')
+            or (role in ('coach','sports_analyst') and job_type = 'seeking_job')
           )
       )
     )
@@ -1559,7 +1559,7 @@ create policy "recommendations owner insert" on public.agent_recommendations for
     end
     and exists (
       select 1 from public.profiles
-      where id = (select auth.uid()) and role = 'coach'
+      where id = (select auth.uid()) and role in ('coach','sports_analyst')
     )
   );
 drop policy if exists "recommendations participants update" on public.agent_recommendations;
@@ -1668,7 +1668,7 @@ grant select on public.media_assets to authenticated;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
-  ('public-media', 'public-media', true, 52428800, array['image/jpeg','image/png','image/webp','image/avif','video/mp4','video/webm']),
+  ('public-media', 'public-media', true, 104857600, array['image/jpeg','image/png','image/webp','image/avif','video/mp4','video/quicktime','video/webm']),
   ('private-media', 'private-media', false, 52428800, array['image/jpeg','image/png','image/webp','image/avif','video/mp4','video/webm']),
   ('private-documents', 'private-documents', false, 20971520, array['application/pdf','image/jpeg','image/png','image/webp'])
 on conflict (id) do update
@@ -2259,7 +2259,7 @@ begin
         then 'FIFA Agent Verified'
         else 'Verified Agent / Scout'
       end;
-    elsif request_row.role = 'coach' then
+    elsif request_row.role in ('coach','sports_analyst') then
       select preferred_role into coach_role
       from public.coach_profiles where user_id = request_row.user_id;
       badge_label := case
@@ -2268,6 +2268,7 @@ begin
         when lower(coalesce(coach_role, '')) like '%team manager%' then 'Verified Team Manager'
         when lower(coalesce(coach_role, '')) like '%sporting director%' then 'Verified Sporting Director'
         when lower(coalesce(coach_role, '')) like '%scout%' then 'Verified Scout'
+        when request_row.role = 'sports_analyst' then 'Verified Sports Analyst'
         else 'Verified Coach'
       end;
     else

@@ -16,6 +16,7 @@ function getVerifiedLabel({ role, specialty, fifaAgent = false, fifaTms = false 
     const badge = COACH_BADGES.find(({ match }) => match.test(specialty ?? ''))
     return badge?.label ?? 'Verified Coach'
   }
+  if (role === 'sports_analyst') return 'Verified Sports Analyst'
   return 'Verified'
 }
 

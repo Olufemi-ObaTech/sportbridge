@@ -11,8 +11,7 @@
  */
 
 import { useState } from 'react'
-import { validateCV, validateImage, validateVideo, guardedUpload } from './lib/uploadGuards'
-import { blockContactInfo } from './lib/uploadGuards'
+import { validateCV, validateImage, validateVideo, guardedUpload, blockContactInfo } from './lib/uploadGuards'
 
 const REASONS = [
   { value: 'fraud_or_payment_request', label: '💰 Agent demanding payment / fraud' },

@@ -6,7 +6,7 @@ begin;
 -- installations that predate the current profile schema.
 alter table public.profiles
   add column if not exists role text not null default 'player'
-    check (role in ('player','coach','agent','academy','super_admin')),
+    check (role in ('player','coach','sports_analyst','agent','academy','super_admin')),
   add column if not exists status text not null default 'active'
     check (status in ('pending','active','suspended','denied')),
   add column if not exists country text,
@@ -374,7 +374,7 @@ begin
         then 'FIFA Agent Verified'
         else 'Verified Agent / Scout'
       end;
-    elsif request_row.role = 'coach' then
+    elsif request_row.role in ('coach','sports_analyst') then
       select preferred_role into coach_role
       from public.coach_profiles where user_id = request_row.user_id;
       badge_label := case
@@ -383,6 +383,7 @@ begin
         when lower(coalesce(coach_role, '')) like '%team manager%' then 'Verified Team Manager'
         when lower(coalesce(coach_role, '')) like '%sporting director%' then 'Verified Sporting Director'
         when lower(coalesce(coach_role, '')) like '%scout%' then 'Verified Scout'
+        when request_row.role = 'sports_analyst' then 'Verified Sports Analyst'
         else 'Verified Coach'
       end;
     else
