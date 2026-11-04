@@ -18,6 +18,7 @@
 
 import { useState } from 'react'
 import { validateCV, validateImage, guardedUpload } from './lib/uploadGuards'
+import DuplicateCheckWidget from './DuplicateCheckWidget.jsx'
 
 // ─── shared helpers ───────────────────────────────────────────────────────────
 function Field({ label, required, hint, col = 'col-12', children }) {
@@ -204,6 +205,7 @@ function PlayerVerifyForm({ supabase, user, onDone }) {
             capture={idType === 'nin' ? 'user' : undefined}
             onChange={pickIdDoc} />
           <FileRow state={idDoc} />
+          <DuplicateCheckWidget supabase={supabase} file={idDoc?.file ?? null} />
         </Field>
 
         <Field label="Last club release letter" required

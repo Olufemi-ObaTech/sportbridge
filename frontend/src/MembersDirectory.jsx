@@ -156,7 +156,7 @@ function InfoRow({ icon, label, value }) {
 }
 
 // ─── Coach / Analyst full profile ──────────────────────────────────────────────
-function CoachProfile({ member, profile, user, onBack, onSignup, role }) {
+function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role }) {
   const m = ROLE_META[role] ?? ROLE_META.coach
   const verified = profile?.verification_status === 'verified'
   const badges = Array.isArray(member.badges) ? member.badges : []
@@ -296,7 +296,7 @@ function CoachProfile({ member, profile, user, onBack, onSignup, role }) {
 }
 
 // ─── Agent full profile ────────────────────────────────────────────────────────
-function AgentProfile({ member, profile, user, onBack, onSignup }) {
+function AgentProfile({ supabase, member, profile, user, onBack, onSignup }) {
   const verified = profile?.verification_status === 'verified'
   const regions  = Array.isArray(member.regions) ? member.regions : []
 
@@ -399,7 +399,7 @@ function AgentProfile({ member, profile, user, onBack, onSignup }) {
 }
 
 // ─── Club / Academy full profile ───────────────────────────────────────────────
-function ClubProfile({ member, academy, user, profile, onBack, onSignup }) {
+function ClubProfile({ supabase, member, academy, user, profile, onBack, onSignup }) {
   const verified = member.verified_badge || profile?.verification_status === 'verified'
 
   return (
@@ -658,6 +658,7 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
     if (selected.type === 'coach' || selected.type === 'sports_analyst') {
       return (
         <CoachProfile
+          supabase={supabase}
           member={selected.item}
           profile={memberProfile}
           user={user}
@@ -670,6 +671,7 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
     if (selected.type === 'agent') {
       return (
         <AgentProfile
+          supabase={supabase}
           member={selected.item}
           profile={memberProfile}
           user={user}
@@ -681,6 +683,7 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
     if (selected.type === 'academy') {
       return (
         <ClubProfile
+          supabase={supabase}
           member={selected.item}
           academy={academies[selected.item.owner_id]}
           profile={memberProfile}

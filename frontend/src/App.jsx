@@ -9,16 +9,17 @@ import PlayerProfile from './PlayerProfile.jsx'
 import PlayerSearch from './PlayerSearch.jsx'
 import JobsPage from './JobsPage.jsx'
 import TryoutsPage from './TryoutsPage.jsx'
+import RegisterForm from './RegisterForm.jsx'
 import ballImage from '../../public/img/fifa-world-cup-ball.avif'
 import footballImage from '../../public/img/football-stadium.jpg'
 import footballStandImage from '../../public/img/football-stadium1.jpg'
 import logoMark from '../../public/img/logo-mark.svg'
 import worldCupBallImage from '../../public/img/world-cup-ball.avif'
 import { supabase } from './lib/supabase'
-import { BASKETBALL_ENABLED, containsContactInfo } from './lib/features'
+import { BASKETBALL_ENABLED } from './lib/features'
 import { getPreferredLanguage, observeLocalization, SUPPORTED_LANGUAGES } from './lib/i18n.js'
 
-const ROLES = [
+const _ROLES = [
   { value: 'player',  label: 'Player',          icon: 'bi-person-arms-up'   },
   { value: 'academy', label: 'Academy / Club',   icon: 'bi-building'         },
   { value: 'agent',   label: 'Agent / Scout',    icon: 'bi-binoculars'       },
@@ -26,7 +27,7 @@ const ROLES = [
   { value: 'sports_analyst', label: 'Sports Analyst', icon: 'bi-graph-up-arrow' },
 ]
 
-const SPORTS = BASKETBALL_ENABLED
+const _SPORTS = BASKETBALL_ENABLED
   ? [
       { value: 'football',   label: 'Football',   icon: 'bi-dribbble' },
       { value: 'basketball', label: 'Basketball', icon: 'bi-circle'   },
@@ -109,8 +110,8 @@ function passwordStrength(pw) {
   return Math.min(score, 4)
 }
 
-const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong']
-const strengthClass = ['', 'weak', 'fair', 'good', 'strong']
+const _strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong']
+const _strengthClass = ['', 'weak', 'fair', 'good', 'strong']
 
 // ─── CommunityProfilesSection — visible to ALL users (including guests) ───────
 // Replaces the old "Scout the next generation / Player Directory" section.
@@ -454,18 +455,18 @@ function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberC
 
 function AuthModal({ onClose, initialMode, initialRole }) {
   const [mode, setMode]               = useState(initialMode)   // 'signin' | 'signup' | 'forgot' | 'confirmed' | 'reset-sent'
-  const [role, setRole]               = useState(initialRole)
-  const [sport, setSport]             = useState('football')
+  const [_role, _setRole]            = useState(initialRole)
+  const [_sport, _setSport]           = useState('football')
   const [message, setMessage]         = useState('')
   const [msgType, setMsgType]         = useState('error')       // 'error' | 'info'
   const [busy, setBusy]               = useState(false)
   const [showPw, setShowPw]           = useState(false)
   const [pwValue, setPwValue]         = useState('')
-  const [confirmedEmail, setConfirmedEmail] = useState('')
+  const [confirmedEmail, _setConfirmedEmail] = useState('')
   const backdropRef                   = useRef(null)
   const firstInputRef                 = useRef(null)
 
-  const strength = passwordStrength(pwValue)
+  const _strength = passwordStrength(pwValue)
 
   // trap focus on open
   useEffect(() => {
@@ -521,65 +522,7 @@ function AuthModal({ onClose, initialMode, initialRole }) {
     // The parent App's onAuthStateChange handler calls setAuthOpen(false)
   }
 
-  // —— sign up ——————————————————————————————————————————————————————————————————
-  const handleSignUp = async (e) => {
-    e.preventDefault()
-    if (!supabase) {
-      showMsg('Connection error. Please try refreshing the page.', 'info')
-      return
-    }
-    setBusy(true)
-    clearMsg()
-    const fd       = new FormData(e.currentTarget)
-    const fullName = String(fd.get('full_name') ?? '').trim()
-    const email    = String(fd.get('email') ?? '').trim()
-    const pw       = String(fd.get('password') ?? '')
-
-    if (pw.length < 12) {
-      setBusy(false)
-      showMsg('Password must be at least 12 characters.')
-      return
-    }
-
-    if (containsContactInfo(fullName)) {
-      setBusy(false)
-      showMsg('Please don\'t include phone numbers or email addresses in your name.')
-      return
-    }
-
-    let signupResult
-    try {
-      signupResult = await supabase.auth.signUp({
-        email,
-        password: pw,
-        options: {
-          data: {
-            full_name: fullName,
-            role,
-            sport,
-          },
-        },
-      })
-    } catch {
-      setBusy(false)
-      showMsg('Unable to create the account. Check your connection and try again.')
-      return
-    }
-    const { data, error } = signupResult
-    setBusy(false)
-
-    if (error) {
-      showMsg('Unable to create the account with these details. Please check them and try again.')
-      return
-    }
-
-    if (!data.session) {
-      // Email confirmation required — show the check inbox screen
-      setConfirmedEmail(email)
-      setMode('confirmed')
-    }
-    // session exists → auto-confirmed, onAuthStateChange fires SIGNED_IN → dashboard
-  }
+  // —— sign up is now handled by the RegisterForm component ─────────────────
 
   // —— forgot password ———————————————————————————————————————————————————————————
   const handleForgot = async (e) => {
@@ -804,165 +747,15 @@ function AuthModal({ onClose, initialMode, initialRole }) {
       )
     }
 
-    // —— sign up form —————————————————————————————————————————————————————————
+    // —— sign up form — uses RegisterForm component ────────────────────────────
     return (
-      <>
-        <p className="eyebrow">Join the network</p>
-        <h2 id="auth-heading">Create your account</h2>
-        <form className="auth-form" onSubmit={handleSignUp} noValidate>
-
-          {/* Full name */}
-          <label className="auth-label">
-            <span>Full name</span>
-            <input
-              ref={firstInputRef}
-              className="auth-input"
-              type="text"
-              name="full_name"
-              autoComplete="name"
-              required
-              placeholder="Your full name"
-            />
-          </label>
-
-          {/* Role picker */}
-          <div>
-            <p className="auth-label mb-2" style={{ marginBottom: 8 }}>
-              <span>I am a…</span>
-            </p>
-            <div className="auth-role-grid">
-              {ROLES.map((r) => (
-                <button
-                  key={r.value}
-                  type="button"
-                  className={`auth-role-btn${role === r.value ? ' selected' : ''}`}
-                  onClick={() => setRole(r.value)}
-                  aria-pressed={role === r.value}
-                >
-                  <i className={`bi ${r.icon}`} aria-hidden="true" />
-                  {r.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Sport picker — basketball hidden until flag is enabled */}
-          <div>
-            <p className="auth-label" style={{ marginBottom: 8 }}>
-              <span>Primary sport</span>
-            </p>
-            {BASKETBALL_ENABLED ? (
-              <div className="auth-sport-pills">
-                {SPORTS.map((s) => (
-                  <button
-                    key={s.value}
-                    type="button"
-                    className={`auth-sport-pill${sport === s.value ? ' selected' : ''}`}
-                    onClick={() => setSport(s.value)}
-                    aria-pressed={sport === s.value}
-                  >
-                    <i className={`bi ${s.icon}`} aria-hidden="true" />
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="auth-sport-pills">
-                <button type="button" className="auth-sport-pill selected" disabled>
-                  <i className="bi bi-dribbble" aria-hidden="true" /> Football
-                </button>
-                <button type="button" className="auth-sport-pill" disabled style={{ opacity: .45, cursor: 'not-allowed' }} title="Basketball coming soon">
-                  <i className="bi bi-circle" aria-hidden="true" /> Basketball <span style={{ fontSize: 10 }}>(Coming Soon)</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Email */}
-          <label className="auth-label">
-            <span>Email address</span>
-            <input
-              className="auth-input"
-              type="email"
-              name="email"
-              autoComplete="email"
-              required
-              placeholder="you@example.com"
-            />
-          </label>
-
-          {/* Password + strength */}
-          <div>
-            <label className="auth-label">
-              <span>Password <span style={{ fontWeight: 400, color: 'var(--fc-muted)' }}>(min. 12 characters)</span></span>
-              <div className="auth-password-wrap">
-                <input
-                  className="auth-input"
-                  type={showPw ? 'text' : 'password'}
-                  name="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={12}
-                  placeholder="Choose a strong password"
-                  value={pwValue}
-                  onChange={(e) => setPwValue(e.target.value)}
-                  style={{ paddingRight: 44 }}
-                />
-                <button
-                  type="button"
-                  className="auth-password-toggle"
-                  aria-label={showPw ? 'Hide password' : 'Show password'}
-                  onClick={() => setShowPw(!showPw)}
-                >
-                  <i className={`bi ${showPw ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" />
-                </button>
-              </div>
-            </label>
-            {pwValue.length > 0 && (
-              <div>
-                <div className="auth-strength" aria-label={`Password strength: ${strengthLabel[strength]}`}>
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className={`auth-strength-bar${strength >= i ? ` ${strengthClass[strength]}` : ''}`}
-                    />
-                  ))}
-                </div>
-                {strength > 0 && (
-                  <span style={{ fontSize: 11, color: 'var(--fc-muted)' }}>
-                    {strengthLabel[strength]}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {message && (
-            <p className={`auth-message ${msgType === 'error' ? 'is-error' : 'is-info'}`} role="status">
-              {message}
-            </p>
-          )}
-
-          <button
-            className="auth-submit"
-            type="submit"
-            disabled={busy}
-          >
-            {busy
-              ? <><span className="spinner-border spinner-border-sm me-2" />Creating account…</>
-              : <><i className="bi bi-person-plus me-2" aria-hidden="true" />Create account</>}
-          </button>
-
-          <p style={{ fontSize: 11, color: 'var(--fc-muted)', margin: 0, lineHeight: 1.5, textAlign: 'center' }}>
-            By creating an account you agree to our terms. SportBridge is free for players.
-          </p>
-        </form>
-
-        <p className="auth-switch">
-          Already have an account?{' '}
-          <button type="button" onClick={() => switchMode('signin')}>Sign in</button>
-        </p>
-      </>
+      <RegisterForm
+        initialRole={_role}
+        onSuccess={() => {
+          // session present: onAuthStateChange fires SIGNED_IN → modal closes
+        }}
+        onSwitchToSignIn={() => switchMode('signin')}
+      />
     )
   }
 

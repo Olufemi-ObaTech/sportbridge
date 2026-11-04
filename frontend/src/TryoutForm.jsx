@@ -17,6 +17,7 @@ import {
   AGE_GROUPS,
   REGIONS,
   containsFraudKeywords,
+  isFeeAboveThreshold,
 } from './lib/features'
 import { blockContactInfo, validateImage, guardedUpload } from './lib/uploadGuards'
 
@@ -43,6 +44,7 @@ const BLANK = {
   gender:       '',
   description:  '',
   feeAmount:    '',
+  feeCurrency:  'NGN',
   feeBreakdown: '',
 }
 
@@ -81,8 +83,9 @@ export default function TryoutForm({ supabase, user, profile, onVerify, onSaved 
   }
 
   // live fraud-keyword indicator
-  const hasFraud = containsFraudKeywords(form.description)
-  const hasFee   = Number(form.feeAmount) > 0
+  const hasFraud    = containsFraudKeywords(form.description)
+  const hasFee      = Number(form.feeAmount) > 0
+  const feeExcessive = isFeeAboveThreshold(Number(form.feeAmount), form.feeCurrency)
 
   // ── submit ────────────────────────────────────────────────────────────────
   const submit = async (e) => {
@@ -138,8 +141,8 @@ export default function TryoutForm({ supabase, user, profile, onVerify, onSaved 
         venueUrls.push(res.url)
       }
 
-      // Determine status — flag if fraud keywords or fee present
-      const isFlagged    = hasFraud || hasFee
+      // Determine status — flag if fraud keywords, fee present, or fee excessive
+      const isFlagged    = hasFraud || hasFee || feeExcessive
       const status       = isFlagged ? 'pending_approval' : 'open'
 
       const payload = {
@@ -155,6 +158,7 @@ export default function TryoutForm({ supabase, user, profile, onVerify, onSaved 
         gender:          form.gender || null,
         description:     form.description.trim(),
         fee_amount:      hasFee ? Number(form.feeAmount) : 0,
+        fee_currency:    form.feeCurrency,
         fee_breakdown:   hasFee ? form.feeBreakdown.trim() : null,
         flyer_pictures:  flyerUrls,
         venue_pictures:  venueUrls,
@@ -307,10 +311,22 @@ export default function TryoutForm({ supabase, user, profile, onVerify, onSaved 
               Tryout fee
             </h3>
             <div className="row g-3">
-              <Field label="Fee amount (NGN)" col="col-12 col-md-5"
+              <Field label="Fee amount" col="col-12 col-md-5"
                 hint="Enter 0 for a free tryout. Any fee requires a breakdown.">
                 <div className="input-group">
-                  <span className="input-group-text">₦</span>
+                  <select
+                    className="form-select flex-grow-0"
+                    style={{ maxWidth: 80 }}
+                    value={form.feeCurrency}
+                    onChange={upd('feeCurrency')}
+                    aria-label="Currency"
+                  >
+                    <option value="NGN">₦</option>
+                    <option value="USD">$</option>
+                    <option value="GBP">£</option>
+                    <option value="EUR">€</option>
+                    <option value="GHS">₵</option>
+                  </select>
                   <input
                     className="form-control"
                     type="number"
@@ -320,6 +336,12 @@ export default function TryoutForm({ supabase, user, profile, onVerify, onSaved 
                     placeholder="0"
                   />
                 </div>
+                {feeExcessive && (
+                  <div className="small text-danger mt-1">
+                    <i className="bi bi-exclamation-triangle-fill me-1" />
+                    Fee exceeds the {form.feeCurrency} threshold. This post will be sent to admin review before going live.
+                  </div>
+                )}
               </Field>
               {hasFee && (
                 <Field label="Fee breakdown" required col="col-12"

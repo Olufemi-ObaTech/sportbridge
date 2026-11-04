@@ -1,12 +1,14 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useEffect, useState, useCallback } from 'react'
+import AccessRequestsPanel from './AccessRequestsPanel.jsx'
+import AcademyPlayerForm from './AcademyPlayerForm.jsx'
 import JobPostForm from './JobPostForm.jsx'
 import PlayerUploadForm from './PlayerUploadForm.jsx'
+import PostUpdateForm from './PostUpdateForm.jsx'
+import RecommendWithMediaForm from './RecommendWithMediaForm.jsx'
 import TryoutForm from './TryoutForm.jsx'
 import VerifyForm, { CvOnlyForm } from './VerifyForm.jsx'
 import { blockContactInfo } from './lib/uploadGuards'
-import ReportProfileButton from './ReportProfileButton.jsx'
 import { FOOTBALL_POSITIONS, REGIONS, STAFF_ROLES } from './lib/features'
-
 // ——— constants ————————————————————————————————————————————————————————————————
 
 const ROLE_LABELS = {
@@ -308,6 +310,12 @@ function PlayerDashboard({ supabase, user, profile }) {
     if (err) { setError(err.message); return }
     setPlayer(data)
     setNotice('Player profile saved.')
+    // Prompt user to share update to Community Feed
+    const goals = draft.achievements?.trim()
+    setFeedPrompt(goals
+      ? `Profile updated on SportBridge! ${goals}`
+      : `I have updated my SportBridge player profile — ${draft.position || 'footballer'} from ${draft.country || 'the world'}.`
+    )
   }
 
   const positions = POSITIONS_FOOTBALL
@@ -332,7 +340,7 @@ function PlayerDashboard({ supabase, user, profile }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[['profile','bi-person-vcard','My Profile'],['uploads','bi-cloud-upload','Upload CV & Media'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
+        {[['profile','bi-person-vcard','My Profile'],['post-update','bi-megaphone','Post Update'],['uploads','bi-cloud-upload','Upload CV & Media'],['requests','bi-shield-lock','Access Requests'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button
               className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`}
@@ -427,12 +435,33 @@ function PlayerDashboard({ supabase, user, profile }) {
           <button className="btn btn-primary px-5" type="submit" disabled={saving}>
             {saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : <><i className="bi bi-check2 me-2" />Save profile</>}
           </button>
+          {feedPrompt && (
+            <ActivityFeedPost supabase={supabase} user={user}
+              activityText={feedPrompt} onDone={() => setFeedPrompt('')} />
+          )}
         </form>
       )}
 
       {activeTab === 'uploads' && (
         <SectionCard title="Upload CV & Media">
           <PlayerUploadForm supabase={supabase} user={user} player={player} onSaved={() => setNotice('Files uploaded.')} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'post-update' && (
+        <SectionCard title="Post Update">
+          <p className="text-muted small mb-3">Share match results, upcoming fixtures, achievements and milestones with the SportBridge community.</p>
+          <PostUpdateForm supabase={supabase} user={user} role="player" onSaved={() => setNotice('Update posted to Community Feed.')} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'requests' && (
+        <SectionCard title="Access Requests">
+          <p className="text-muted small mb-3">
+            Manage which agents and scouts can view your contact details.
+            Approving an access request allows that agent to message you directly.
+          </p>
+          <AccessRequestsPanel supabase={supabase} user={user} player={player} onUpdate={() => setNotice('Access request updated.')} />
         </SectionCard>
       )}
 
@@ -590,7 +619,7 @@ function CoachDashboard({ supabase, user, profile }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[['profile','bi-clipboard2-pulse','Coaching Profile'],['recommend','bi-send-check','Recommend a Player'],['cv','bi-file-earmark-person','Upload CV'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
+        {[['profile','bi-clipboard2-pulse','Coaching Profile'],['recommend','bi-send-check','Recommend a Player'],['post-event','bi-calendar-event','Post Event'],['post-tryout','bi-calendar2-plus','Post Tryout'],['apply-jobs','bi-briefcase','Browse Jobs'],['cv','bi-file-earmark-person','Upload CV'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
@@ -841,7 +870,7 @@ function AgentDashboard({ supabase, user, profile }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[['profile','bi-person-vcard','Agency Profile'],['post-tryout','bi-calendar2-plus','Post Tryout'],['post-position','bi-briefcase-fill','Post Position Needed'],['cv','bi-file-earmark-person','Upload CV'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
+        {[['profile','bi-person-vcard','Agency Profile'],['post-event','bi-calendar-event','Post Event'],['post-tryout','bi-calendar2-plus','Post Tryout'],['post-position','bi-briefcase-fill','Post Position Needed'],['apply-jobs','bi-briefcase','Browse Jobs'],['cv','bi-file-earmark-person','Upload CV'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
@@ -895,6 +924,23 @@ function AgentDashboard({ supabase, user, profile }) {
               activityText={feedPrompt} onDone={() => setFeedPrompt('')} />
           )}
         </form>
+      )}
+
+      {activeTab === 'post-event' && (
+        <SectionCard title="Post Upcoming Event / Certificate">
+          <p className="text-muted small mb-3">Share upcoming events, earned certificates, industry news and announcements with the SportBridge community.</p>
+          <PostUpdateForm supabase={supabase} user={user} role="agent" onSaved={() => setNotice('Event posted to Community Feed.')} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'apply-jobs' && (
+        <SectionCard title="Browse & Apply for Jobs">
+          <p className="text-muted small mb-3">Browse available agent, scout and sporting director roles. Apply with your verified SportBridge profile.</p>
+          <div className="alert alert-info d-flex gap-2 align-items-center">
+            <i className="bi bi-info-circle flex-shrink-0" />
+            <span>Visit the <button className="btn btn-link p-0 small" type="button" onClick={() => window.location.hash='#jobs'}>Jobs Board</button> to browse and apply for open positions with your verified profile.</span>
+          </div>
+        </SectionCard>
       )}
 
       {/* —— Demo Flow 3: Agent posts Tryout ———————————————————————————————— */}
@@ -1026,7 +1072,7 @@ function AcademyDashboard({ supabase, user, profile }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[['profile','bi-building','Club Profile'],['post-job','bi-briefcase-fill','Post a Job'],['cv','bi-file-earmark-person','Upload CV'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
+        {[['profile','bi-building','Club Profile'],['squad','bi-people','Squad Roster'],['post-update','bi-megaphone','Post Match Update'],['post-job','bi-briefcase-fill','Post a Job'],['post-tryout','bi-calendar2-plus','Post Tournament'],['recommend','bi-send-check','Recommend Player'],['cv','bi-file-earmark-person','Upload CV'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`} type="button" role="tab" onClick={() => setActiveTab(tab)}>
               <i className={`bi ${icon}`} aria-hidden="true" />{label}
@@ -1079,6 +1125,34 @@ function AcademyDashboard({ supabase, user, profile }) {
               activityText={feedPrompt} onDone={() => setFeedPrompt('')} />
           )}
         </form>
+      )}
+
+      {activeTab === 'squad' && (
+        <SectionCard title="Squad Roster">
+          <p className="text-muted small mb-3">Add players to your squad. Each submission requires identity evidence and ownership/contract documents for admin review.</p>
+          <AcademyPlayerForm supabase={supabase} user={user} onDone={() => setNotice('Player submission sent for admin review.')} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'post-update' && (
+        <SectionCard title="Post Match Update">
+          <p className="text-muted small mb-3">Share match results, player goals and assists, upcoming fixtures and tournaments with the community.</p>
+          <PostUpdateForm supabase={supabase} user={user} role="academy" onSaved={() => setNotice('Match update posted to Community Feed.')} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'post-tryout' && (
+        <SectionCard title="Post Tournament / Trial">
+          <p className="text-muted small mb-3">Post a tournament, open trial or player combine event for your club or academy.</p>
+          <TryoutForm supabase={supabase} user={user} onSaved={() => { setActiveTab('profile'); setNotice('Tournament / trial posted.') }} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'recommend' && (
+        <SectionCard title="Recommend a Player with Video / CV">
+          <p className="text-muted small mb-3">Recommend a player from your squad to agents and scouts, attaching their highlight video or CV to make the recommendation stronger.</p>
+          <RecommendWithMediaForm supabase={supabase} user={user} role="academy" onSaved={() => setNotice('Recommendation sent.')} />
+        </SectionCard>
       )}
 
       {/* —— Demo Flow 1: Club posts Player / Staff job —————————————————————— */}
@@ -1242,8 +1316,12 @@ function SportsAnalystDashboard({ supabase, user, profile }) {
       <ul className="nav nav-tabs mb-4" role="tablist">
         {[
           ['profile',      'bi-graph-up-arrow',    'Analyst Profile'],
+          ['post-review',  'bi-camera-video',      'Post Analysis'],
           ['recommend',    'bi-send-check',         'Recommend a Player'],
+          ['recommend-media','bi-film',             'Recommend with Video/CV'],
           ['post-position','bi-briefcase-fill',     'Post Position Needed'],
+          ['apply-jobs',   'bi-briefcase',          'Browse Jobs'],
+          ['find-players', 'bi-person-arms-up',     'Find Players'],
           ['cv',           'bi-file-earmark-person','Upload CV'],
           ['verify',       'bi-patch-check',        'Get Verified'],
         ].map(([tab, icon, label]) => (
@@ -1413,6 +1491,47 @@ function AdminDashboard({ supabase, user }) {
   const [verifNote,    setVerifNote]   = useState({})
   const [reportQueue,  setReportQueue] = useState([])
   const [reportNote,   setReportNote]  = useState({})
+  const [reportFilter, setReportFilter]= useState('all') // 'all'|'pending'|'investigating'|'confirmed_scam'|'dismissed'
+  const [reportLoading,setReportLoading]= useState(false)
+
+  // Fetch reports flat (no embedded FK joins) then enrich with profiles in JS.
+  // This avoids "Could not find relationship" errors when PostgREST schema cache
+  // doesn't know about the reporter_id / reported_user_id FK names.
+  const loadReports = useCallback(async () => {
+    setReportLoading(true)
+    setError('')
+    const { data: rawReports, error: rErr } = await supabase
+      .from('reports')
+      .select('id, reason, details, status, created_at, updated_at, reviewer_notes, reviewed_at, reporter_id, reported_user_id, reviewer_id')
+      .order('created_at', { ascending: false })
+      .limit(200)
+
+    if (rErr) { setError(`Reports could not load: ${rErr.message}`); setReportLoading(false); return }
+
+    const reports = rawReports ?? []
+    if (reports.length === 0) { setReportQueue([]); setReportLoading(false); return }
+
+    const profileIds = [...new Set([
+      ...reports.map(r => r.reporter_id).filter(Boolean),
+      ...reports.map(r => r.reported_user_id).filter(Boolean),
+    ])]
+
+    let profileMap = {}
+    if (profileIds.length > 0) {
+      const { data: profileRows } = await supabase
+        .from('profiles').select('id, full_name, email, role').in('id', profileIds)
+      ;(profileRows ?? []).forEach(p => { profileMap[p.id] = p })
+    }
+
+    setReportQueue(reports.map(r => ({
+      ...r,
+      reporter: r.reporter_id      ? (profileMap[r.reporter_id]      ?? { id: r.reporter_id,      full_name: 'Unknown', email: '', role: '' }) : null,
+      reported: r.reported_user_id  ? (profileMap[r.reported_user_id]  ?? { id: r.reported_user_id,  full_name: 'Unknown', email: '', role: '' }) : null,
+    })))
+    setReportLoading(false)
+  }, [supabase])
+
+  const refreshReports = useCallback(() => { setReportQueue([]); loadReports() }, [loadReports])
 
   useEffect(() => {
     let alive = true
@@ -1503,15 +1622,9 @@ function AdminDashboard({ supabase, user }) {
         .then(({ data }) => setVerifQueue(data ?? []))
     }
     if (activeTab === 'reports' && reportQueue.length === 0) {
-      supabase.from('reports')
-        .select(`id, reason, details, status, created_at,
-                 reporter:profiles!reporter_id(id, full_name, email, role),
-                 reported:profiles!reported_user_id(id, full_name, email, role),
-                 reviewer_notes, reviewed_at`)
-        .order('created_at', { ascending: false }).limit(200)
-        .then(({ data }) => setReportQueue(data ?? []))
+      loadReports()
     }
-  }, [activeTab, supabase, duplicates.length, flagged.length, verifQueue.length, reportQueue.length])
+  }, [activeTab, supabase, loadReports, duplicates.length, flagged.length, verifQueue.length, reportQueue.length])
 
   const approveOpp = async (id) => {
     await supabase.from('opportunities').update({ status: 'open', is_fee_flagged: false }).eq('id', id)
@@ -1569,47 +1682,58 @@ function AdminDashboard({ supabase, user }) {
     setNotice(`Account ${newStatus === 'suspended' ? 'suspended' : 'reactivated'}.`)
   }
 
-  const updateReport = async (reportId, status, outcomeNote) => {
+  const updateReport = async (reportId, outcomeStatus, outcomeNote) => {
     setSaving(true); setError(''); setNotice('')
+    const note = outcomeNote || reportNote[reportId] || ''
+
+    // Use reviewed_by (original schema column) + reviewer_id (added via ALTER)
     const { error: err } = await supabase.from('reports')
-      .update({ status, reviewer_notes: outcomeNote || reportNote[reportId] || null, reviewed_at: new Date().toISOString(), reviewer_id: user.id })
+      .update({
+        status:         outcomeStatus,
+        reviewer_notes: note.trim() || null,
+        reviewed_by:    user.id,
+        reviewer_id:    user.id,
+        reviewed_at:    new Date().toISOString(),
+        updated_at:     new Date().toISOString(),
+      })
       .eq('id', reportId)
-    if (err) { setError(err.message); setSaving(false); return }
-    // If confirmed scam — set reported user to denied
-    if (status === 'confirmed_scam') {
+
+    if (err) { setError(`Could not update report: ${err.message}`); setSaving(false); return }
+
+    // If confirmed scam — set reported user's account to denied
+    if (outcomeStatus === 'confirmed_scam') {
       const rep = reportQueue.find(r => r.id === reportId)
       if (rep?.reported?.id) {
-        await supabase.from('profiles').update({ status: 'denied', updated_at: new Date().toISOString() }).eq('id', rep.reported.id)
+        await supabase.from('profiles')
+          .update({ status: 'denied', updated_at: new Date().toISOString() })
+          .eq('id', rep.reported.id)
         setUsers(cur => cur.map(u => u.id === rep.reported.id ? { ...u, status: 'denied' } : u))
       }
     }
 
-    // Notify the reporter about the outcome
+    // Send notifications to reporter and (if actioned/dismissed) to reported user
     const rep = reportQueue.find(r => r.id === reportId)
     if (rep?.reporter?.id) {
-      const outcomeMsg = status === 'confirmed_scam'
-        ? `Your report about ${rep.reported?.full_name || 'a user'} has been reviewed. The reported account has been actioned.`
-        : status === 'dismissed'
-        ? `Your report about ${rep.reported?.full_name || 'a user'} has been reviewed. No further action was taken at this time.`
-        : `Your report about ${rep.reported?.full_name || 'a user'} is now under active investigation by our team.`
+      const outcomeMsg =
+        outcomeStatus === 'confirmed_scam'
+          ? `Your report about ${rep.reported?.full_name || 'a user'} has been reviewed. The reported account has been actioned.`
+          : outcomeStatus === 'dismissed'
+          ? `Your report about ${rep.reported?.full_name || 'a user'} has been reviewed. No further action was taken at this time.`
+          : `Your report about ${rep.reported?.full_name || 'a user'} is now under active investigation by our team.`
 
-      const toNotify = [
-        // Reporter notification
-        {
-          user_id:           rep.reporter.id,
-          notification_type: 'report_update',
-          data: { message: outcomeMsg, report_id: reportId, status },
-        },
-      ]
+      const toNotify = [{
+        user_id:           rep.reporter.id,
+        notification_type: 'report_update',
+        data: { message: outcomeMsg, report_id: reportId, status: outcomeStatus },
+      }]
 
-      // Also notify the reported user if scam confirmed or dismissed
-      if (rep.reported?.id && status === 'confirmed_scam') {
+      if (rep.reported?.id && outcomeStatus === 'confirmed_scam') {
         toNotify.push({
           user_id:           rep.reported.id,
           notification_type: 'account_actioned',
           data: { message: 'Your SportBridge account has been reviewed and action has been taken due to a verified report. Contact support if you believe this is an error.' },
         })
-      } else if (rep.reported?.id && status === 'dismissed') {
+      } else if (rep.reported?.id && outcomeStatus === 'dismissed') {
         toNotify.push({
           user_id:           rep.reported.id,
           notification_type: 'report_dismissed',
@@ -1617,14 +1741,17 @@ function AdminDashboard({ supabase, user }) {
         })
       }
 
-      try {
-        await supabase.from('notifications').insert(toNotify)
-      } catch { /* non-critical */ }
+      try { await supabase.from('notifications').insert(toNotify) } catch { /* non-critical */ }
     }
 
-    setReportQueue(q => q.map(r => r.id === reportId ? { ...r, status } : r))
+    // Update local state — keep card visible with new status
+    setReportQueue(q => q.map(r => r.id === reportId ? { ...r, status: outcomeStatus, reviewer_notes: note.trim() || null } : r))
     setSaving(false)
-    setNotice(`Report ${status === 'dismissed' ? 'dismissed' : status === 'confirmed_scam' ? 'confirmed — account denied' : 'updated'}.`)
+    setNotice(
+      outcomeStatus === 'dismissed'      ? 'Report dismissed. No action taken.' :
+      outcomeStatus === 'confirmed_scam' ? 'Scam confirmed — account denied.' :
+      'Report status updated to: investigating.'
+    )
   }
 
     const roleCounts = ALL_ROLES.reduce((acc, r) => ({ ...acc, [r]: users.filter((u) => u.role === r).length }), {})
@@ -2110,13 +2237,20 @@ function AdminDashboard({ supabase, user }) {
             <h2 className="h5 fw-bold mb-0" style={{ color:'var(--fc-blue-700)' }}>
               <i className="bi bi-flag-fill me-2 text-danger" />Reports & Disputes
             </h2>
-            <div className="d-flex gap-2">
+            <div className="d-flex gap-2 align-items-center">
               <span className="badge text-bg-danger px-3 py-2">
                 {reportQueue.filter(r=>r.status==='pending').length} pending
               </span>
               <span className="badge text-bg-warning px-3 py-2">
                 {reportQueue.filter(r=>r.status==='investigating').length} investigating
               </span>
+              <button className="btn btn-outline-secondary btn-sm" type="button"
+                onClick={refreshReports} disabled={reportLoading}
+                title="Refresh reports list">
+                {reportLoading
+                  ? <span className="spinner-border spinner-border-sm" />
+                  : <i className="bi bi-arrow-clockwise" />}
+              </button>
             </div>
           </div>
 
@@ -2133,170 +2267,18 @@ function AdminDashboard({ supabase, user }) {
             ))}
           </ul>
 
-          {reportQueue.filter(r=>reportFilter==='all'||r.status===reportFilter).length===0 ? (
+          {reportLoading ? (
+            <div className="py-5 text-center text-muted">
+              <span className="spinner-border spinner-border-sm me-2" />Loading reports…
+            </div>
+          ) : reportQueue.filter(r=>reportFilter==='all'||r.status===reportFilter).length===0 ? (
             <div className="text-center py-5 text-muted">
               <i className="bi bi-shield-check fs-1 d-block mb-2" style={{color:'#198754',opacity:.4}} />
-              <p className="fw-semibold mb-1">No {reportFilter==='all'?'':reportFilter} reports.</p>
-            </div>
-          ) : reportQueue
-              .filter(r=>reportFilter==='all'||r.status===reportFilter)
-              .map(rep=>(
-            <div key={rep.id} className="card p-4 mb-3"
-              style={{borderLeft:`4px solid ${rep.status==='confirmed_scam'?'#dc3545':rep.status==='dismissed'?'#6c757d':rep.status==='investigating'?'#f5b301':'#2F7DF0'}`,
-                background:rep.status==='confirmed_scam'?'rgba(220,53,69,.04)':rep.status==='dismissed'?'rgba(108,117,125,.04)':'rgba(47,125,240,.03)'}}>
-
-              {/* Report header */}
-              <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-                <div>
-                  <div className="d-flex align-items-center gap-2 mb-1">
-                    <span className={`badge ${
-                      rep.status==='confirmed_scam'?'text-bg-danger':
-                      rep.status==='dismissed'?'text-bg-secondary':
-                      rep.status==='investigating'?'text-bg-warning':
-                      'text-bg-primary'}`}>
-                      {rep.status?.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
-                    </span>
-                    <span className="badge text-bg-light border text-capitalize">
-                      {rep.reason?.replace(/_/g,' ')}
-                    </span>
-                  </div>
-                  <div className="small text-muted">
-                    Reported {rep.created_at?new Date(rep.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}):'—'}
-                  </div>
-                </div>
-                {rep.reviewed_at && (
-                  <div className="small text-muted">
-                    Reviewed {new Date(rep.reviewed_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
-                  </div>
-                )}
-              </div>
-
-              {/* Reporter + Reported */}
-              <div className="row g-3 mb-3">
-                <div className="col-12 col-sm-6">
-                  <div className="p-3 rounded" style={{background:'rgba(0,0,0,.04)'}}>
-                    <div className="small text-muted fw-semibold mb-1">
-                      <i className="bi bi-person me-1" />Reporter
-                    </div>
-                    <div className="fw-semibold">{rep.reporter?.full_name||'Unknown'}</div>
-                    <div className="small text-muted">{rep.reporter?.email}</div>
-                    <span className="badge text-bg-light border mt-1" style={{fontSize:10}}>
-                      {ROLE_LABELS[rep.reporter?.role]||rep.reporter?.role||'—'}
-                    </span>
-                  </div>
-                </div>
-                <div className="col-12 col-sm-6">
-                  <div className="p-3 rounded" style={{background:'rgba(220,53,69,.06)'}}>
-                    <div className="small text-danger fw-semibold mb-1">
-                      <i className="bi bi-flag me-1" />Reported Profile
-                    </div>
-                    <div className="fw-semibold">{rep.reported?.full_name||'Unknown'}</div>
-                    <div className="small text-muted">{rep.reported?.email}</div>
-                    <span className="badge text-bg-light border mt-1" style={{fontSize:10}}>
-                      {ROLE_LABELS[rep.reported?.role]||rep.reported?.role||'—'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Details */}
-              {rep.details && (
-                <div className="mb-3">
-                  <div className="small fw-semibold text-muted mb-1">Details</div>
-                  <p className="small mb-0" style={{whiteSpace:'pre-wrap'}}>{rep.details}</p>
-                </div>
-              )}
-
-              {/* Reviewer notes */}
-              {rep.reviewer_notes && (
-                <div className="alert alert-light py-2 small mb-3">
-                  <i className="bi bi-chat-square-text me-1" />
-                  <strong>Admin note:</strong> {rep.reviewer_notes}
-                </div>
-              )}
-
-              {/* Actions — only show if not already resolved */}
-              {!['confirmed_scam','dismissed'].includes(rep.status) && (
-                <div className="mb-3">
-                  <label className="form-label small fw-semibold" htmlFor={`report-note-${rep.id}`}>
-                    Investigation note <span className="text-muted fw-normal">(optional)</span>
-                  </label>
-                  <input id={`report-note-${rep.id}`} className="form-control form-control-sm"
-                    placeholder="Add investigation notes…"
-                    value={reportNote[rep.id]??''}
-                    onChange={e=>setReportNote(n=>({...n,[rep.id]:e.target.value}))} />
-                </div>
-              )}
-
-              {!['confirmed_scam','dismissed'].includes(rep.status) && (
-                <div className="d-flex gap-2 flex-wrap">
-                  {rep.status==='pending' && (
-                    <button className="btn btn-warning btn-sm d-flex align-items-center gap-2" type="button"
-                      disabled={saving} onClick={()=>updateReport(rep.id,'investigating')}>
-                      <i className="bi bi-search" />Start investigation
-                    </button>
-                  )}
-                  <button className="btn btn-danger btn-sm d-flex align-items-center gap-2" type="button"
-                    disabled={saving}
-                    onClick={()=>{ if(window.confirm('Confirm as scam/fraud? This will DENY the reported account.')) updateReport(rep.id,'confirmed_scam') }}>
-                    <i className="bi bi-shield-x" />Confirm scam & deny account
-                  </button>
-                  <button className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" type="button"
-                    disabled={saving} onClick={()=>updateReport(rep.id,'dismissed')}>
-                    <i className="bi bi-x-circle" />Dismiss report
-                  </button>
-                </div>
-              )}
-
-              {rep.status==='confirmed_scam' && (
-                <div className="alert alert-danger py-2 mb-0 d-flex align-items-center gap-2">
-                  <i className="bi bi-shield-x-fill" />Account denied. Scam confirmed.
-                </div>
-              )}
-              {rep.status==='dismissed' && (
-                <div className="alert alert-secondary py-2 mb-0 d-flex align-items-center gap-2">
-                  <i className="bi bi-check-circle" />Report dismissed. No action taken.
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Reports & Disputes Queue ── */}
-      {activeTab==='reports' && (
-        <div className="card p-4">
-          <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-            <h2 className="h5 fw-bold mb-0" style={{ color:'var(--fc-blue-700)' }}>
-              <i className="bi bi-flag-fill me-2 text-danger" />Reports & Disputes
-            </h2>
-            <div className="d-flex gap-2">
-              <span className="badge text-bg-danger px-3 py-2">
-                {reportQueue.filter(r=>r.status==='pending').length} pending
-              </span>
-              <span className="badge text-bg-warning px-3 py-2">
-                {reportQueue.filter(r=>r.status==='investigating').length} investigating
-              </span>
-            </div>
-          </div>
-
-          {/* Filter tabs */}
-          <ul className="nav nav-pills mb-4 gap-1 flex-wrap">
-            {[['all','All'],['pending','Pending'],['investigating','Investigating'],['confirmed_scam','Scam confirmed'],['dismissed','Dismissed']].map(([s,l])=>(
-              <li key={s}>
-                <button
-                  className={`btn btn-sm ${reportFilter===s?'btn-primary':'btn-outline-secondary'}`}
-                  type="button" onClick={()=>setReportFilter(s)}>
-                  {l} ({s==='all'?reportQueue.length:reportQueue.filter(r=>r.status===s).length})
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          {reportQueue.filter(r=>reportFilter==='all'||r.status===reportFilter).length===0 ? (
-            <div className="text-center py-5 text-muted">
-              <i className="bi bi-shield-check fs-1 d-block mb-2" style={{color:'#198754',opacity:.4}} />
-              <p className="fw-semibold mb-1">No {reportFilter==='all'?'':reportFilter} reports.</p>
+              <p className="fw-semibold mb-1">No {reportFilter==='all'?'':reportFilter.replace(/_/g,' ')} reports.</p>
+              <p className="small mb-3">When users file reports they will appear here.</p>
+              <button className="btn btn-outline-secondary btn-sm" type="button" onClick={refreshReports}>
+                <i className="bi bi-arrow-clockwise me-2" />Refresh
+              </button>
             </div>
           ) : reportQueue
               .filter(r=>reportFilter==='all'||r.status===reportFilter)

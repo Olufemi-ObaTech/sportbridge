@@ -116,7 +116,40 @@ export const FRAUD_KEYWORDS = [
   'payment required',
   'pay to play',
   'pay for trial',
+  'registration fee',
+  'sign-up fee',
+  'joining fee',
+  'compulsory payment',
+  'mandatory payment',
+  'we guarantee',
+  'secure your spot',
 ]
+
+/**
+ * Fee thresholds per currency.
+ * Any fee above these amounts automatically sets is_fee_flagged=true
+ * and status='pending_approval' regardless of fraud keywords.
+ *
+ * Rule: > 5,000 USD | > 5,000 EUR | > 5,000 GBP | > 5,000,000 NGN | > 75,000 GHS
+ */
+export const FEE_FLAG_THRESHOLDS = {
+  USD: 5000,
+  EUR: 5000,
+  GBP: 5000,
+  NGN: 5_000_000,
+  GHS: 75_000,   // Ghana Cedis (~5 000 USD at ~15 GHS/USD)
+}
+
+/**
+ * Returns true if the fee amount for the given currency should be flagged.
+ * @param {number} amount
+ * @param {string} currency  'USD' | 'EUR' | 'GBP' | 'NGN' | 'GHS'
+ */
+export function isFeeAboveThreshold(amount, currency = 'USD') {
+  if (!amount || isNaN(amount) || amount <= 0) return false
+  const threshold = FEE_FLAG_THRESHOLDS[currency?.toUpperCase()] ?? FEE_FLAG_THRESHOLDS.USD
+  return Number(amount) > threshold
+}
 
 // ─── Contact-info regex (blocks phone numbers & emails in public fields) ──────
 // Nigerian formats: 0801..., +2348..., 08..., 070..., 090...

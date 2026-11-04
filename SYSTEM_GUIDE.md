@@ -280,12 +280,18 @@ Rebuilt admin UI (committed `a7577d4`) with:
 | Order | File | What it does |
 |---|---|---|
 | 1 | `supabase/schema.sql` | Creates all 31+ tables, RLS policies, triggers, indexes, helper functions |
-| 2 | `supabase/fix-roles.sql` | Patches `profiles_role_check` to include `sports_analyst`; patches `players_availability_check`; fixes any wrong user roles; verifies demo accounts |
+| 2 | `supabase/fix-roles.sql` | Patches `profiles_role_check` to include `sports_analyst`; patches `players_availability_check`; fixes any wrong user roles |
 | 3 | `supabase/seed.sql` | Inserts 50 international demo accounts — pure SQL, no PL/pgSQL blocks |
+| 4 | `supabase/patch-profile-badges.sql` | Creates `public_profile_badges` view for verified badge display |
+| **ONE-CLICK FIX** | **`supabase/fix-demo-accounts.sql`** | **Single file that does everything: patches constraints, upserts all 50 auth users + profiles, ensures clubs + players exist, confirms emails, resets admin password. Run this if any demo login fails.** |
 | Optional | `supabase/reset-passwords.sql` | Resets all demo account passwords if login stops working |
 
 **Demo account password:** `Demo@SportBridge1!`
 **Admin login:** `sportbridge.com.ng@gmail.com` / `SportBridge2026!`
+
+### ⚡ Fastest way to fix demo login errors
+
+Go to [Supabase SQL Editor](https://supabase.com/dashboard/project/pzfohowzaeunywaqukwe/sql/new), paste the **entire contents** of `supabase/fix-demo-accounts.sql` and click **Run**. That single file fixes everything — constraints, passwords, profiles, player rows and email confirmation — for all 50 demo accounts.
 
 ### seed.sql — what it creates (v5, verified)
 

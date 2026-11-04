@@ -1840,6 +1840,8 @@ create table if not exists public.opportunities (
   gender           text check (gender in ('male','female','mixed')),
   description      text,
   fee_amount       integer not null default 0 check (fee_amount >= 0),
+  fee_currency     text not null default 'NGN'
+                     check (fee_currency in ('NGN','USD','GBP','EUR','GHS')),
   fee_breakdown    text,
   flyer_pictures   jsonb not null default '[]'::jsonb,
   venue_pictures   jsonb not null default '[]'::jsonb,
@@ -2388,7 +2390,9 @@ grant select, insert on public.contact_unlocks to authenticated;
 
 -- A narrowly scoped public projection avoids exposing private profile fields
 -- while allowing public player pages and feed cards to show verification.
-create or replace view public.public_profile_badges
+-- DROP and recreate so we can change the column list without 42P16 errors.
+drop view if exists public.public_profile_badges cascade;
+create view public.public_profile_badges
 with (security_barrier = true)
 as
 select id, role, verification_status, verification_badge
@@ -2463,6 +2467,11 @@ notify pgrst, 'reload schema';
 -- through the profile status while preserving report and account history.
 alter table public.reports
   add column if not exists reviewer_notes text;
+
+-- Add reviewer_id as an alias for reviewed_by so both the review_user_report
+-- function and direct updates work (schema uses reviewed_by, function used reviewer_id).
+alter table public.reports
+  add column if not exists reviewer_id uuid references public.profiles(id) on delete set null;
 
 alter table public.reports
   drop constraint if exists reports_status_check,

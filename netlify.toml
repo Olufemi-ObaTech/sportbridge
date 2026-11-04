@@ -17,8 +17,9 @@
   publish = "frontend/dist"
 
 [build.environment]
-  VITE_SUPABASE_URL = "https://pzfohowzaeunywaqukwe.supabase.co"
-  NODE_VERSION      = "22"
+  VITE_SUPABASE_URL      = "https://pzfohowzaeunywaqukwe.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6Zm9ob3d6YWV1bnl3YXF1a3dlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxNzQ0NTksImV4cCI6MjEwNTc1MDQ1OX0.kTcQgqGgB9Fgs9q_13PeQgzNxpuxH_foK8we5JrFZik"
+  NODE_VERSION           = "22"
 
 [functions]
   directory = "netlify/functions"
@@ -49,8 +50,8 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
     # HSTS — enforce HTTPS for 1 year
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    # Content Security Policy — allow Supabase + Bootstrap + local assets
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https://*.supabase.co blob:; connect-src 'self' https://*.supabase.co https://api.brevo.com wss://*.supabase.co; frame-ancestors 'none';"
+    # Content Security Policy — allow Supabase + Bootstrap CDN + Google Fonts
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.brevo.com; frame-ancestors 'none';"
 
 # SPA fallback — every path serves index.html so React state-based routing works
 [[redirects]]
