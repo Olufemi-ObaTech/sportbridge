@@ -9,8 +9,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    // Raise chunk warning threshold (bundle is a single SPA, expected to be large)
     chunkSizeWarningLimit: 1000,
+    cssMinify: false,
   },
   server: {
     // Security: restrict access during dev

@@ -38,20 +38,11 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    # Prevent MIME-type sniffing
     X-Content-Type-Options = "nosniff"
-    # Block clickjacking
     X-Frame-Options = "SAMEORIGIN"
-    # XSS protection (legacy browsers)
     X-XSS-Protection = "1; mode=block"
-    # Referrer policy
     Referrer-Policy = "strict-origin-when-cross-origin"
-    # Permissions policy — restrict unnecessary browser APIs
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
-    # HSTS — enforce HTTPS for 1 year
-    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    # Content Security Policy — allow Supabase + Bootstrap CDN + Google Fonts
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.brevo.com; frame-ancestors 'none';"
 
 # SPA fallback — every path serves index.html so React state-based routing works
 [[redirects]]
