@@ -3,14 +3,13 @@
  * Bootstrap 5.3 bundled via npm (no CDN dependency).
  * This file holds custom properties, Bootstrap variable overrides,
  * and all component-level styling.
+ * Note: the "fc-" prefix predates the SportBridge rename (Football-Connect origin)
+ * and is kept to avoid a repo-wide CSS class rename.
  */
 
 /* ── Bootstrap ────────────────────────────────────────────────────────────── */
 @import "bootstrap/dist/css/bootstrap.min.css";
 @import "bootstrap-icons/font/bootstrap-icons.min.css";
- * Note: the "fc-" prefix predates the SportBridge rename (Football-Connect origin)
- * and is kept to avoid a repo-wide CSS class rename.
- */
 
 :root {
     /* Core brand palette */
