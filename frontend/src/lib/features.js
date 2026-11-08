@@ -8,21 +8,85 @@ export const BASKETBALL_ENABLED = false
 export const PAYMENTS_ENABLED = false
 export const MAX_PLAYER_TRAINING_MINUTES = 30
 
-// ─── Football positions (full list including Left Full Back for job posts) ────
+// ─── Football positions (expanded full list) ──────────────────────────────────
 export const FOOTBALL_POSITIONS = [
+  // Goalkeepers
   'Goalkeeper',
+  // Defenders
   'Right Back',
-  'Left Back',       // Left Full Back
+  'Left Back',
+  'Right Wing Back',
+  'Left Wing Back',
   'Centre Back',
   'Sweeper',
+  'Ball-Playing Centre Back',
+  'Libero',
+  // Midfielders
   'Defensive Mid',
   'Central Mid',
+  'Box-to-Box Mid',
   'Attacking Mid',
+  'Deep-Lying Playmaker',
+  'Advanced Playmaker',
+  // Wingers
   'Right Wing',
   'Left Wing',
+  'Inverted Right Winger',
+  'Inverted Left Winger',
+  // Forwards
   'Second Striker',
   'Striker',
   'Centre Forward',
+  'False 9',
+  'Target Man',
+  'Poacher',
+]
+
+// ─── Player contract status ───────────────────────────────────────────────────
+export const CONTRACT_STATUSES = [
+  'Free Agent',
+  'Under Contract',
+  'Contract Expiring (6 months)',
+  'Contract Expiring (1 year)',
+  'On Loan',
+  'Released',
+  'Trial Period',
+]
+
+// ─── Player profile specialisation tags ──────────────────────────────────────
+export const PLAYER_SPECIALISATIONS = [
+  'Pace & Dribbling',
+  'Aerial Ability',
+  'Set Piece Specialist',
+  'Long Range Shooting',
+  'Defensive Duels',
+  'Pressing & High Press',
+  'Box-to-Box Runner',
+  'Creative Passing',
+  'Leadership / Captain',
+  'Technical Dribbler',
+  'Two-Footed',
+  'Vision & Through Balls',
+]
+
+// ─── Analyst specialisation sub-roles ────────────────────────────────────────
+export const ANALYST_SPECIALISATIONS = [
+  'Performance Analyst',
+  'Video Analyst',
+  'Data Analyst',
+  'Recruitment Analyst',
+  'Tactical Analyst',
+  'Opposition Analyst',
+  'Head of Analysis',
+  'Sports Scientist (Analytics)',
+  'Biomechanics Analyst',
+]
+
+// ─── Analyst tools / software ────────────────────────────────────────────────
+export const ANALYST_TOOLS = [
+  'Wyscout', 'InStat', 'StatsBomb IQ', 'Opta', 'Hudl Sportscode',
+  'Python', 'R', 'Tableau', 'PowerBI', 'SciSports',
+  'Tracab', 'Metrica Sports', 'Nacsport', 'LongoMatch',
 ]
 
 export const BASKETBALL_POSITIONS = [
@@ -56,16 +120,18 @@ export const REGIONS = [
   'Middle East', 'Asia', 'Americas', 'Other',
 ]
 
-// ─── Staff / coaching roles (used in job posts AND coach/analyst dashboard dropdowns) ──
+// ─── Staff / coaching roles (35 + sub-roles — job posts AND profile dropdowns) ─
 export const STAFF_ROLES = [
-  // Head positions
+  // ── Head positions
   'Head Coach',
   'First Team Manager',
   'Caretaker Manager',
   'Interim Manager',
   'Player-Manager',
+  'Under-23 Manager',
+  'Under-18 Manager',
 
-  // Coaching staff
+  // ── Coaching staff
   'Assistant Head Coach',
   'Assistant Coach',
   'Goalkeeping Coach',
@@ -75,8 +141,10 @@ export const STAFF_ROLES = [
   'Sports Scientist',
   'Physio / Sports Therapist',
   'Team Doctor',
+  'Nutritionist',
+  'Sport Psychologist',
 
-  // Management & leadership
+  // ── Management & leadership
   'Sporting Director',
   'Technical Director',
   'Director of Football',
@@ -84,24 +152,65 @@ export const STAFF_ROLES = [
   'Head of Recruitment',
   'Head of Player Development',
   'Head of Analysis',
+  'Chief Executive Officer (CEO)',
+  'General Manager',
+  'Club Secretary',
+  'Operations Manager',
 
-  // Scouting & analysis
+  // ── Scouting & analysis
   'Scout',
   'Chief Scout',
+  'Regional Scout',
+  'International Scout',
   'Performance Analyst',
   'Video Analyst',
   'Data Analyst',
   'Opposition Analyst',
   'Recruitment Analyst',
   'Tactical Analyst',
+  'Head of Data Science',
 
-  // Other
+  // ── Development & other
   'Reserve Team Coach',
   'U23 / U21 Coach',
   'U18 Coach',
+  'U16 Coach',
+  'U14 Coach',
   'Youth Academy Coach',
+  'Elite Development Coach',
   'Loan Manager',
   'Player Liaison',
+  'Community Coach',
+  'Women\'s Team Coach',
+  'Futsal Coach',
+]
+
+// ─── Coaching licence levels ──────────────────────────────────────────────────
+export const COACHING_LICENCES = [
+  'UEFA Pro Licence',
+  'UEFA A Licence',
+  'UEFA B Licence',
+  'UEFA C Licence',
+  'CAF Pro Licence',
+  'CAF A Licence',
+  'CAF B Licence',
+  'FIFA Coaching Diploma',
+  'FA Level 4 (Pro)',
+  'FA Level 3',
+  'FA Level 2',
+  'FA Level 1',
+  'Turkish FA Pro Licence',
+  'CBF Pro Licence (Brazil)',
+  'DFB Fussballlehrer (Germany)',
+  'FFF Diplôme d\'Entraîneur Pro (France)',
+  'RFEF Nivel III (Spain)',
+  'NFF Coaching Licence (Nigeria)',
+  'GFA Coaching Licence (Ghana)',
+  'NSCA-CSCS (S&C)',
+  'UEFA Fitness Certificate',
+  'UEFA Analysis Certificate',
+  'Wyscout Certified',
+  'StatsBomb IQ Certified',
 ]
 
 // ─── Tryout fee watchdog ──────────────────────────────────────────────────────

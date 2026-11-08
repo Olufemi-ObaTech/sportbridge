@@ -715,6 +715,56 @@ const entries = [
   ['Match / Tournament',       'Match / Tournoi',              'Jogo / Torneio',             'مباراة / بطولة',             'Partido / Torneo'],
   ['Post review',              'Publier un avis',              'Publicar revisão',           'نشر مراجعة',                 'Publicar reseña'],
   ['Recommend player',         'Recommander un joueur',        'Recomendar jogador',         'أوصِ بلاعب',                 'Recomendar jugador'],
+
+  // ── Admin investigation messaging ──
+  ['Send admin message to parties',    'Envoyer un message admin aux parties',    'Enviar mensagem admin às partes',    'إرسال رسالة إدارية للأطراف',       'Enviar mensaje admin a las partes'],
+  ['Sends directly to their inbox + notification', 'Envoyé dans leur boîte + notification', 'Enviado para a caixa + notificação', 'يُرسل للصندوق + إشعار',          'Enviado al buzón + notificación'],
+  ['Reporter',                         'Signaleur',                               'Denunciante',                        'المُبلِّغ',                         'Denunciante'],
+  ['Reported Profile',                 'Profil signalé',                          'Perfil denunciado',                  'الملف المُبلَّغ عنه',               'Perfil denunciado'],
+  ['Investigation started. Inbox messages sent to both parties.', 'Enquête lancée. Messages envoyés aux deux parties.', 'Investigação iniciada. Mensagens às partes.', 'بدأ التحقيق. رسائل أُرسلت للطرفين.', 'Investigación iniciada. Mensajes enviados a ambas partes.'],
+  ['Scam confirmed — account denied. All parties notified via inbox.', 'Arnaque confirmée — compte refusé. Toutes les parties notifiées.', 'Fraude confirmada — conta negada. Todas as partes notificadas.', 'تم تأكيد الاحتيال — الحساب مرفوض. إخطار جميع الأطراف.', 'Fraude confirmada — cuenta denegada. Todas las partes notificadas.'],
+  ['Report dismissed. Inbox messages sent to both parties.',       'Signalement classé. Messages envoyés.',          'Denúncia arquivada. Mensagens enviadas.',    'تم إغلاق البلاغ. رسائل أُرسلت.',  'Denuncia archivada. Mensajes enviados.'],
+  ['Sent!',                            'Envoyé !',                                'Enviado!',                           'تم الإرسال!',                       '¡Enviado!'],
+
+  // ── Unverified member limits ──
+  ['Verification required',            'Vérification requise',                    'Verificação obrigatória',            'التحقق مطلوب',                      'Verificación requerida'],
+  ['This feature is available to verified members only.', 'Réservé aux membres vérifiés.', 'Disponível apenas para membros verificados.', 'متاح للأعضاء الموثّقين فقط.',    'Solo para miembros verificados.'],
+  ['Complete verification to unlock posting.', 'Complétez la vérification pour débloquer.', 'Complete a verificação para desbloquear.', 'أكمل التحقق للنشر.', 'Completa la verificación para publicar.'],
+  ['Complete verification to control who can contact you.', 'Complétez pour contrôler qui vous contacte.', 'Complete para controlar os contactos.', 'أكمل التحقق للتحكم في من يتواصل معك.', 'Completa para controlar quién te contacta.'],
+
+  // ── Home page role cards ──
+  ['Browse directory',                 'Parcourir l\'annuaire',                   'Navegar no diretório',               'تصفح الدليل',                       'Explorar directorio'],
+  ['Browse directory →',               'Parcourir l\'annuaire →',                 'Navegar no diretório →',             'تصفح الدليل →',                     'Explorar directorio →'],
+
+  // ── Player profile upgrade ──
+  ['Overview',                         'Vue d\'ensemble',                         'Visão geral',                        'نظرة عامة',                         'Resumen'],
+  ['Career',                           'Carrière',                                'Carreira',                           'المسيرة المهنية',                   'Carrera'],
+  ['Career Timeline',                  'Chronologie de carrière',                 'Linha do tempo da carreira',         'الجدول الزمني للمسيرة',             'Línea de tiempo de la carrera'],
+  ['Season Summary',                   'Résumé de la saison',                     'Resumo da época',                    'ملخص الموسم',                       'Resumen de temporada'],
+  ['Physical & Technical Profile',     'Profil physique et technique',            'Perfil físico e técnico',            'الملف البدني والتقني',              'Perfil físico y técnico'],
+  ['Contract & Availability',          'Contrat et disponibilité',                'Contrato e disponibilidade',         'العقد والتوفر',                     'Contrato y disponibilidad'],
+  ['Career Statistics',                'Statistiques de carrière',                'Estatísticas de carreira',           'إحصائيات المسيرة',                  'Estadísticas de carrera'],
+  ['Goals per Match',                  'Buts par match',                          'Golos por jogo',                    'الأهداف في كل مباراة',              'Goles por partido'],
+  ['Pass Accuracy',                    'Précision des passes',                    'Precisão de passe',                  'دقة التمرير',                       'Precisión de pase'],
+  ['Dribble Success',                  'Réussite des dribbles',                   'Sucesso no drible',                  'نجاح المراوغة',                     'Éxito en regates'],
+  ['Shots on Target',                  'Tirs cadrés',                             'Remates à baliza',                   'التسديدات على الهدف',               'Tiros a puerta'],
+  ['Aerial Duels Won',                 'Duels aériens gagnés',                    'Duelos aéreos ganhos',               'الكرات الهوائية المكتسبة',          'Duelos aéreos ganados'],
+  ['Tackles Won',                      'Tacles réussis',                          'Desarmes conquistados',              'التدخلات الناجحة',                  'Entradas ganadas'],
+  ['Physical Attributes',              'Attributs physiques',                     'Atributos físicos',                  'الصفات البدنية',                    'Atributos físicos'],
+  ['Profile completeness',             'Complétude du profil',                    'Completude do perfil',               'اكتمال الملف الشخصي',               'Perfil completado'],
+  ['Strong profile',                   'Profil solide',                           'Perfil sólido',                      'ملف شخصي قوي',                      'Perfil sólido'],
+  ['Add more details to improve visibility', 'Ajoutez plus de détails pour la visibilité', 'Adicione mais detalhes para a visibilidade', 'أضف تفاصيل لتحسين ظهورك', 'Añade más detalles para mejorar la visibilidad'],
+
+  // ── Player specialisations ──
+  ['Pace & Dribbling',                 'Vitesse et dribble',                      'Velocidade e drible',                'السرعة والمراوغة',                  'Velocidad y regate'],
+  ['Aerial Ability',                   'Jeu aérien',                              'Jogo aéreo',                         'القدرة الجوية',                     'Juego aéreo'],
+  ['Set Piece Specialist',             'Spécialiste des phases arrêtées',         'Especialista em bola parada',        'أخصائي الكرات الثابتة',             'Especialista en balón parado'],
+  ['Long Range Shooting',              'Tirs longue distance',                    'Remates de longa distância',         'التسديد من مسافة بعيدة',            'Tiros de larga distancia'],
+  ['Defensive Duels',                  'Duels défensifs',                         'Duelos defensivos',                  'المبارزة الدفاعية',                 'Duelos defensivos'],
+  ['Pressing & High Press',            'Pressing haute pression',                 'Pressing e alta pressão',            'الضغط العالي',                      'Pressing y presión alta'],
+  ['Creative Passing',                 'Passes créatifs',                         'Passes criativos',                   'التمرير الإبداعي',                  'Pases creativos'],
+  ['Two-Footed',                       'Ambidextre',                              'Ambidestro',                         'استخدام القدمين',                   'Ambidiestro'],
+  ['Vision & Through Balls',           'Vision et passes en profondeur',          'Visão e passes em profundidade',     'الرؤية والتمريرات المتعمقة',        'Visión y pases en profundidad'],
 ]
 
 const catalog = Object.fromEntries(entries.map(([source, ...values]) => [

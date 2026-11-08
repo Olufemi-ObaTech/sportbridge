@@ -1273,7 +1273,16 @@ function App() {
                           key={role.accountRole}
                           type="button"
                           className="btn text-start p-0 border-0"
-                          onClick={() => openSignup(role.accountRole)}
+                          onClick={() => {
+                            if (user) {
+                              // Logged-in users → Members Directory filtered by role
+                              setView('members')
+                              window.scrollTo(0, 0)
+                            } else {
+                              // Guest users → Create Account
+                              openSignup(role.accountRole)
+                            }
+                          }}
                           style={{ background: 'none' }}
                         >
                           <div
@@ -1292,9 +1301,11 @@ function App() {
                             </span>
                             <div>
                               <div className="fw-bold text-white" style={{ fontSize: 14 }}>{role.heroTitle}</div>
-                              <div style={{ fontSize: 12, color: 'rgba(247,249,248,.65)' }}>{role.heroCopy}</div>
+                              <div style={{ fontSize: 12, color: 'rgba(247,249,248,.65)' }}>
+                                {user ? 'Browse directory →' : role.heroCopy}
+                              </div>
                             </div>
-                            <i className="bi bi-arrow-right ms-auto text-white opacity-50" aria-hidden="true" />
+                            <i className={`bi ${user ? 'bi-people-fill' : 'bi-arrow-right'} ms-auto text-white opacity-50`} aria-hidden="true" />
                           </div>
                         </button>
                       ))}
@@ -1366,9 +1377,16 @@ function App() {
                       <button
                         type="button"
                         className="fw-semibold btn btn-link p-0 justify-content-start"
-                        onClick={() => openSignup(role.accountRole)}
+                        onClick={() => {
+                          if (user) {
+                            setView('members')
+                            window.scrollTo(0, 0)
+                          } else {
+                            openSignup(role.accountRole)
+                          }
+                        }}
                       >
-                        {role.action} <i className="bi bi-arrow-right" aria-hidden="true" />
+                        {user ? 'Browse directory' : role.action} <i className={`bi ${user ? 'bi-people-fill' : 'bi-arrow-right'}`} aria-hidden="true" />
                       </button>
                     </div>
                   </div>

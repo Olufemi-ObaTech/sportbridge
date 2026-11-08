@@ -42,6 +42,30 @@ const COUNTRIES = [
 
 // ——— shared UI helpers ————————————————————————————————————————————————————————
 
+// ── Unverified member gate — blocks access to restricted features ──────────────
+// Shows a blurred overlay with a call-to-action to complete verification.
+function UnverifiedGate({ profile, message, children }) {
+  const isVerified = profile?.verification_status === 'verified'
+  if (isVerified) return children
+  return (
+    <div className="position-relative">
+      <div style={{ filter: 'blur(3px)', pointerEvents: 'none', userSelect: 'none', opacity: 0.5 }}>
+        {children}
+      </div>
+      <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+        style={{ background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(4px)', borderRadius: 8, zIndex: 2 }}>
+        <div className="text-center p-4" style={{ maxWidth: 320 }}>
+          <i className="bi bi-patch-check-fill fs-2 mb-3 d-block" style={{ color: 'var(--fc-blue-500)' }} />
+          <h3 className="h6 fw-bold mb-2">Verification required</h3>
+          <p className="small text-muted mb-0">
+            {message || 'This feature is available to verified members only. Complete identity verification in the Get Verified tab.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function StatCard({ icon, label, value, colour }) {
   return (
     <div className="col-6 col-md-3">
@@ -450,18 +474,22 @@ function PlayerDashboard({ supabase, user, profile }) {
 
       {activeTab === 'post-update' && (
         <SectionCard title="Post Update">
-          <p className="text-muted small mb-3">Share match results, upcoming fixtures, achievements and milestones with the SportBridge community.</p>
-          <PostUpdateForm supabase={supabase} user={user} role="player" onSaved={() => setNotice('Update posted to Community Feed.')} />
+          <UnverifiedGate profile={profile} message="Only verified players can post updates to the Community Feed. Complete verification to unlock posting.">
+            <p className="text-muted small mb-3">Share match results, upcoming fixtures, achievements and milestones with the SportBridge community.</p>
+            <PostUpdateForm supabase={supabase} user={user} role="player" onSaved={() => setNotice('Update posted to Community Feed.')} />
+          </UnverifiedGate>
         </SectionCard>
       )}
 
       {activeTab === 'requests' && (
         <SectionCard title="Access Requests">
-          <p className="text-muted small mb-3">
-            Manage which agents and scouts can view your contact details.
-            Approving an access request allows that agent to message you directly.
-          </p>
-          <AccessRequestsPanel supabase={supabase} user={user} player={player} onUpdate={() => setNotice('Access request updated.')} />
+          <UnverifiedGate profile={profile} message="Only verified players can manage agent access requests. Complete verification to control who can contact you.">
+            <p className="text-muted small mb-3">
+              Manage which agents and scouts can view your contact details.
+              Approving an access request allows that agent to message you directly.
+            </p>
+            <AccessRequestsPanel supabase={supabase} user={user} player={player} onUpdate={() => setNotice('Access request updated.')} />
+          </UnverifiedGate>
         </SectionCard>
       )}
 
@@ -935,11 +963,13 @@ function AgentDashboard({ supabase, user, profile }) {
 
       {activeTab === 'apply-jobs' && (
         <SectionCard title="Browse & Apply for Jobs">
-          <p className="text-muted small mb-3">Browse available agent, scout and sporting director roles. Apply with your verified SportBridge profile.</p>
-          <div className="alert alert-info d-flex gap-2 align-items-center">
-            <i className="bi bi-info-circle flex-shrink-0" />
-            <span>Visit the <button className="btn btn-link p-0 small" type="button" onClick={() => window.location.hash='#jobs'}>Jobs Board</button> to browse and apply for open positions with your verified profile.</span>
-          </div>
+          <UnverifiedGate profile={profile} message="Verified agents can apply for roles with their verified profile. Complete verification to apply.">
+            <p className="text-muted small mb-3">Browse available agent, scout and sporting director roles. Apply with your verified SportBridge profile.</p>
+            <div className="alert alert-info d-flex gap-2 align-items-center">
+              <i className="bi bi-info-circle flex-shrink-0" />
+              <span>Visit the <button className="btn btn-link p-0 small" type="button" onClick={() => window.location.hash='#jobs'}>Jobs Board</button> to browse and apply for open positions with your verified profile.</span>
+            </div>
+          </UnverifiedGate>
         </SectionCard>
       )}
 
@@ -1471,6 +1501,60 @@ function SportsAnalystDashboard({ supabase, user, profile }) {
   )
 }
 
+// ——— Admin Message Form (used inside report cards) ─────────────────────────────
+function AdminMessageForm({ repId, reporter, reported, onSend, saving }) {
+  const [target,  setTarget]  = useState(reporter?.id ? 'reporter' : 'reported')
+  const [message, setMessage] = useState('')
+  const [sent,    setSent]    = useState(false)
+
+  const targetUser = target === 'reporter' ? reporter : reported
+  const targetName = targetUser?.full_name || targetUser?.email || 'party'
+
+  const handleSend = async () => {
+    if (!message.trim() || !targetUser?.id) return
+    await onSend(targetUser.id, targetName, message.trim())
+    setMessage('')
+    setSent(true)
+    setTimeout(() => setSent(false), 3000)
+  }
+
+  return (
+    <div className="d-grid gap-2">
+      <div className="d-flex gap-2 flex-wrap">
+        {reporter?.id && (
+          <label className={`d-flex align-items-center gap-2 px-3 py-1 rounded border small ${target==='reporter'?'border-primary bg-primary bg-opacity-10 fw-semibold':''}`}
+            style={{ cursor:'pointer' }}>
+            <input type="radio" name={`msg-target-${repId}`} checked={target==='reporter'}
+              onChange={()=>setTarget('reporter')} className="form-check-input m-0" />
+            <i className="bi bi-person text-primary" />Reporter: {reporter.full_name || reporter.email}
+          </label>
+        )}
+        {reported?.id && (
+          <label className={`d-flex align-items-center gap-2 px-3 py-1 rounded border small ${target==='reported'?'border-danger bg-danger bg-opacity-10 fw-semibold':''}`}
+            style={{ cursor:'pointer' }}>
+            <input type="radio" name={`msg-target-${repId}`} checked={target==='reported'}
+              onChange={()=>setTarget('reported')} className="form-check-input m-0" />
+            <i className="bi bi-flag text-danger" />Reported: {reported.full_name || reported.email}
+          </label>
+        )}
+      </div>
+      <div className="input-group input-group-sm">
+        <input className="form-control form-control-sm" type="text"
+          placeholder={`Type a message to send to ${targetName}…`}
+          value={message} onChange={e => setMessage(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleSend() }} />
+        <button className="btn btn-primary btn-sm" type="button"
+          disabled={saving || !message.trim()} onClick={handleSend}>
+          <i className="bi bi-send me-1" />{sent ? 'Sent!' : 'Send'}
+        </button>
+      </div>
+      <div className="small text-muted">
+        <i className="bi bi-info-circle me-1" />Sends directly to their inbox + notification.
+      </div>
+    </div>
+  )
+}
+
 // ——— Super Admin dashboard ————————————————————————————————————————————————————
 
 function AdminDashboard({ supabase, user }) {
@@ -1685,8 +1769,9 @@ function AdminDashboard({ supabase, user }) {
   const updateReport = async (reportId, outcomeStatus, outcomeNote) => {
     setSaving(true); setError(''); setNotice('')
     const note = outcomeNote || reportNote[reportId] || ''
+    const rep = reportQueue.find(r => r.id === reportId)
 
-    // Use reviewed_by (original schema column) + reviewer_id (added via ALTER)
+    // Update report status
     const { error: err } = await supabase.from('reports')
       .update({
         status:         outcomeStatus,
@@ -1700,58 +1785,128 @@ function AdminDashboard({ supabase, user }) {
 
     if (err) { setError(`Could not update report: ${err.message}`); setSaving(false); return }
 
-    // If confirmed scam — set reported user's account to denied
-    if (outcomeStatus === 'confirmed_scam') {
-      const rep = reportQueue.find(r => r.id === reportId)
-      if (rep?.reported?.id) {
-        await supabase.from('profiles')
-          .update({ status: 'denied', updated_at: new Date().toISOString() })
-          .eq('id', rep.reported.id)
-        setUsers(cur => cur.map(u => u.id === rep.reported.id ? { ...u, status: 'denied' } : u))
-      }
+    // If confirmed scam — deny reported account
+    if (outcomeStatus === 'confirmed_scam' && rep?.reported?.id) {
+      await supabase.from('profiles')
+        .update({ status: 'denied', updated_at: new Date().toISOString() })
+        .eq('id', rep.reported.id)
+      setUsers(cur => cur.map(u => u.id === rep.reported.id ? { ...u, status: 'denied' } : u))
     }
 
-    // Send notifications to reporter and (if actioned/dismissed) to reported user
-    const rep = reportQueue.find(r => r.id === reportId)
+    // ── Build personalised messages for each party ─────────────────────
+    const reporterName = rep?.reporter?.full_name || 'Reporter'
+    const reportedName = rep?.reported?.full_name || 'the reported user'
+
+    const reporterMsg =
+      outcomeStatus === 'confirmed_scam'
+        ? `Dear ${reporterName},\n\nYour report against ${reportedName} has been thoroughly reviewed by the SportBridge team. We have confirmed a violation of our platform rules and the reported account has been denied. Thank you for helping keep SportBridge safe.\n\n— SportBridge Admin`
+        : outcomeStatus === 'dismissed'
+        ? `Dear ${reporterName},\n\nYour report against ${reportedName} has been reviewed by our team. After investigation, we found insufficient evidence of a violation at this time and no action has been taken. If you have additional evidence, you may file a new report.\n\n— SportBridge Admin`
+        : `Dear ${reporterName},\n\nYour report against ${reportedName} has been received and is now under active investigation by the SportBridge team. We will notify you of the outcome within 48 hours.\n\n— SportBridge Admin`
+
+    const reportedMsg =
+      outcomeStatus === 'confirmed_scam'
+        ? `Dear ${reportedName},\n\nYour SportBridge account has been reviewed by our team following a report submitted against your profile. Our investigation has confirmed a violation of platform rules and your account has been denied access. If you believe this is an error, please contact support.\n\n— SportBridge Admin`
+        : outcomeStatus === 'dismissed'
+        ? `Dear ${reportedName},\n\nA report was filed against your SportBridge profile. Our team has completed a review and found no violation of our platform rules. Your account remains fully active. Thank you for your patience.\n\n— SportBridge Admin`
+        : `Dear ${reportedName},\n\nA report has been filed against your SportBridge profile and our team has begun an active review. We will notify you of the outcome. If you have any information relevant to this matter, please respond to this message.\n\n— SportBridge Admin`
+
+    // ── Helper: send inbox message from admin to a user ────────────────
+    const sendInboxMessage = async (toUserId, msgContent) => {
+      if (!toUserId || toUserId === user.id) return
+      try {
+        let { data: conv } = await supabase.from('conversations')
+          .select('id')
+          .or(`and(initiator_id.eq.${user.id},recipient_id.eq.${toUserId}),and(initiator_id.eq.${toUserId},recipient_id.eq.${user.id})`)
+          .maybeSingle()
+        if (!conv) {
+          const { data: nc } = await supabase.from('conversations').insert({
+            initiator_id: user.id, recipient_id: toUserId,
+            subject: `Report Investigation — Case #${reportId.slice(0,8).toUpperCase()}`,
+            last_message_at: new Date().toISOString(),
+          }).select('id').single()
+          conv = nc
+        } else {
+          await supabase.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', conv.id)
+        }
+        if (conv?.id) {
+          await supabase.from('messages').insert({
+            conversation_id: conv.id, sender_id: user.id, content: msgContent,
+          })
+        }
+      } catch { /* non-critical */ }
+    }
+
+    // ── Notifications + inbox messages for all parties ─────────────────
+    const toNotify = []
     if (rep?.reporter?.id) {
-      const outcomeMsg =
-        outcomeStatus === 'confirmed_scam'
-          ? `Your report about ${rep.reported?.full_name || 'a user'} has been reviewed. The reported account has been actioned.`
-          : outcomeStatus === 'dismissed'
-          ? `Your report about ${rep.reported?.full_name || 'a user'} has been reviewed. No further action was taken at this time.`
-          : `Your report about ${rep.reported?.full_name || 'a user'} is now under active investigation by our team.`
-
-      const toNotify = [{
-        user_id:           rep.reporter.id,
+      toNotify.push({
+        user_id: rep.reporter.id,
         notification_type: 'report_update',
-        data: { message: outcomeMsg, report_id: reportId, status: outcomeStatus },
-      }]
-
-      if (rep.reported?.id && outcomeStatus === 'confirmed_scam') {
+        data: { message: `Your report (Case #${reportId.slice(0,8).toUpperCase()}) has been updated: ${outcomeStatus.replace(/_/g,' ')}`, report_id: reportId, status: outcomeStatus },
+      })
+    }
+    if (rep?.reported?.id) {
+      toNotify.push({
+        user_id: rep.reported.id,
+        notification_type: outcomeStatus === 'confirmed_scam' ? 'account_actioned' : outcomeStatus === 'dismissed' ? 'report_dismissed' : 'report_update',
+        data: { message: `A SportBridge report case involving your account has been updated: ${outcomeStatus.replace(/_/g,' ')}`, report_id: reportId, status: outcomeStatus },
+      })
+    }
+    // Notify all other super admins
+    const { data: adminProfiles } = await supabase.from('profiles').select('id').eq('role', 'super_admin')
+    ;(adminProfiles ?? []).forEach(a => {
+      if (a.id !== user.id) {
         toNotify.push({
-          user_id:           rep.reported.id,
-          notification_type: 'account_actioned',
-          data: { message: 'Your SportBridge account has been reviewed and action has been taken due to a verified report. Contact support if you believe this is an error.' },
-        })
-      } else if (rep.reported?.id && outcomeStatus === 'dismissed') {
-        toNotify.push({
-          user_id:           rep.reported.id,
-          notification_type: 'report_dismissed',
-          data: { message: 'A report filed against your profile has been reviewed and dismissed. No action has been taken against your account.' },
+          user_id: a.id,
+          notification_type: 'admin_report_update',
+          data: { message: `[Admin] Report #${reportId.slice(0,8).toUpperCase()} updated to: ${outcomeStatus.replace(/_/g,' ')} | Reporter: ${rep?.reporter?.email} | Reported: ${rep?.reported?.email}`, report_id: reportId },
         })
       }
+    })
+    try { await supabase.from('notifications').insert(toNotify) } catch { /* non-critical */ }
 
-      try { await supabase.from('notifications').insert(toNotify) } catch { /* non-critical */ }
-    }
+    // Send inbox messages to reporter and reported user
+    if (rep?.reporter?.id) await sendInboxMessage(rep.reporter.id, reporterMsg)
+    if (rep?.reported?.id) await sendInboxMessage(rep.reported.id, reportedMsg)
 
-    // Update local state — keep card visible with new status
     setReportQueue(q => q.map(r => r.id === reportId ? { ...r, status: outcomeStatus, reviewer_notes: note.trim() || null } : r))
     setSaving(false)
     setNotice(
-      outcomeStatus === 'dismissed'      ? 'Report dismissed. No action taken.' :
-      outcomeStatus === 'confirmed_scam' ? 'Scam confirmed — account denied.' :
-      'Report status updated to: investigating.'
+      outcomeStatus === 'dismissed'      ? '✓ Report dismissed. Inbox messages sent to both parties.' :
+      outcomeStatus === 'confirmed_scam' ? '✓ Scam confirmed — account denied. All parties notified via inbox.' :
+      '✓ Investigation started. Inbox messages sent to both parties.'
     )
+  }
+
+  // ── Admin: send custom inbox message to any specific user ─────────────
+  const sendAdminMessage = async (toUserId, toName, message) => {
+    if (!message?.trim() || !toUserId) return
+    try {
+      let { data: conv } = await supabase.from('conversations')
+        .select('id')
+        .or(`and(initiator_id.eq.${user.id},recipient_id.eq.${toUserId}),and(initiator_id.eq.${toUserId},recipient_id.eq.${user.id})`)
+        .maybeSingle()
+      if (!conv) {
+        const { data: nc } = await supabase.from('conversations').insert({
+          initiator_id: user.id, recipient_id: toUserId,
+          subject: 'Message from SportBridge Admin',
+          last_message_at: new Date().toISOString(),
+        }).select('id').single()
+        conv = nc
+      } else {
+        await supabase.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', conv.id)
+      }
+      if (conv?.id) {
+        await supabase.from('messages').insert({ conversation_id: conv.id, sender_id: user.id, content: message.trim() })
+      }
+      await supabase.from('notifications').insert({
+        user_id: toUserId,
+        notification_type: 'admin_message',
+        data: { message: 'You have a new message from SportBridge Admin. Open your inbox to read it.' },
+      })
+      setNotice(`✓ Message sent to ${toName}.`)
+    } catch (e) { setError(`Could not send message: ${e.message}`) }
   }
 
     const roleCounts = ALL_ROLES.reduce((acc, r) => ({ ...acc, [r]: users.filter((u) => u.role === r).length }), {})
@@ -2367,6 +2522,24 @@ function AdminDashboard({ supabase, user }) {
                     placeholder="Add investigation notes…"
                     value={reportNote[rep.id]??''}
                     onChange={e=>setReportNote(n=>({...n,[rep.id]:e.target.value}))} />
+                </div>
+              )}
+
+              {/* Admin direct message panel — always visible on open cases */}
+              {!['confirmed_scam','dismissed'].includes(rep.status) && (
+                <div className="card p-3 mb-3" style={{ background: 'rgba(47,125,240,.04)', border: '1px solid rgba(47,125,240,.2)' }}>
+                  <div className="fw-semibold small mb-2 d-flex align-items-center gap-2">
+                    <i className="bi bi-envelope-fill text-primary" />
+                    Send admin message to parties
+                    <span className="badge text-bg-primary" style={{ fontSize: 9 }}>Inbox + Notification</span>
+                  </div>
+                  <AdminMessageForm
+                    repId={rep.id}
+                    reporter={rep.reporter}
+                    reported={rep.reported}
+                    onSend={sendAdminMessage}
+                    saving={saving}
+                  />
                 </div>
               )}
 
