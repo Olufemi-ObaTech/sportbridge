@@ -828,6 +828,16 @@ const entries = [
   ['verification_approved',                 'vérification approuvée',                    'verificação aprovada',                     'تم الموافقة على التحقق',                    'verificación aprobada'],
   ['verification_rejected',                 'vérification rejetée',                      'verificação rejeitada',                    'تم رفض التحقق',                             'verificación rechazada'],
   ['new_message',                           'nouveau message',                           'nova mensagem',                            'رسالة جديدة',                               'nuevo mensaje'],
+
+  // ── Social media links (all 5 languages) ──
+  ['Social Media & Links',      'Réseaux sociaux et liens',       'Redes sociais e links',           'وسائل التواصل الاجتماعي والروابط', 'Redes sociales y enlaces'],
+  ['all optional',              'tous facultatifs',                'todos opcionais',                 'جميعها اختيارية',                   'todos opcionales'],
+  ['Website',                   'Site web',                        'Website',                         'الموقع الإلكتروني',                 'Sitio web'],
+  ['X / Twitter',               'X / Twitter',                     'X / Twitter',                     'إكس / تويتر',                       'X / Twitter'],
+  ['TikTok',                    'TikTok',                          'TikTok',                          'تيك توك',                           'TikTok'],
+  ['Facebook page',             'Page Facebook',                   'Página Facebook',                 'صفحة فيسبوك',                       'Página de Facebook'],
+  ['Instagram profile',         'Profil Instagram',                'Perfil Instagram',                'ملف إنستغرام',                      'Perfil de Instagram'],
+  ['YouTube channel',           'Chaîne YouTube',                  'Canal YouTube',                   'قناة يوتيوب',                       'Canal de YouTube'],
 ]
 
 const catalog = Object.fromEntries(entries.map(([source, ...values]) => [

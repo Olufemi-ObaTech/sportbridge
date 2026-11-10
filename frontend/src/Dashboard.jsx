@@ -99,6 +99,47 @@ function SectionCard({ title, children, action }) {
 
 function FormRow({ children }) { return <div className="row g-3">{children}</div> }
 
+// ── Social media links section (optional — used by all profile forms) ──────────
+function SocialMediaFields({ draft, upd }) {
+  const fields = [
+    { key: 'linkedin',      label: 'LinkedIn',   icon: 'bi-linkedin',   placeholder: 'https://linkedin.com/in/yourname',      colour: '#0A66C2' },
+    { key: 'website_url',   label: 'Website',    icon: 'bi-globe2',     placeholder: 'https://yourwebsite.com',                colour: '#2F7DF0' },
+    { key: 'facebook_url',  label: 'Facebook',   icon: 'bi-facebook',   placeholder: 'https://facebook.com/yourpage',          colour: '#1877F2' },
+    { key: 'instagram_url', label: 'Instagram',  icon: 'bi-instagram',  placeholder: 'https://instagram.com/yourhandle',       colour: '#E4405F' },
+    { key: 'twitter_url',   label: 'X / Twitter',icon: 'bi-twitter-x',  placeholder: 'https://x.com/yourhandle',               colour: '#000000' },
+    { key: 'youtube_url',   label: 'YouTube',    icon: 'bi-youtube',    placeholder: 'https://youtube.com/@yourchannel',       colour: '#FF0000' },
+    { key: 'tiktok_url',    label: 'TikTok',     icon: 'bi-tiktok',     placeholder: 'https://tiktok.com/@yourhandle',         colour: '#000000' },
+  ]
+  return (
+    <div className="col-12">
+      <div className="card p-3 mb-0" style={{ background: 'var(--bs-secondary-bg)', border: 'none' }}>
+        <div className="fw-semibold small mb-3 d-flex align-items-center gap-2" style={{ color: 'var(--fc-blue-700)' }}>
+          <i className="bi bi-share-fill text-primary" />
+          Social Media &amp; Links <span className="text-muted fw-normal">(all optional)</span>
+        </div>
+        <div className="row g-2">
+          {fields.map(({ key, label, icon, placeholder, colour }) => (
+            <div key={key} className="col-12 col-md-6">
+              <div className="input-group input-group-sm">
+                <span className="input-group-text" style={{ background: colour, color: '#fff', border: 'none', minWidth: 36, justifyContent: 'center' }}>
+                  <i className={`bi ${icon}`} />
+                </span>
+                <input
+                  className="form-control form-control-sm"
+                  type="url"
+                  value={draft[key] ?? ''}
+                  onChange={upd(key)}
+                  placeholder={placeholder}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Field({ label, col = 'col-12 col-md-6', hint, children }) {
   return (
     <div className={col}>
@@ -263,7 +304,7 @@ function PlayerDashboard({ supabase, user, profile }) {
   useEffect(() => {
     let alive = true
     supabase.from('players')
-      .select('id, display_name, position, secondary_position, age, country, nationality, bio, is_public, sport, gender, foot, preferred_foot, dominant_hand, height_cm, weight_kg, current_club, achievements, achievements_data, linkedin, views_count, region, availability, age_group, stats')
+      .select('id, display_name, position, secondary_position, age, country, nationality, bio, is_public, sport, gender, foot, preferred_foot, dominant_hand, height_cm, weight_kg, current_club, achievements, achievements_data, linkedin, views_count, region, availability, age_group, stats, facebook_url, instagram_url, twitter_url, youtube_url, tiktok_url, website_url')
       .eq('profile_id', user.id)
       .maybeSingle()
       .then(({ data, error: err }) => {
@@ -292,6 +333,12 @@ function PlayerDashboard({ supabase, user, profile }) {
           region:             p.region             ?? '',
           availability:       p.availability       ?? 'available_now',
           age_group:          p.age_group          ?? '',
+          facebook_url:       p.facebook_url       ?? '',
+          instagram_url:      p.instagram_url      ?? '',
+          twitter_url:        p.twitter_url        ?? '',
+          youtube_url:        p.youtube_url        ?? '',
+          tiktok_url:         p.tiktok_url         ?? '',
+          website_url:        p.website_url        ?? '',
         })
         setLoading(false)
       })
@@ -328,6 +375,12 @@ function PlayerDashboard({ supabase, user, profile }) {
       region:             draft.region?.trim() || null,
       availability:       draft.availability || 'available_now',
       age_group:          draft.age_group || null,
+      facebook_url:       draft.facebook_url?.trim()   || null,
+      instagram_url:      draft.instagram_url?.trim()  || null,
+      twitter_url:        draft.twitter_url?.trim()    || null,
+      youtube_url:        draft.youtube_url?.trim()    || null,
+      tiktok_url:         draft.tiktok_url?.trim()     || null,
+      website_url:        draft.website_url?.trim()    || null,
       updated_at:         new Date().toISOString(),
     }
     const q = player
@@ -463,6 +516,7 @@ function PlayerDashboard({ supabase, user, profile }) {
                 </select>
               </Field>
               <Field label="LinkedIn URL" col="col-12"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} placeholder="https://linkedin.com/in/yourname" /></Field>
+              <SocialMediaFields draft={draft} upd={upd} />
               <Field label="About / Bio" col="col-12">
                 <textarea className="form-control" rows={4} value={draft.bio} onChange={upd('bio')} placeholder="Playing style, experience and goals…" />
                 {blockContactInfo(draft.bio) && <div className="small text-danger mt-1"><i className="bi bi-exclamation-circle me-1" />{blockContactInfo(draft.bio)}</div>}
@@ -470,6 +524,7 @@ function PlayerDashboard({ supabase, user, profile }) {
               <Field label="Achievements" col="col-12">
                 <textarea className="form-control" rows={3} value={draft.achievements} onChange={upd('achievements')} placeholder="Honours, caps, notable clubs…" />
               </Field>
+              <SocialMediaFields draft={draft} upd={upd} />
               <div className="col-12">
                 <div className="form-check form-switch">
                   <input className="form-check-input" type="checkbox" id="player-public" checked={draft.is_public} onChange={upd('is_public')} />
@@ -550,7 +605,7 @@ function CoachDashboard({ supabase, user, profile }) {
   useEffect(() => {
     let alive = true
     supabase.from('coach_profiles')
-      .select('id, full_name, sport, preferred_role, experience_years, current_club, nationality, gender, about, achievements, badges, open_to_work, linkedin, is_public')
+      .select('id, full_name, sport, preferred_role, experience_years, current_club, nationality, gender, about, achievements, badges, open_to_work, linkedin, is_public, facebook_url, instagram_url, twitter_url, youtube_url, tiktok_url, website_url')
       .eq('user_id', user.id).maybeSingle()
       .then(({ data, error: err }) => {
         if (!alive) return
@@ -571,6 +626,12 @@ function CoachDashboard({ supabase, user, profile }) {
           open_to_work:     c.open_to_work     ?? true,
           linkedin:         c.linkedin         ?? '',
           is_public:        c.is_public        ?? false,
+          facebook_url:     c.facebook_url     ?? '',
+          instagram_url:    c.instagram_url    ?? '',
+          twitter_url:      c.twitter_url      ?? '',
+          youtube_url:      c.youtube_url      ?? '',
+          tiktok_url:       c.tiktok_url       ?? '',
+          website_url:      c.website_url      ?? '',
         })
         setLoading(false)
       })
@@ -599,6 +660,12 @@ function CoachDashboard({ supabase, user, profile }) {
       open_to_work:     draft.open_to_work,
       linkedin:         draft.linkedin.trim()     || null,
       is_public:        draft.is_public,
+      facebook_url:     draft.facebook_url?.trim()   || null,
+      instagram_url:    draft.instagram_url?.trim()  || null,
+      twitter_url:      draft.twitter_url?.trim()    || null,
+      youtube_url:      draft.youtube_url?.trim()    || null,
+      tiktok_url:       draft.tiktok_url?.trim()     || null,
+      website_url:      draft.website_url?.trim()    || null,
       updated_at:       new Date().toISOString(),
     }
     const q = coach ? supabase.from('coach_profiles').update(payload).eq('id', coach.id) : supabase.from('coach_profiles').insert(payload)
@@ -708,6 +775,7 @@ function CoachDashboard({ supabase, user, profile }) {
                 </select>
               </Field>
               <Field label="LinkedIn URL"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} /></Field>
+              <SocialMediaFields draft={draft} upd={upd} />
               <Field label="Badges / Licences (comma-separated)" col="col-12">
                 <input className="form-control" value={draft.badges} onChange={upd('badges')} placeholder="e.g. UEFA B, CAF A Licence" />
               </Field>
@@ -872,7 +940,7 @@ function AgentDashboard({ supabase, user, profile }) {
   useEffect(() => {
     let alive = true
     Promise.all([
-      supabase.from('agent_profiles').select('id, agency_name, sport, nationality, gender, experience_years, regions, about, achievements, linkedin, is_public').eq('user_id', user.id).maybeSingle(),
+      supabase.from('agent_profiles').select('id, agency_name, sport, nationality, gender, experience_years, regions, about, achievements, linkedin, is_public, facebook_url, instagram_url, twitter_url, youtube_url, tiktok_url, website_url').eq('user_id', user.id).maybeSingle(),
       supabase.from('watchlists').select('id', { count: 'exact', head: true }).eq('owner_id', user.id),
     ]).then(([{ data: a, error: ae }, { count, error: we }]) => {
       if (!alive) return
@@ -891,6 +959,12 @@ function AgentDashboard({ supabase, user, profile }) {
         achievements:     ag.achievements     ?? '',
         linkedin:         ag.linkedin         ?? '',
         is_public:        ag.is_public        ?? false,
+        facebook_url:     ag.facebook_url     ?? '',
+        instagram_url:    ag.instagram_url    ?? '',
+        twitter_url:      ag.twitter_url      ?? '',
+        youtube_url:      ag.youtube_url      ?? '',
+        tiktok_url:       ag.tiktok_url       ?? '',
+        website_url:      ag.website_url      ?? '',
       })
       setLoading(false)
     })
@@ -916,6 +990,12 @@ function AgentDashboard({ supabase, user, profile }) {
       achievements:     draft.achievements.trim()  || null,
       linkedin:         draft.linkedin.trim()      || null,
       is_public:        draft.is_public,
+      facebook_url:     draft.facebook_url?.trim()   || null,
+      instagram_url:    draft.instagram_url?.trim()  || null,
+      twitter_url:      draft.twitter_url?.trim()    || null,
+      youtube_url:      draft.youtube_url?.trim()    || null,
+      tiktok_url:       draft.tiktok_url?.trim()     || null,
+      website_url:      draft.website_url?.trim()    || null,
       updated_at:       new Date().toISOString(),
     }
     const q = agent ? supabase.from('agent_profiles').update(payload).eq('id', agent.id) : supabase.from('agent_profiles').insert(payload)
@@ -977,6 +1057,7 @@ function AgentDashboard({ supabase, user, profile }) {
                 </select>
               </Field>
               <Field label="LinkedIn URL"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} /></Field>
+              <SocialMediaFields draft={draft} upd={upd} />
               <Field label="Operating regions (comma-separated)" col="col-12"><input className="form-control" value={draft.regions} onChange={upd('regions')} placeholder="e.g. West Africa, Europe, Middle East" /></Field>
               <Field label="About" col="col-12">
                 <textarea className="form-control" rows={4} value={draft.about} onChange={upd('about')} />
@@ -1073,7 +1154,7 @@ function AcademyDashboard({ supabase, user, profile }) {
   useEffect(() => {
     let alive = true
     supabase.from('academy_profiles')
-      .select('id, club_id, sports, country, state, address, phone, year_founded, linkedin, leagues, languages')
+      .select('id, club_id, sports, country, state, address, phone, year_founded, linkedin, leagues, languages, facebook_url, instagram_url, twitter_url, youtube_url, tiktok_url')
       .eq('user_id', user.id).maybeSingle()
       .then(async ({ data: ac, error: ae }) => {
         if (!alive) return
@@ -1101,6 +1182,11 @@ function AcademyDashboard({ supabase, user, profile }) {
           about:        c.about        ?? '',
           website:      c.website      ?? '',
           sports:       Array.isArray(a.sports) ? a.sports : ['football'],
+          facebook_url: a.facebook_url  ?? '',
+          instagram_url:a.instagram_url ?? '',
+          twitter_url:  a.twitter_url   ?? '',
+          youtube_url:  a.youtube_url   ?? '',
+          tiktok_url:   a.tiktok_url    ?? '',
         })
         setLoading(false)
       })
@@ -1123,7 +1209,7 @@ function AcademyDashboard({ supabase, user, profile }) {
       const { error: ce } = await supabase.from('clubs').update({ name: draft.club_name.trim() || profile.full_name, about: draft.about.trim() || null, website: draft.website.trim() || null, sports: draft.sports, updated_at: new Date().toISOString() }).eq('id', club.id)
       if (ce) { setError(ce.message); setSaving(false); return }
     }
-    const apPayload = { user_id: user.id, sports: draft.sports, country: draft.country || null, state: draft.state.trim() || null, address: draft.address.trim() || null, phone: draft.phone.trim() || null, year_founded: draft.year_founded ? Number(draft.year_founded) : null, linkedin: draft.linkedin.trim() || null, updated_at: new Date().toISOString() }
+    const apPayload = { user_id: user.id, sports: draft.sports, country: draft.country || null, state: draft.state.trim() || null, address: draft.address.trim() || null, phone: draft.phone.trim() || null, year_founded: draft.year_founded ? Number(draft.year_founded) : null, linkedin: draft.linkedin.trim() || null, facebook_url: draft.facebook_url?.trim()||null, instagram_url: draft.instagram_url?.trim()||null, twitter_url: draft.twitter_url?.trim()||null, youtube_url: draft.youtube_url?.trim()||null, tiktok_url: draft.tiktok_url?.trim()||null, updated_at: new Date().toISOString() }
     const q = academy ? supabase.from('academy_profiles').update(apPayload).eq('id', academy.id) : supabase.from('academy_profiles').insert(apPayload)
     const { data, error: ae } = await q.select().single()
     setSaving(false)
@@ -1178,6 +1264,7 @@ function AcademyDashboard({ supabase, user, profile }) {
               <Field label="Phone"><input className="form-control" type="tel" value={draft.phone} onChange={upd('phone')} /></Field>
               <Field label="Website"><input className="form-control" type="url" value={draft.website} onChange={upd('website')} /></Field>
               <Field label="LinkedIn URL"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} /></Field>
+              <SocialMediaFields draft={draft} upd={upd} />
               <div className="col-12">
                 <label className="form-label fw-semibold" style={{ fontSize: 13 }}>Sports</label>
                 <div className="d-flex gap-3">
@@ -1287,7 +1374,7 @@ function SportsAnalystDashboard({ supabase, user, profile }) {
   useEffect(() => {
     let alive = true
     supabase.from('coach_profiles')
-      .select('id, full_name, sport, preferred_role, experience_years, current_club, nationality, gender, about, achievements, badges, open_to_work, linkedin, is_public')
+      .select('id, full_name, sport, preferred_role, experience_years, current_club, nationality, gender, about, achievements, badges, open_to_work, linkedin, is_public, facebook_url, instagram_url, twitter_url, youtube_url, tiktok_url, website_url')
       .eq('user_id', user.id).maybeSingle()
       .then(({ data, error: err }) => {
         if (!alive) return
@@ -1308,6 +1395,12 @@ function SportsAnalystDashboard({ supabase, user, profile }) {
           open_to_work:     c.open_to_work     ?? true,
           linkedin:         c.linkedin         ?? '',
           is_public:        c.is_public        ?? false,
+          facebook_url:     c.facebook_url     ?? '',
+          instagram_url:    c.instagram_url    ?? '',
+          twitter_url:      c.twitter_url      ?? '',
+          youtube_url:      c.youtube_url      ?? '',
+          tiktok_url:       c.tiktok_url       ?? '',
+          website_url:      c.website_url      ?? '',
         })
         setLoading(false)
       })
@@ -1336,6 +1429,12 @@ function SportsAnalystDashboard({ supabase, user, profile }) {
       open_to_work:     draft.open_to_work,
       linkedin:         draft.linkedin.trim()     || null,
       is_public:        draft.is_public,
+      facebook_url:     draft.facebook_url?.trim()   || null,
+      instagram_url:    draft.instagram_url?.trim()  || null,
+      twitter_url:      draft.twitter_url?.trim()    || null,
+      youtube_url:      draft.youtube_url?.trim()    || null,
+      tiktok_url:       draft.tiktok_url?.trim()     || null,
+      website_url:      draft.website_url?.trim()    || null,
       updated_at:       new Date().toISOString(),
     }
     const q = analyst ? supabase.from('coach_profiles').update(payload).eq('id', analyst.id) : supabase.from('coach_profiles').insert(payload)
@@ -1452,6 +1551,7 @@ function SportsAnalystDashboard({ supabase, user, profile }) {
                 </select>
               </Field>
               <Field label="LinkedIn URL"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} /></Field>
+              <SocialMediaFields draft={draft} upd={upd} />
               <Field label="Software / Tools (comma-separated)" col="col-12">
                 <input className="form-control" value={draft.badges} onChange={upd('badges')} placeholder="e.g. Wyscout, StatsBomb, Tableau, Python" />
               </Field>
