@@ -161,32 +161,64 @@ function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role 
   const verified = profile?.verification_status === 'verified'
   const badges = Array.isArray(member.badges) ? member.badges : []
 
+  // Group licences vs general badges for display
+  const LICENCE_KEYWORDS = ['licence','license','diploma','certificate','certified','pro','uefa','caf','fifa','fa level','nsca','cscs']
+  const licences = badges.filter(b => LICENCE_KEYWORDS.some(k => b.toLowerCase().includes(k)))
+  const otherBadges = badges.filter(b => !LICENCE_KEYWORDS.some(k => b.toLowerCase().includes(k)))
+
+  // Map preferred_role to a category colour
+  const ROLE_CATEGORY = {
+    'Head Coach': '#2F7DF0', 'First Team Manager': '#2F7DF0', 'Caretaker Manager': '#2F7DF0',
+    'Interim Manager': '#2F7DF0', 'Player-Manager': '#2F7DF0', 'Under-23 Manager': '#2F7DF0',
+    'Under-18 Manager': '#2F7DF0',
+    'Assistant Head Coach': '#20c997', 'Assistant Coach': '#20c997', 'Goalkeeping Coach': '#20c997',
+    'Set-Piece Coach': '#20c997', 'Fitness Coach': '#20c997', 'Strength & Conditioning Coach': '#20c997',
+    'Sports Scientist': '#20c997', 'Physio / Sports Therapist': '#20c997', 'Team Doctor': '#20c997',
+    'Nutritionist': '#20c997', 'Sport Psychologist': '#20c997',
+    'Sporting Director': '#F5B301', 'Technical Director': '#F5B301', 'Director of Football': '#F5B301',
+    'Academy Director': '#F5B301', 'Head of Recruitment': '#F5B301', 'Head of Player Development': '#F5B301',
+    'Head of Analysis': '#F5B301', 'Chief Executive Officer (CEO)': '#F5B301', 'General Manager': '#F5B301',
+    'Club Secretary': '#F5B301', 'Operations Manager': '#F5B301',
+    'Scout': '#0dcaf0', 'Chief Scout': '#0dcaf0', 'Regional Scout': '#0dcaf0',
+    'International Scout': '#0dcaf0', 'Performance Analyst': '#0dcaf0', 'Video Analyst': '#0dcaf0',
+    'Data Analyst': '#0dcaf0', 'Opposition Analyst': '#0dcaf0', 'Recruitment Analyst': '#0dcaf0',
+    'Tactical Analyst': '#0dcaf0', 'Head of Data Science': '#0dcaf0',
+    'Reserve Team Coach': '#fd7e14', 'U23 / U21 Coach': '#fd7e14', 'U18 Coach': '#fd7e14',
+    'U16 Coach': '#fd7e14', 'U14 Coach': '#fd7e14', 'Youth Academy Coach': '#fd7e14',
+    'Elite Development Coach': '#fd7e14', 'Loan Manager': '#fd7e14', 'Player Liaison': '#fd7e14',
+    'Community Coach': '#fd7e14', "Women's Team Coach": '#fd7e14', 'Futsal Coach': '#fd7e14',
+  }
+  const roleColour = ROLE_CATEGORY[member.preferred_role] ?? m.colour
+
   return (
-    <div className="container py-4" style={{ maxWidth: 900 }}>
+    <div className="container py-4" style={{ maxWidth: 960 }}>
       <button className="btn btn-link p-0 mb-4 text-decoration-none" type="button" onClick={onBack}>
         <i className="bi bi-arrow-left me-1" />Back to directory
       </button>
 
       <div className="row g-4">
-        {/* Left — profile card */}
+        {/* ── Left ── */}
         <div className="col-12 col-md-8">
+
+          {/* Profile header card */}
           <div className="card p-4 mb-4">
-            {/* Header */}
             <div className="d-flex gap-4 align-items-start mb-4">
-              <RoleAvatar role={role} size={80} name={member.full_name} />
-              <div>
+              <RoleAvatar role={role} size={88} name={member.full_name} />
+              <div className="flex-grow-1 min-w-0">
                 <h1 className="h3 fw-bold mb-1" style={{ color: 'var(--fc-blue-700)' }}>
                   {member.full_name}
-                  {verified && (
-                    <i className="bi bi-patch-check-fill text-primary ms-2" style={{ fontSize: 20 }} aria-label="Verified" />
-                  )}
+                  {verified && <i className="bi bi-patch-check-fill text-primary ms-2" style={{ fontSize: 20 }} aria-label="Verified" />}
                 </h1>
-                <div className="d-flex flex-wrap gap-2 align-items-center">
+
+                {/* Role + sub-role badges */}
+                <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
                   <span className="badge" style={{ background: m.colour, color: m.darkText ? '#212529' : '#fff' }}>
                     <i className={`bi ${m.icon} me-1`} />{m.label}
                   </span>
                   {member.preferred_role && (
-                    <span className="badge text-bg-light border">{member.preferred_role}</span>
+                    <span className="badge fw-semibold" style={{ background: roleColour + '22', color: roleColour, border: `1px solid ${roleColour}55` }}>
+                      {member.preferred_role}
+                    </span>
                   )}
                   {member.open_to_work && (
                     <span className="badge text-bg-success">
@@ -194,74 +226,177 @@ function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role 
                     </span>
                   )}
                 </div>
+
+                {/* Quick info grid */}
+                <div className="row g-2 small">
+                  {[
+                    { icon: 'bi-globe2',           label: 'Nationality',   value: member.nationality },
+                    { icon: 'bi-briefcase',         label: 'Experience',    value: member.experience_years ? `${member.experience_years} years` : null },
+                    { icon: 'bi-building',          label: 'Current club',  value: member.current_club },
+                    { icon: 'bi-dribbble',          label: 'Sport',         value: member.sport },
+                    { icon: 'bi-gender-ambiguous',  label: 'Gender',        value: member.gender },
+                    { icon: 'bi-people-fill',       label: 'Age groups',    value: member.age_groups_coached },
+                  ].filter(r => r.value).map(({ icon, label, value }) => (
+                    <div key={label} className="col-6 d-flex align-items-center gap-1">
+                      <i className={`bi ${icon} text-primary flex-shrink-0`} style={{ fontSize: 13 }} />
+                      <span className="text-muted me-1">{label}:</span>
+                      <span className="fw-semibold text-truncate">{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {member.linkedin && (
+                  <a href={member.linkedin} target="_blank" rel="noopener noreferrer"
+                    className="btn btn-outline-primary btn-sm mt-3 d-inline-flex align-items-center gap-2">
+                    <i className="bi bi-linkedin" />LinkedIn profile
+                  </a>
+                )}
               </div>
             </div>
+          </div>
 
-            {/* Key info */}
-            <div className="row g-2 mb-4">
-              <div className="col-12 col-sm-6">
-                <InfoRow icon="bi-globe2"           label="Nationality"     value={member.nationality} />
-                <InfoRow icon="bi-briefcase"         label="Experience"      value={member.experience_years ? `${member.experience_years} years` : null} />
-                <InfoRow icon="bi-building"          label="Current club"    value={member.current_club} />
+          {/* About */}
+          {member.about && (
+            <div className="card p-4 mb-4">
+              <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-person-lines-fill me-2 text-primary" />About
+              </h2>
+              <p className="mb-0" style={{ lineHeight: 1.8, color: 'var(--fc-muted)' }}>{member.about}</p>
+            </div>
+          )}
+
+          {/* Coaching philosophy / style */}
+          {member.coaching_philosophy && (
+            <div className="card p-4 mb-4">
+              <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-lightbulb-fill me-2 text-warning" />Coaching Philosophy
+              </h2>
+              <p className="mb-0 fst-italic" style={{ lineHeight: 1.8, color: 'var(--fc-muted)' }}>"{member.coaching_philosophy}"</p>
+            </div>
+          )}
+
+          {/* Key achievements */}
+          {member.achievements && (
+            <div className="card p-4 mb-4">
+              <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-trophy-fill me-2 text-warning" />Key Achievements
+              </h2>
+              <p className="mb-0 small" style={{ lineHeight: 1.8, color: 'var(--fc-muted)', whiteSpace: 'pre-line' }}>{member.achievements}</p>
+            </div>
+          )}
+
+          {/* Licences & Qualifications */}
+          {licences.length > 0 && (
+            <div className="card p-4 mb-4">
+              <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-award-fill me-2 text-primary" />Licences &amp; Qualifications
+              </h2>
+              <div className="d-flex flex-wrap gap-2">
+                {licences.map((b, i) => (
+                  <span key={i} className="badge d-inline-flex align-items-center gap-1 px-3 py-2"
+                    style={{ background: 'var(--fc-blue-500)', color: '#fff', fontSize: 12 }}>
+                    <i className="bi bi-award-fill" style={{ fontSize: 10 }} />{b}
+                  </span>
+                ))}
               </div>
-              <div className="col-12 col-sm-6">
-                <InfoRow icon="bi-dribbble"          label="Sport"           value={member.sport} />
-                <InfoRow icon="bi-gender-ambiguous"  label="Gender"          value={member.gender} />
-                {member.linkedin && (
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <i className="bi bi-linkedin text-primary" style={{ fontSize: 14 }} />
-                    <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="small">
-                      LinkedIn profile
-                    </a>
+            </div>
+          )}
+
+          {/* Other badges / tools */}
+          {otherBadges.length > 0 && (
+            <div className="card p-4 mb-4">
+              <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-patch-check me-2 text-success" />
+                {role === 'sports_analyst' ? 'Tools & Software' : 'Additional Badges'}
+              </h2>
+              <div className="d-flex flex-wrap gap-2">
+                {otherBadges.map((b, i) => (
+                  <span key={i} className="badge text-bg-light border fw-normal px-3 py-2" style={{ fontSize: 12 }}>{b}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Role-specific detail sections */}
+          {/* For analysts — show specialisation + tools */}
+          {role === 'sports_analyst' && (
+            <div className="card p-4 mb-4">
+              <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-graph-up-arrow me-2 text-primary" />Analyst Specialisation
+              </h2>
+              <div className="row g-3">
+                {member.preferred_role && (
+                  <div className="col-12">
+                    <div className="p-3 rounded d-flex align-items-center gap-3"
+                      style={{ background: '#fd7e1412', border: '1px solid #fd7e1433' }}>
+                      <i className="bi bi-graph-up-arrow" style={{ color: '#fd7e14', fontSize: 24 }} />
+                      <div>
+                        <div className="small text-muted mb-1">Specialisation</div>
+                        <div className="fw-bold" style={{ color: '#fd7e14' }}>{member.preferred_role}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {member.publications && (
+                  <div className="col-12">
+                    <div className="small fw-semibold text-muted mb-1">Publications / Research</div>
+                    <p className="small mb-0" style={{ lineHeight: 1.7 }}>{member.publications}</p>
                   </div>
                 )}
               </div>
             </div>
+          )}
 
-            {/* About */}
-            {member.about && (
-              <div className="mb-4">
-                <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>About</h2>
-                <p className="small text-muted mb-0" style={{ lineHeight: 1.7 }}>{member.about}</p>
+          {/* For scouts/analysts — show scouting regions */}
+          {['Scout','Chief Scout','Regional Scout','International Scout','Recruitment Analyst'].includes(member.preferred_role) && member.regions?.length > 0 && (
+            <div className="card p-4 mb-4">
+              <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-geo-alt-fill me-2 text-primary" />Scouting Regions
+              </h2>
+              <div className="d-flex flex-wrap gap-2">
+                {(Array.isArray(member.regions) ? member.regions : []).map((r, i) => (
+                  <span key={i} className="badge text-bg-light border">
+                    <i className="bi bi-geo-alt me-1" />{r}
+                  </span>
+                ))}
               </div>
-            )}
+            </div>
+          )}
+        </div>
 
-            {/* Achievements */}
-            {member.achievements && (
-              <div className="mb-4">
-                <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
-                  <i className="bi bi-trophy me-2 text-warning" />Key achievements
-                </h2>
-                <p className="small text-muted mb-0" style={{ lineHeight: 1.7 }}>{member.achievements}</p>
+        {/* ── Right sidebar ── */}
+        <div className="col-12 col-md-4">
+
+          {/* Role info card */}
+          <div className="card p-4 mb-3" style={{ background: roleColour + '0a', border: `1px solid ${roleColour}22` }}>
+            <div className="d-flex align-items-center gap-3 mb-3">
+              <div className="d-flex align-items-center justify-content-center rounded-circle"
+                style={{ width: 48, height: 48, background: roleColour, color: '#fff', fontSize: 20 }}>
+                <i className={`bi ${m.icon}`} />
               </div>
-            )}
-
-            {/* Badges / licences */}
-            {badges.length > 0 && (
-              <div className="mb-4">
-                <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
-                  <i className="bi bi-award me-2 text-primary" />
-                  {role === 'sports_analyst' ? 'Tools & Certifications' : 'Badges & Licences'}
-                </h2>
-                <div className="d-flex flex-wrap gap-2">
-                  {badges.map((b, i) => (
-                    <span key={i} className="badge text-bg-light border fw-normal">{b}</span>
-                  ))}
+              <div>
+                <div className="fw-bold small" style={{ color: roleColour }}>{member.preferred_role || m.label}</div>
+                <div className="small text-muted">
+                  {member.experience_years ? `${member.experience_years} yrs experience` : 'Experience not listed'}
                 </div>
+              </div>
+            </div>
+            {member.open_to_work && (
+              <div className="alert alert-success py-2 mb-0 small d-flex align-items-center gap-2">
+                <i className="bi bi-circle-fill" style={{ fontSize: 8 }} />
+                Available for new opportunities
               </div>
             )}
           </div>
-        </div>
 
-        {/* Right — contact sidebar */}
-        <div className="col-12 col-md-4">
+          {/* Contact */}
           <div className="card p-4 mb-3">
             <h2 className="h6 fw-bold mb-3">Contact</h2>
             <VerifiedGate user={user} profile={profile} onSignup={onSignup}>
               <div className="p-3 rounded" style={{ background: 'var(--bs-secondary-bg)' }}>
                 <p className="small text-muted mb-2">
                   <i className="bi bi-shield-check text-success me-1" />
-                  Contact details are protected. Send a message via the secure inbox.
+                  Contact details are protected. All communication goes through the secure SportBridge inbox.
                 </p>
                 {user ? (
                   <button className="btn btn-primary w-100 btn-sm" type="button">
@@ -276,7 +411,8 @@ function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role 
             </VerifiedGate>
           </div>
 
-          <div className="card p-4">
+          {/* Verification */}
+          <div className="card p-4 mb-3">
             <h2 className="h6 fw-bold mb-3">Verification</h2>
             <VerifiedBadge status={profile?.verification_status} />
             {!verified && (
@@ -284,8 +420,42 @@ function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role 
                 This member has not yet completed identity verification.
               </p>
             )}
+            {verified && licences.length > 0 && (
+              <div className="mt-2 small text-success d-flex align-items-center gap-1">
+                <i className="bi bi-award-fill" />Licences verified by SportBridge
+              </div>
+            )}
           </div>
-          <div className="card p-4 mt-3">
+
+          {/* Quick stats */}
+          <div className="card p-4 mb-3">
+            <h2 className="h6 fw-bold mb-3">Quick Stats</h2>
+            <div className="d-grid gap-2">
+              {member.experience_years && (
+                <div className="d-flex justify-content-between align-items-center py-1"
+                  style={{ borderBottom: '1px solid var(--bs-border-color)' }}>
+                  <span className="small text-muted"><i className="bi bi-briefcase me-1" />Experience</span>
+                  <span className="fw-bold small">{member.experience_years} years</span>
+                </div>
+              )}
+              {licences.length > 0 && (
+                <div className="d-flex justify-content-between align-items-center py-1"
+                  style={{ borderBottom: '1px solid var(--bs-border-color)' }}>
+                  <span className="small text-muted"><i className="bi bi-award me-1" />Licences</span>
+                  <span className="fw-bold small">{licences.length}</span>
+                </div>
+              )}
+              {badges.length > 0 && (
+                <div className="d-flex justify-content-between align-items-center py-1">
+                  <span className="small text-muted"><i className="bi bi-patch-check me-1" />Total badges</span>
+                  <span className="fw-bold small">{badges.length}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Report */}
+          <div className="card p-4">
             <ReportProfileButton supabase={supabase} user={user}
               reportedUserId={profile?.id} reportedName={member.full_name} onSignup={onSignup} />
           </div>
@@ -301,76 +471,160 @@ function AgentProfile({ supabase, member, profile, user, onBack, onSignup }) {
   const regions  = Array.isArray(member.regions) ? member.regions : []
 
   return (
-    <div className="container py-4" style={{ maxWidth: 900 }}>
+    <div className="container py-4" style={{ maxWidth: 960 }}>
       <button className="btn btn-link p-0 mb-4 text-decoration-none" type="button" onClick={onBack}>
         <i className="bi bi-arrow-left me-1" />Back to directory
       </button>
 
       <div className="row g-4">
         <div className="col-12 col-md-8">
+
+          {/* Header card */}
           <div className="card p-4 mb-4">
             <div className="d-flex gap-4 align-items-start mb-4">
-              <RoleAvatar role="agent" size={80} name={member.agency_name} />
-              <div>
+              <RoleAvatar role="agent" size={88} name={member.agency_name} />
+              <div className="flex-grow-1 min-w-0">
                 <h1 className="h3 fw-bold mb-1" style={{ color: 'var(--fc-blue-700)' }}>
                   {member.agency_name || 'Agency'}
-                  {verified && <i className="bi bi-patch-check-fill text-primary ms-2" style={{ fontSize: 20 }} />}
+                  {verified && <i className="bi bi-patch-check-fill text-primary ms-2" style={{ fontSize: 20 }} aria-label="Verified" />}
                 </h1>
-                <div className="d-flex flex-wrap gap-2 align-items-center">
+                <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
                   <span className="badge" style={{ background: '#198754', color: '#fff' }}>
                     <i className="bi bi-binoculars me-1" />Agent / Scout
                   </span>
-                  {verified && <span className="badge text-bg-success">FIFA Agent Verified</span>}
+                  {verified && <span className="badge text-bg-success"><i className="bi bi-award-fill me-1" />FIFA Agent Verified</span>}
                 </div>
+                <div className="row g-2 small">
+                  {[
+                    { icon: 'bi-globe2',    label: 'Nationality',  value: member.nationality },
+                    { icon: 'bi-briefcase', label: 'Experience',   value: member.experience_years ? `${member.experience_years} years` : null },
+                    { icon: 'bi-dribbble',  label: 'Sport',        value: member.sport },
+                    { icon: 'bi-gender-ambiguous', label: 'Gender', value: member.gender },
+                  ].filter(r => r.value).map(({ icon, label, value }) => (
+                    <div key={label} className="col-6 d-flex align-items-center gap-1">
+                      <i className={`bi ${icon} text-primary flex-shrink-0`} style={{ fontSize: 13 }} />
+                      <span className="text-muted me-1">{label}:</span>
+                      <span className="fw-semibold text-truncate">{value}</span>
+                    </div>
+                  ))}
+                </div>
+                {member.linkedin && (
+                  <a href={member.linkedin} target="_blank" rel="noopener noreferrer"
+                    className="btn btn-outline-primary btn-sm mt-3 d-inline-flex align-items-center gap-2">
+                    <i className="bi bi-linkedin" />LinkedIn profile
+                  </a>
+                )}
               </div>
             </div>
+          </div>
 
-            <div className="row g-2 mb-4">
-              <div className="col-12 col-sm-6">
-                <InfoRow icon="bi-globe2"    label="Nationality"  value={member.nationality} />
-                <InfoRow icon="bi-briefcase" label="Experience"   value={member.experience_years ? `${member.experience_years} years` : null} />
-              </div>
-              <div className="col-12 col-sm-6">
-                <InfoRow icon="bi-dribbble"  label="Sport"        value={member.sport} />
+          {/* Operating regions */}
+          {regions.length > 0 && (
+            <div className="card p-4 mb-4">
+              <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-geo-alt-fill me-2 text-primary" />Operating Regions
+              </h2>
+              <div className="d-flex flex-wrap gap-2">
+                {regions.map((r, i) => (
+                  <span key={i} className="badge px-3 py-2"
+                    style={{ background: '#19875420', color: '#198754', border: '1px solid #19875455', fontSize: 12 }}>
+                    <i className="bi bi-geo-alt me-1" />{r}
+                  </span>
+                ))}
               </div>
             </div>
+          )}
 
-            {regions.length > 0 && (
-              <div className="mb-4">
-                <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
-                  <i className="bi bi-geo-alt me-2" />Operating regions
-                </h2>
-                <div className="d-flex flex-wrap gap-2">
-                  {regions.map((r, i) => <span key={i} className="badge text-bg-light border">{r}</span>)}
-                </div>
-              </div>
-            )}
+          {/* About */}
+          {member.about && (
+            <div className="card p-4 mb-4">
+              <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-person-lines-fill me-2 text-primary" />About the Agency
+              </h2>
+              <p className="mb-0" style={{ lineHeight: 1.8, color: 'var(--fc-muted)' }}>{member.about}</p>
+            </div>
+          )}
 
-            {member.about && (
-              <div className="mb-4">
-                <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>About</h2>
-                <p className="small text-muted mb-0" style={{ lineHeight: 1.7 }}>{member.about}</p>
-              </div>
-            )}
+          {/* Achievements */}
+          {member.achievements && (
+            <div className="card p-4 mb-4">
+              <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-trophy-fill me-2 text-warning" />Track Record &amp; Achievements
+              </h2>
+              <p className="mb-0 small" style={{ lineHeight: 1.8, color: 'var(--fc-muted)', whiteSpace: 'pre-line' }}>
+                {member.achievements}
+              </p>
+            </div>
+          )}
 
-            {member.achievements && (
-              <div className="mb-4">
-                <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
-                  <i className="bi bi-trophy me-2 text-warning" />Key achievements
-                </h2>
-                <p className="small text-muted mb-0" style={{ lineHeight: 1.7 }}>{member.achievements}</p>
-              </div>
-            )}
+          {/* Safety notice for agents */}
+          <div className="alert d-flex gap-2 align-items-start"
+            style={{ background: 'rgba(220,53,69,.06)', border: '1.5px solid rgba(220,53,69,.25)' }}>
+            <i className="bi bi-shield-exclamation text-danger flex-shrink-0 mt-1" />
+            <div className="small">
+              <strong>SportBridge Safety:</strong> Legitimate agents never charge players fees to arrange trials or introductions.
+              Always check the Verified ✓ badge before engaging. Report any fee requests immediately.
+            </div>
           </div>
         </div>
 
+        {/* Right sidebar */}
         <div className="col-12 col-md-4">
+
+          {/* Agency summary card */}
+          <div className="card p-4 mb-3" style={{ background: '#19875408', border: '1px solid #19875422' }}>
+            <div className="d-flex align-items-center gap-3 mb-3">
+              <div className="d-flex align-items-center justify-content-center rounded-circle"
+                style={{ width: 48, height: 48, background: '#198754', color: '#fff', fontSize: 20 }}>
+                <i className="bi bi-binoculars" />
+              </div>
+              <div>
+                <div className="fw-bold small text-success">Agent / Scout Agency</div>
+                <div className="small text-muted">
+                  {member.experience_years ? `${member.experience_years} yrs experience` : 'Agency'}
+                </div>
+              </div>
+            </div>
+            {verified && (
+              <div className="alert alert-success py-2 mb-0 small d-flex align-items-center gap-2">
+                <i className="bi bi-award-fill" />FIFA Agents Licence Verified
+              </div>
+            )}
+          </div>
+
+          {/* Quick stats */}
+          <div className="card p-4 mb-3">
+            <h2 className="h6 fw-bold mb-3">Agency Stats</h2>
+            <div className="d-grid gap-2">
+              {member.experience_years && (
+                <div className="d-flex justify-content-between py-1" style={{ borderBottom: '1px solid var(--bs-border-color)' }}>
+                  <span className="small text-muted"><i className="bi bi-briefcase me-1" />Experience</span>
+                  <span className="fw-bold small">{member.experience_years} years</span>
+                </div>
+              )}
+              {regions.length > 0 && (
+                <div className="d-flex justify-content-between py-1" style={{ borderBottom: '1px solid var(--bs-border-color)' }}>
+                  <span className="small text-muted"><i className="bi bi-geo-alt me-1" />Regions covered</span>
+                  <span className="fw-bold small">{regions.length}</span>
+                </div>
+              )}
+              <div className="d-flex justify-content-between py-1">
+                <span className="small text-muted"><i className="bi bi-shield-check me-1" />Verified</span>
+                <span className="fw-bold small" style={{ color: verified ? '#198754' : '#6c757d' }}>
+                  {verified ? 'Yes ✓' : 'Pending'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact */}
           <div className="card p-4 mb-3">
             <h2 className="h6 fw-bold mb-3">Contact agency</h2>
             <VerifiedGate user={user} profile={profile} onSignup={onSignup}>
               <div className="p-3 rounded" style={{ background: 'var(--bs-secondary-bg)' }}>
                 <p className="small text-muted mb-2">
-                  <i className="bi bi-shield-check text-success me-1" />All contact is through the secure SportBridge inbox.
+                  <i className="bi bi-shield-check text-success me-1" />
+                  All contact goes through the secure SportBridge inbox.
                 </p>
                 {user ? (
                   <button className="btn btn-primary w-100 btn-sm" type="button">
@@ -384,11 +638,15 @@ function AgentProfile({ supabase, member, profile, user, onBack, onSignup }) {
               </div>
             </VerifiedGate>
           </div>
-          <div className="card p-4">
+
+          {/* Verification */}
+          <div className="card p-4 mb-3">
             <h2 className="h6 fw-bold mb-3">Verification</h2>
             <VerifiedBadge status={profile?.verification_status} />
           </div>
-          <div className="card p-4 mt-3">
+
+          {/* Report */}
+          <div className="card p-4">
             <ReportProfileButton supabase={supabase} user={user}
               reportedUserId={profile?.id} reportedName={member.agency_name || 'Agency'} onSignup={onSignup} />
           </div>
