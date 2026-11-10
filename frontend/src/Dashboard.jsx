@@ -2120,10 +2120,11 @@ function AdminDashboard({ supabase, user }) {
   }
 
   const TABS = [
-    ['users',        'bi-people',      `Users (${users.length})`],
-    ['verification', 'bi-patch-check', `Verify${pendingVerif > 0 ? ` (${pendingVerif})` : ''}`],
-    ['reports',      'bi-flag-fill',   `Reports${reportQueue.length > 0 ? ` (${reportQueue.length})` : ''}`],
-    ['duplicates',   'bi-files',       'Duplicates'],
+    ['users',        'bi-people',              `Users (${users.length})`],
+    ['analytics',    'bi-graph-up-arrow',      'Analytics'],
+    ['verification', 'bi-patch-check',         `Verify${pendingVerif > 0 ? ` (${pendingVerif})` : ''}`],
+    ['reports',      'bi-flag-fill',           `Reports${reportQueue.length > 0 ? ` (${reportQueue.length})` : ''}`],
+    ['duplicates',   'bi-files',               'Duplicates'],
     ['flagged',      'bi-exclamation-triangle-fill', 'Fee-Flagged'],
   ]
 
@@ -2373,6 +2374,200 @@ function AdminDashboard({ supabase, user }) {
           </li>
         ))}
       </ul>
+
+      {/* ── Analytics Dashboard ── */}
+      {activeTab==='analytics' && (
+        <div className="d-grid gap-4">
+
+          {/* ── Growth Metrics ── */}
+          <div className="card p-4">
+            <h2 className="h5 fw-bold mb-4 d-flex align-items-center gap-2" style={{ color:'var(--fc-blue-700)' }}>
+              <i className="bi bi-graph-up-arrow text-primary" />Growth Metrics
+            </h2>
+            <div className="row g-3">
+              {/* Total growth bar */}
+              {[
+                { role:'player',         label:'Players',       colour:'#2F7DF0', count: roleCounts.player??0 },
+                { role:'coach',          label:'Coaches',       colour:'#F5B301', count: roleCounts.coach??0 },
+                { role:'agent',          label:'Agents',        colour:'#198754', count: roleCounts.agent??0 },
+                { role:'academy',        label:'Clubs',         colour:'#6f42c1', count: roleCounts.academy??0 },
+                { role:'sports_analyst', label:'Analysts',      colour:'#fd7e14', count: roleCounts.sports_analyst??0 },
+              ].map(({ label, colour, count }) => {
+                const pct = accountCount > 0 ? Math.round((count / accountCount) * 100) : 0
+                return (
+                  <div key={label} className="col-12">
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <span className="small fw-semibold" style={{ color: colour }}>{label}</span>
+                      <span className="small fw-bold">{count} <span className="text-muted fw-normal">({pct}%)</span></span>
+                    </div>
+                    <div className="progress" style={{ height: 10, borderRadius: 6 }}>
+                      <div className="progress-bar" style={{ width:`${pct}%`, background: colour, borderRadius: 6 }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* ── Verification KPIs ── */}
+          <div className="card p-4">
+            <h2 className="h5 fw-bold mb-4 d-flex align-items-center gap-2" style={{ color:'var(--fc-blue-700)' }}>
+              <i className="bi bi-patch-check-fill text-success" />Verification KPIs
+            </h2>
+            <div className="row g-3">
+              {(() => {
+                const verified   = users.filter(u => u.verification_status === 'verified').length
+                const pending    = users.filter(u => u.verification_status === 'pending').length
+                const rejected   = users.filter(u => u.verification_status === 'rejected').length
+                const unverified = users.filter(u => (u.verification_status ?? 'unverified') === 'unverified').length
+                const total      = users.length || 1
+                return [
+                  { label:'Verified',    count: verified,   colour:'#198754', icon:'bi-patch-check-fill', pct: Math.round(verified/total*100) },
+                  { label:'Pending',     count: pending,    colour:'#F5B301', icon:'bi-hourglass-split',  pct: Math.round(pending/total*100) },
+                  { label:'Rejected',    count: rejected,   colour:'#dc3545', icon:'bi-x-circle-fill',    pct: Math.round(rejected/total*100) },
+                  { label:'Unverified',  count: unverified, colour:'#6c757d', icon:'bi-patch-question',   pct: Math.round(unverified/total*100) },
+                ].map(({ label, count, colour, icon, pct }) => (
+                  <div key={label} className="col-6 col-sm-3">
+                    <div className="rounded-3 p-3 text-center h-100" style={{ background: colour+'12', border:`1px solid ${colour}33` }}>
+                      <i className={`bi ${icon} d-block mb-2`} style={{ color: colour, fontSize: 28 }} />
+                      <div style={{ fontSize: 28, fontWeight: 800, color: colour, lineHeight: 1 }}>{count}</div>
+                      <div className="fw-semibold small mt-1">{label}</div>
+                      <div className="text-muted" style={{ fontSize: 11 }}>{pct}% of total</div>
+                    </div>
+                  </div>
+                ))
+              })()}
+            </div>
+            <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--bs-border-color)' }}>
+              <div className="d-flex justify-content-between small mb-1">
+                <span className="text-muted">Overall verification rate</span>
+                <span className="fw-bold text-success">
+                  {users.length > 0 ? Math.round(users.filter(u=>u.verification_status==='verified').length / users.length * 100) : 0}%
+                </span>
+              </div>
+              <div className="progress" style={{ height: 8 }}>
+                <div className="progress-bar bg-success"
+                  style={{ width:`${users.length > 0 ? Math.round(users.filter(u=>u.verification_status==='verified').length / users.length * 100) : 0}%` }} />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Safety KPIs ── */}
+          <div className="card p-4">
+            <h2 className="h5 fw-bold mb-4 d-flex align-items-center gap-2" style={{ color:'var(--fc-blue-700)' }}>
+              <i className="bi bi-shield-fill-check text-danger" />Safety &amp; Trust KPIs
+            </h2>
+            <div className="row g-3">
+              {[
+                { label:'Total Reports Filed',    value: reportQueue.length,                                                     icon:'bi-flag-fill',          colour:'#dc3545' },
+                { label:'Scams Confirmed',         value: reportQueue.filter(r=>r.status==='confirmed_scam').length,              icon:'bi-shield-x-fill',      colour:'#dc3545' },
+                { label:'Reports Dismissed',       value: reportQueue.filter(r=>r.status==='dismissed').length,                   icon:'bi-check-circle-fill',  colour:'#198754' },
+                { label:'Under Investigation',     value: reportQueue.filter(r=>r.status==='investigating').length,               icon:'bi-search',             colour:'#F5B301' },
+                { label:'Accounts Denied',         value: users.filter(u=>u.status==='denied').length,                           icon:'bi-person-x-fill',      colour:'#dc3545' },
+                { label:'Accounts Suspended',      value: users.filter(u=>u.status==='suspended').length,                        icon:'bi-slash-circle-fill',  colour:'#F5B301' },
+                { label:'Duplicate Files Found',   value: duplicates.length,                                                     icon:'bi-files',              colour:'#6f42c1' },
+                { label:'Fee-Flagged Tryouts',     value: flagged.length,                                                        icon:'bi-exclamation-triangle-fill','colour':'#F5B301' },
+              ].map(({ label, value, icon, colour }) => (
+                <div key={label} className="col-6 col-md-3">
+                  <div className="rounded-3 p-3 d-flex align-items-center gap-3" style={{ background: colour+'0d', border:`1px solid ${colour}22` }}>
+                    <div className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                      style={{ width:40, height:40, background: colour+'22', color: colour, fontSize:18 }}>
+                      <i className={`bi ${icon}`} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize:22, fontWeight:800, color: colour, lineHeight:1 }}>{value}</div>
+                      <div className="text-muted" style={{ fontSize:11, lineHeight:1.3, marginTop:2 }}>{label}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Retention & Activity ── */}
+          <div className="card p-4">
+            <h2 className="h5 fw-bold mb-4 d-flex align-items-center gap-2" style={{ color:'var(--fc-blue-700)' }}>
+              <i className="bi bi-activity text-primary" />Retention &amp; Activity
+            </h2>
+            <div className="row g-3">
+              {(() => {
+                const now = new Date()
+                const day7  = users.filter(u => u.created_at && (now - new Date(u.created_at)) / 86400000 <= 7).length
+                const day30 = users.filter(u => u.created_at && (now - new Date(u.created_at)) / 86400000 <= 30).length
+                const day90 = users.filter(u => u.created_at && (now - new Date(u.created_at)) / 86400000 <= 90).length
+                const activeNow = users.filter(u => u.status === 'active').length
+                return [
+                  { label:'New (Last 7 days)',   value: day7,       icon:'bi-calendar-week',    colour:'#2F7DF0' },
+                  { label:'New (Last 30 days)',   value: day30,      icon:'bi-calendar-month',   colour:'#198754' },
+                  { label:'New (Last 90 days)',   value: day90,      icon:'bi-calendar3',        colour:'#F5B301' },
+                  { label:'Active Accounts',      value: activeNow,  icon:'bi-circle-fill',      colour:'#20c997' },
+                ].map(({ label, value, icon, colour }) => (
+                  <div key={label} className="col-6 col-sm-3">
+                    <div className="rounded-3 p-3 text-center h-100" style={{ background: colour+'12', border:`1px solid ${colour}33` }}>
+                      <i className={`bi ${icon} d-block mb-2`} style={{ color: colour, fontSize:24 }} />
+                      <div style={{ fontSize:28, fontWeight:800, color: colour, lineHeight:1 }}>{value}</div>
+                      <div className="text-muted small mt-1" style={{ fontSize:11 }}>{label}</div>
+                    </div>
+                  </div>
+                ))
+              })()}
+            </div>
+          </div>
+
+          {/* ── Platform Health ── */}
+          <div className="card p-4">
+            <h2 className="h5 fw-bold mb-4 d-flex align-items-center gap-2" style={{ color:'var(--fc-blue-700)' }}>
+              <i className="bi bi-heart-pulse-fill text-danger" />Platform Health
+            </h2>
+            <div className="row g-3">
+              {[
+                {
+                  label: 'Accounts Active',
+                  value: `${users.filter(u=>u.status==='active').length} / ${users.length}`,
+                  icon: 'bi-people-fill', colour: '#198754',
+                  health: users.length ? Math.round(users.filter(u=>u.status==='active').length/users.length*100) : 100,
+                },
+                {
+                  label: 'Verification Rate',
+                  value: `${users.length ? Math.round(users.filter(u=>u.verification_status==='verified').length/users.length*100) : 0}%`,
+                  icon: 'bi-patch-check-fill', colour: '#2F7DF0',
+                  health: users.length ? Math.round(users.filter(u=>u.verification_status==='verified').length/users.length*100) : 0,
+                },
+                {
+                  label: 'Reports Resolved',
+                  value: reportQueue.length
+                    ? `${Math.round(reportQueue.filter(r=>['confirmed_scam','dismissed'].includes(r.status)).length/reportQueue.length*100)}%`
+                    : 'N/A',
+                  icon: 'bi-shield-check', colour: '#6f42c1',
+                  health: reportQueue.length ? Math.round(reportQueue.filter(r=>['confirmed_scam','dismissed'].includes(r.status)).length/reportQueue.length*100) : 100,
+                },
+                {
+                  label: 'Public Player Profiles',
+                  value: `${roleCounts.player??0} players`,
+                  icon: 'bi-person-arms-up', colour: '#F5B301',
+                  health: 100,
+                },
+              ].map(({ label, value, icon, colour, health }) => (
+                <div key={label} className="col-12 col-sm-6">
+                  <div className="p-3 rounded-3" style={{ background: 'var(--bs-secondary-bg)' }}>
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <div className="d-flex align-items-center gap-2">
+                        <i className={`bi ${icon}`} style={{ color: colour, fontSize:18 }} />
+                        <span className="small fw-semibold">{label}</span>
+                      </div>
+                      <span className="fw-bold small" style={{ color: colour }}>{value}</span>
+                    </div>
+                    <div className="progress" style={{ height: 6 }}>
+                      <div className="progress-bar" style={{ width:`${health}%`, background: colour }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      )}
 
       {/* ── Users table ── */}
       {activeTab==='users' && (
