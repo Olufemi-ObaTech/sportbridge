@@ -275,13 +275,24 @@ function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role 
             </div>
           )}
 
-          {/* Key achievements */}
+          {/* Key achievements + Track Record */}
           {member.achievements && (
             <div className="card p-4 mb-4">
-              <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
-                <i className="bi bi-trophy-fill me-2 text-warning" />Key Achievements
+              <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-trophy-fill me-2 text-warning" />Track Record &amp; Key Achievements
               </h2>
-              <p className="mb-0 small" style={{ lineHeight: 1.8, color: 'var(--fc-muted)', whiteSpace: 'pre-line' }}>{member.achievements}</p>
+              {member.achievements.split('\n').filter(Boolean).length > 1 ? (
+                <ul className="list-unstyled mb-0 d-grid gap-2">
+                  {member.achievements.split('\n').filter(Boolean).map((line, i) => (
+                    <li key={i} className="d-flex align-items-start gap-2">
+                      <i className="bi bi-check-circle-fill text-success flex-shrink-0 mt-1" style={{ fontSize: 13 }} />
+                      <span className="small" style={{ lineHeight: 1.7, color: 'var(--fc-muted)' }}>{line.replace(/^[-•·]\s*/, '')}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mb-0 small" style={{ lineHeight: 1.8, color: 'var(--fc-muted)', whiteSpace: 'pre-line' }}>{member.achievements}</p>
+              )}
             </div>
           )}
 
@@ -548,12 +559,21 @@ function AgentProfile({ supabase, member, profile, user, onBack, onSignup }) {
           {/* Achievements */}
           {member.achievements && (
             <div className="card p-4 mb-4">
-              <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
+              <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
                 <i className="bi bi-trophy-fill me-2 text-warning" />Track Record &amp; Achievements
               </h2>
-              <p className="mb-0 small" style={{ lineHeight: 1.8, color: 'var(--fc-muted)', whiteSpace: 'pre-line' }}>
-                {member.achievements}
-              </p>
+              {member.achievements.split('\n').filter(Boolean).length > 1 ? (
+                <ul className="list-unstyled mb-0 d-grid gap-2">
+                  {member.achievements.split('\n').filter(Boolean).map((line, i) => (
+                    <li key={i} className="d-flex align-items-start gap-2">
+                      <i className="bi bi-check-circle-fill text-success flex-shrink-0 mt-1" style={{ fontSize: 13 }} />
+                      <span className="small" style={{ lineHeight: 1.7, color: 'var(--fc-muted)' }}>{line.replace(/^[-•·]\s*/, '')}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mb-0 small" style={{ lineHeight: 1.8, color: 'var(--fc-muted)', whiteSpace: 'pre-line' }}>{member.achievements}</p>
+              )}
             </div>
           )}
 
@@ -688,6 +708,11 @@ function ClubProfile({ supabase, member, academy, user, profile, onBack, onSignu
                   {verified && (
                     <span className="badge text-bg-success">
                       <i className="bi bi-award-fill me-1" />Verified Club
+                    </span>
+                  )}
+                  {member.verified_badge && (
+                    <span className="badge" style={{ background: '#0d6efd', color: '#fff' }}>
+                      <i className="bi bi-trophy-fill me-1" />FIFA TMS Verified
                     </span>
                   )}
                   {sports.map((s, i) => (
@@ -941,6 +966,13 @@ function ClubProfile({ supabase, member, academy, user, profile, onBack, onSignu
           <div className="card p-4 mb-3">
             <h2 className="h6 fw-bold mb-3">Verification</h2>
             <VerifiedBadge status={verified ? 'verified' : 'unverified'} />
+            {verified && member.verified_badge && (
+              <div className="mt-2">
+                <span className="badge px-3 py-2" style={{ background: '#0d6efd', color: '#fff', fontSize: 11 }}>
+                  <i className="bi bi-trophy-fill me-1" />FIFA TMS Verified
+                </span>
+              </div>
+            )}
             {verified && (
               <div className="mt-2 small text-success d-flex align-items-center gap-1">
                 <i className="bi bi-award-fill" />CAC / FA registration verified by SportBridge

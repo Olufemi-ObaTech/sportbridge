@@ -789,6 +789,45 @@ const entries = [
   ['Create free account',      'Créer un compte gratuit',      'Criar conta gratuita',        'إنشاء حساب مجاني',           'Crear cuenta gratis'],
   ['No credit card required · Players always free · 25+ countries','Sans carte · Gratuit · +25 pays','Sem cartão · Gratuito · +25 países','بدون بطاقة · مجاني · +25 دولة','Sin tarjeta · Gratis · +25 países'],
   ['Free for players · Verified clubs · Trusted network','Gratuit pour les joueurs · Clubs vérifiés','Gratuito · Clubes verificados','مجاني للاعبين · أندية موثّقة','Gratis · Clubes verificados'],
+
+  // ── Inbox verified-only gate ──
+  ['Verified members only',                 'Membres vérifiés uniquement',               'Apenas membros verificados',               'الأعضاء الموثّقون فقط',                     'Solo miembros verificados'],
+  ['The SportBridge inbox is available to verified members only.','La boîte de réception SportBridge est réservée aux membres vérifiés.','A caixa de entrada SportBridge é apenas para membros verificados.','صندوق الوارد متاح للأعضاء الموثّقين فقط.','El buzón de SportBridge es solo para miembros verificados.'],
+  ['Complete identity verification to send and receive messages.','Complétez la vérification pour envoyer et recevoir des messages.','Complete a verificação para enviar e receber mensagens.','أكمل التحقق من الهوية لإرسال الرسائل واستقبالها.','Completa la verificación para enviar y recibir mensajes.'],
+  ['Get verified in My Dashboard',          'Vérifiez-vous dans mon tableau de bord',    'Verifique-se no meu painel',               'تحقق في لوحة التحكم',                       'Verifica en mi panel'],
+  ['Verification takes 24–48 hours after document submission.','La vérification prend 24–48 h après soumission.','A verificação demora 24–48 horas após submissão.','يستغرق التحقق 24–48 ساعة بعد تقديم المستندات.','La verificación tarda 24–48 h tras enviar los documentos.'],
+  ['This protects all members from spam and fraud.','Cela protège tous les membres contre le spam et la fraude.','Protege todos os membros de spam e fraude.','هذا يحمي جميع الأعضاء من البريد العشوائي والاحتيال.','Esto protege a todos los miembros del spam y el fraude.'],
+
+  // ── Coach / Analyst profile — Track Record & Licences ──
+  ['Track Record & Key Achievements',       'Bilan et réalisations clés',                'Historial e conquistas principais',        'السجل والإنجازات الرئيسية',                 'Historial y logros principales'],
+  ['Track Record & Achievements',           'Bilan et réalisations',                     'Historial e conquistas',                   'السجل والإنجازات',                          'Historial y logros'],
+  ['Licences & Qualifications',             'Licences et qualifications',                'Licenças e qualificações',                 'الرخص والمؤهلات',                           'Licencias y calificaciones'],
+  ['Licences verified by SportBridge',      'Licences vérifiées par SportBridge',        'Licenças verificadas pelo SportBridge',    'الرخص موثّقة من SportBridge',               'Licencias verificadas por SportBridge'],
+  ['Coaching Philosophy',                   'Philosophie d\'entraînement',               'Filosofia de treino',                     'فلسفة التدريب',                             'Filosofía de entrenamiento'],
+  ['Tools & Software',                      'Outils et logiciels',                       'Ferramentas e software',                   'الأدوات والبرامج',                          'Herramientas y software'],
+  ['Additional Badges',                     'Badges supplémentaires',                    'Badges adicionais',                        'شارات إضافية',                              'Insignias adicionales'],
+  ['Available for new opportunities',       'Disponible pour de nouvelles opportunités', 'Disponível para novas oportunidades',      'متاح لفرص جديدة',                           'Disponible para nuevas oportunidades'],
+  ['Age groups coached',                    'Tranches d\'âge entraînées',                'Grupos etários treinados',                 'الفئات العمرية المدرَّبة',                  'Grupos de edad entrenados'],
+  ['Analyst Specialisation',                'Spécialisation analyste',                   'Especialização do analista',               'تخصص المحلل',                               'Especialización del analista'],
+  ['Publications / Research',               'Publications / Recherches',                 'Publicações / Pesquisas',                  'المنشورات / البحوث',                        'Publicaciones / Investigación'],
+  ['Scouting Regions',                      'Régions de recrutement',                    'Regiões de recrutamento',                  'مناطق الاستكشاف',                           'Regiones de captación'],
+
+  // ── Club / Academy — FIFA TMS ──
+  ['FIFA TMS Verified',                     'Vérifié FIFA TMS',                          'Verificado FIFA TMS',                      'موثّق من FIFA TMS',                         'Verificado FIFA TMS'],
+  ['CAC / FA Registered & Verified',        'Enregistré et vérifié CAC/FA',              'Registado e verificado CAC/FA',            'مسجّل وموثّق CAC/FA',                       'Registrado y verificado CAC/FA'],
+  ['CAC / FA registration verified by SportBridge','Vérification CAC/FA par SportBridge','Registo CAC/FA verificado pelo SportBridge','تحقق CAC/FA من قِبل SportBridge',          'Registro CAC/FA verificado por SportBridge'],
+
+  // ── Notification type labels ──
+  ['report_update',                         'mise à jour du signalement',                'atualização da denúncia',                  'تحديث البلاغ',                              'actualización de denuncia'],
+  ['account_actioned',                      'compte traité',                             'conta acionada',                           'تم معالجة الحساب',                          'cuenta accionada'],
+  ['report_dismissed',                      'signalement classé',                        'denúncia arquivada',                       'تم إغلاق البلاغ',                           'denuncia archivada'],
+  ['admin_message',                         'message de l\'admin',                       'mensagem do admin',                        'رسالة المسؤول',                             'mensaje del admin'],
+  ['admin_report_update',                   'mise à jour admin du signalement',          'atualização admin da denúncia',            'تحديث المسؤول للبلاغ',                      'actualización admin de denuncia'],
+  ['access_request_granted',               'demande d\'accès accordée',                  'pedido de acesso concedido',               'تم منح طلب الوصول',                         'solicitud de acceso concedida'],
+  ['access_request_denied',                'demande d\'accès refusée',                   'pedido de acesso recusado',                'تم رفض طلب الوصول',                         'solicitud de acceso denegada'],
+  ['verification_approved',                 'vérification approuvée',                    'verificação aprovada',                     'تم الموافقة على التحقق',                    'verificación aprobada'],
+  ['verification_rejected',                 'vérification rejetée',                      'verificação rejeitada',                    'تم رفض التحقق',                             'verificación rechazada'],
+  ['new_message',                           'nouveau message',                           'nova mensagem',                            'رسالة جديدة',                               'nuevo mensaje'],
 ]
 
 const catalog = Object.fromEntries(entries.map(([source, ...values]) => [

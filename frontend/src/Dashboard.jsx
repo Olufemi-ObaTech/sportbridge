@@ -2951,6 +2951,32 @@ function Dashboard({ supabase, user, onBack }) {
 
       {/* —— Inbox ——————————————————————————————————————————— */}
       {dashTab === 'inbox' && (
+        <>
+        {/* Verified-only gate for inbox */}
+        {profile.verification_status !== 'verified' && profile.role !== 'super_admin' && (
+          <div className="row justify-content-center">
+            <div className="col-12 col-md-7">
+              <div className="card p-5 text-center">
+                <i className="bi bi-lock-fill fs-1 d-block mb-3" style={{ color: 'var(--fc-blue-500)' }} />
+                <h2 className="h5 fw-bold mb-2">Verified members only</h2>
+                <p className="text-muted mb-4">
+                  The SportBridge inbox is available to verified members only.
+                  Complete identity verification to send and receive messages.
+                </p>
+                <div className="d-flex gap-3 justify-content-center flex-wrap">
+                  <button className="btn btn-primary" type="button" onClick={() => setDashTab('main')}>
+                    <i className="bi bi-patch-check me-2" />Get verified in My Dashboard
+                  </button>
+                </div>
+                <p className="small text-muted mt-3 mb-0">
+                  Verification takes 24–48 hours after document submission.
+                  This protects all members from spam and fraud.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        {(profile.verification_status === 'verified' || profile.role === 'super_admin') && (
         <div className="row g-0" style={{ minHeight: 500 }}>
           {/* Conversation list */}
           <div className={`col-12 col-md-4 border-end ${activeConv ? 'd-none d-md-flex' : 'd-flex'} flex-column`}>
@@ -3031,6 +3057,8 @@ function Dashboard({ supabase, user, onBack }) {
             )}
           </div>
         </div>
+        )}
+        </>
       )}
     </div>
   )
