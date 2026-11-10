@@ -235,7 +235,6 @@ function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role 
                     { icon: 'bi-building',          label: 'Current club',  value: member.current_club },
                     { icon: 'bi-dribbble',          label: 'Sport',         value: member.sport },
                     { icon: 'bi-gender-ambiguous',  label: 'Gender',        value: member.gender },
-                    { icon: 'bi-people-fill',       label: 'Age groups',    value: member.age_groups_coached },
                   ].filter(r => r.value).map(({ icon, label, value }) => (
                     <div key={label} className="col-6 d-flex align-items-center gap-1">
                       <i className={`bi ${icon} text-primary flex-shrink-0`} style={{ fontSize: 13 }} />
@@ -262,16 +261,6 @@ function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role 
                 <i className="bi bi-person-lines-fill me-2 text-primary" />About
               </h2>
               <p className="mb-0" style={{ lineHeight: 1.8, color: 'var(--fc-muted)' }}>{member.about}</p>
-            </div>
-          )}
-
-          {/* Coaching philosophy / style */}
-          {member.coaching_philosophy && (
-            <div className="card p-4 mb-4">
-              <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
-                <i className="bi bi-lightbulb-fill me-2 text-warning" />Coaching Philosophy
-              </h2>
-              <p className="mb-0 fst-italic" style={{ lineHeight: 1.8, color: 'var(--fc-muted)' }}>"{member.coaching_philosophy}"</p>
             </div>
           )}
 
@@ -328,48 +317,19 @@ function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role 
             </div>
           )}
 
-          {/* Role-specific detail sections */}
-          {/* For analysts — show specialisation + tools */}
-          {role === 'sports_analyst' && (
+          {/* Role-specific detail sections — Analyst specialisation */}
+          {role === 'sports_analyst' && member.preferred_role && (
             <div className="card p-4 mb-4">
               <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
                 <i className="bi bi-graph-up-arrow me-2 text-primary" />Analyst Specialisation
               </h2>
-              <div className="row g-3">
-                {member.preferred_role && (
-                  <div className="col-12">
-                    <div className="p-3 rounded d-flex align-items-center gap-3"
-                      style={{ background: '#fd7e1412', border: '1px solid #fd7e1433' }}>
-                      <i className="bi bi-graph-up-arrow" style={{ color: '#fd7e14', fontSize: 24 }} />
-                      <div>
-                        <div className="small text-muted mb-1">Specialisation</div>
-                        <div className="fw-bold" style={{ color: '#fd7e14' }}>{member.preferred_role}</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {member.publications && (
-                  <div className="col-12">
-                    <div className="small fw-semibold text-muted mb-1">Publications / Research</div>
-                    <p className="small mb-0" style={{ lineHeight: 1.7 }}>{member.publications}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* For scouts/analysts — show scouting regions */}
-          {['Scout','Chief Scout','Regional Scout','International Scout','Recruitment Analyst'].includes(member.preferred_role) && member.regions?.length > 0 && (
-            <div className="card p-4 mb-4">
-              <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
-                <i className="bi bi-geo-alt-fill me-2 text-primary" />Scouting Regions
-              </h2>
-              <div className="d-flex flex-wrap gap-2">
-                {(Array.isArray(member.regions) ? member.regions : []).map((r, i) => (
-                  <span key={i} className="badge text-bg-light border">
-                    <i className="bi bi-geo-alt me-1" />{r}
-                  </span>
-                ))}
+              <div className="p-3 rounded d-flex align-items-center gap-3"
+                style={{ background: '#fd7e1412', border: '1px solid #fd7e1433' }}>
+                <i className="bi bi-graph-up-arrow" style={{ color: '#fd7e14', fontSize: 24 }} />
+                <div>
+                  <div className="small text-muted mb-1">Specialisation</div>
+                  <div className="fw-bold" style={{ color: '#fd7e14' }}>{member.preferred_role}</div>
+                </div>
               </div>
             </div>
           )}
@@ -1057,7 +1017,7 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
 
       // Agent profiles
       supabase.from('agent_profiles')
-        .select('id,user_id,agency_name,sport,nationality,experience_years,regions,about,achievements,is_public,verified_badge')
+        .select('id,user_id,agency_name,sport,nationality,experience_years,regions,about,achievements,linkedin,is_public,verified_badge')
         .eq('is_public', true)
         .order('agency_name'),
 
@@ -1075,7 +1035,7 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
 
       // Academy profiles (for club address/phone details)
       supabase.from('academy_profiles')
-        .select('id,user_id,club_id,country,state,address,phone,year_founded,sports'),
+        .select('id,user_id,club_id,country,state,address,phone,year_founded,sports,leagues,languages'),
     ]).then(([{ data: coachData }, { data: agentData }, { data: clubData }, { data: profData }, { data: acadData }]) => {
       // Build profile lookup by id
       const profMap = Object.fromEntries((profData ?? []).map((p) => [p.id, p]))

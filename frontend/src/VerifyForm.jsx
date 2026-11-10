@@ -136,9 +136,14 @@ function PlayerVerifyForm({ supabase, user, onDone }) {
       const cvRes = await guardedUpload(supabase, cv.file, 'private-documents', `cv/${user.id}/`, 'cv', user.id, 0)
       if (!cvRes.ok) { setError(cvRes.error); setSaving(false); return }
       cvUrl = cvRes.url
-      const { error: cvProfileError } = await supabase.from('player_private')
-        .upsert({ player_id: user.id, cv_storage_path: cvUrl, updated_at: new Date().toISOString() }, { onConflict: 'player_id' })
-      if (cvProfileError) cvProfileWarning = ` Your CV was uploaded but could not be added to your private profile: ${cvProfileError.message}`
+      // Fetch the actual players.id (FK to players, NOT profiles)
+      const { data: playerRow } = await supabase
+        .from('players').select('id').eq('profile_id', user.id).maybeSingle()
+      if (playerRow?.id) {
+        const { error: cvProfileError } = await supabase.from('player_private')
+          .upsert({ player_id: playerRow.id, cv_storage_path: cvUrl, updated_at: new Date().toISOString() }, { onConflict: 'player_id' })
+        if (cvProfileError) cvProfileWarning = ` Your CV was uploaded but could not be added to your private profile: ${cvProfileError.message}`
+      }
     }
 
     const payload = {

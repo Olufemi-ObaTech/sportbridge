@@ -182,7 +182,10 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
           setViewerVerified(vp?.verification_status === 'verified')
         }
       }
-      supabase.from('players').update({ views_count: (p.views_count ?? 0) + 1 }).eq('id', p.id)
+      // Only increment view count when someone else views the profile
+      if (!user || user.id !== p.profile_id) {
+        supabase.from('players').update({ views_count: (p.views_count ?? 0) + 1 }).eq('id', p.id)
+      }
       setLoading(false)
     }
     load()
@@ -447,22 +450,15 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
                               <div className="fw-bold" style={{ color: 'var(--fc-blue-700)' }}>{h.club_name}</div>
                               <div className="small text-muted">
                                 {h.season_from}{h.season_to ? ` – ${h.season_to}` : ' – Present'}
-                                {h.league && <span className="ms-2 badge text-bg-light border" style={{ fontSize: 10 }}>{h.league}</span>}
                               </div>
                             </div>
-                            {h.country && (
-                              <span className="badge text-bg-light border small">
-                                <i className="bi bi-geo-alt me-1" />{h.country}
-                              </span>
-                            )}
                           </div>
                           <div className="d-flex flex-wrap gap-3">
                             {[
-                              { label: 'Apps',    value: h.appearances,    icon: 'bi-calendar-check',  colour: '#2F7DF0' },
-                              { label: 'Goals',   value: h.goals,          icon: 'bi-dribbble',         colour: '#198754' },
-                              { label: 'Assists', value: h.assists,        icon: 'bi-arrow-up-right',   colour: '#F5B301' },
-                              { label: 'CS',      value: h.clean_sheets,   icon: 'bi-shield-fill-check',colour: '#6f42c1' },
-                              { label: 'Mins',    value: h.minutes_played, icon: 'bi-stopwatch',        colour: '#fd7e14' },
+                              { label: 'Apps',    value: h.appearances,  icon: 'bi-calendar-check',   colour: '#2F7DF0' },
+                              { label: 'Goals',   value: h.goals,        icon: 'bi-dribbble',          colour: '#198754' },
+                              { label: 'Assists', value: h.assists,      icon: 'bi-arrow-up-right',    colour: '#F5B301' },
+                              { label: 'CS',      value: h.clean_sheets, icon: 'bi-shield-fill-check', colour: '#6f42c1' },
                             ].filter((s) => s.value != null).map(({ label, value, icon, colour }) => (
                               <div key={label} className="text-center px-3 py-2 rounded"
                                 style={{ background: colour + '12', minWidth: 58 }}>

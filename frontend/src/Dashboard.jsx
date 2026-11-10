@@ -263,7 +263,7 @@ function PlayerDashboard({ supabase, user, profile }) {
   useEffect(() => {
     let alive = true
     supabase.from('players')
-      .select('id, display_name, position, secondary_position, age, country, nationality, bio, is_public, sport, gender, foot, dominant_hand, height_cm, weight_kg, current_club, achievements, linkedin, views_count, region')
+      .select('id, display_name, position, secondary_position, age, country, nationality, bio, is_public, sport, gender, foot, preferred_foot, dominant_hand, height_cm, weight_kg, current_club, achievements, achievements_data, linkedin, views_count, region, availability, age_group, stats')
       .eq('profile_id', user.id)
       .maybeSingle()
       .then(({ data, error: err }) => {
@@ -290,6 +290,8 @@ function PlayerDashboard({ supabase, user, profile }) {
           achievements:       p.achievements       ?? '',
           linkedin:           p.linkedin           ?? '',
           region:             p.region             ?? '',
+          availability:       p.availability       ?? 'available_now',
+          age_group:          p.age_group          ?? '',
         })
         setLoading(false)
       })
@@ -324,6 +326,8 @@ function PlayerDashboard({ supabase, user, profile }) {
       achievements:       draft.achievements.trim() || null,
       linkedin:           draft.linkedin.trim() || null,
       region:             draft.region?.trim() || null,
+      availability:       draft.availability || 'available_now',
+      age_group:          draft.age_group || null,
       updated_at:         new Date().toISOString(),
     }
     const q = player
@@ -439,6 +443,25 @@ function PlayerDashboard({ supabase, user, profile }) {
                 </select>
               </Field>
               <Field label="Current club"><input className="form-control" value={draft.current_club} onChange={upd('current_club')} placeholder="e.g. FC Academy Lagos" /></Field>
+              <Field label="Availability">
+                <select className="form-select" value={draft.availability} onChange={upd('availability')}>
+                  <option value="available_now">Available Now</option>
+                  <option value="available_jan_2026">Available Jan 2026</option>
+                  <option value="available_jul_2026">Available Jul 2026</option>
+                  <option value="under_contract">Under Contract</option>
+                </select>
+              </Field>
+              <Field label="Age Group">
+                <select className="form-select" value={draft.age_group ?? ''} onChange={upd('age_group')}>
+                  <option value="">— Select —</option>
+                  <option value="U13">U13</option>
+                  <option value="U15">U15</option>
+                  <option value="U17">U17</option>
+                  <option value="U20">U20</option>
+                  <option value="U23">U23</option>
+                  <option value="Senior">Senior</option>
+                </select>
+              </Field>
               <Field label="LinkedIn URL" col="col-12"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} placeholder="https://linkedin.com/in/yourname" /></Field>
               <Field label="About / Bio" col="col-12">
                 <textarea className="form-control" rows={4} value={draft.bio} onChange={upd('bio')} placeholder="Playing style, experience and goals…" />
@@ -790,6 +813,31 @@ function CoachDashboard({ supabase, user, profile }) {
         </SectionCard>
       )}
 
+      {activeTab === 'post-event' && (
+        <SectionCard title="Post Event / Certificate">
+          <p className="text-muted small mb-3">Share upcoming tournaments, coaching events, or newly earned certificates.</p>
+          <PostUpdateForm supabase={supabase} user={user} role="coach" onSaved={() => setNotice('Update posted to Community Feed.')} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'post-tryout' && (
+        <SectionCard title="Post Tournament / Tryout">
+          <TryoutForm supabase={supabase} user={user} profile={profile} onVerify={() => setActiveTab('verify')} onSaved={() => { setActiveTab('profile'); setNotice('Tryout posted.') }} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'apply-jobs' && (
+        <SectionCard title="Browse & Apply for Jobs">
+          <UnverifiedGate profile={profile} message="Verified coaches can apply for roles with their verified profile.">
+            <p className="text-muted small mb-3">Browse coaching, management and director roles posted by clubs and academies.</p>
+            <div className="alert alert-info d-flex gap-2 align-items-center">
+              <i className="bi bi-info-circle flex-shrink-0" />
+              <span>Visit the <strong>Jobs Board</strong> to browse and apply for open positions. Your verified profile is attached automatically.</span>
+            </div>
+          </UnverifiedGate>
+        </SectionCard>
+      )}
+
       {activeTab === 'cv' && (
         <SectionCard title="Upload CV / Résumé">
           <p className="text-muted small mb-3">Your CV is stored privately and only shared with clubs, academies and agents you directly apply to or approve.</p>
@@ -1025,7 +1073,7 @@ function AcademyDashboard({ supabase, user, profile }) {
   useEffect(() => {
     let alive = true
     supabase.from('academy_profiles')
-      .select('id, club_id, sports, country, state, address, phone, year_founded, linkedin')
+      .select('id, club_id, sports, country, state, address, phone, year_founded, linkedin, leagues, languages')
       .eq('user_id', user.id).maybeSingle()
       .then(async ({ data: ac, error: ae }) => {
         if (!alive) return
@@ -1160,7 +1208,14 @@ function AcademyDashboard({ supabase, user, profile }) {
       {activeTab === 'squad' && (
         <SectionCard title="Squad Roster">
           <p className="text-muted small mb-3">Add players to your squad. Each submission requires identity evidence and ownership/contract documents for admin review.</p>
-          <AcademyPlayerForm supabase={supabase} user={user} onDone={() => setNotice('Player submission sent for admin review.')} />
+          <AcademyPlayerForm
+            supabase={supabase}
+            user={user}
+            profile={profile}
+            academyId={academy?.id}
+            onSaved={() => setNotice('Player submission sent for admin review.')}
+            onVerify={() => setActiveTab('verify')}
+          />
         </SectionCard>
       )}
 
@@ -1482,6 +1537,46 @@ function SportsAnalystDashboard({ supabase, user, profile }) {
         </SectionCard>
       )}
 
+      {/* Post Review / Analysis */}
+      {activeTab === 'post-review' && (
+        <SectionCard title="Post Match Analysis">
+          <p className="text-muted small mb-3">Share a match analysis, tactical review or data insight with the SportBridge community.</p>
+          <PostUpdateForm supabase={supabase} user={user} role="sports_analyst" onSaved={() => setNotice('Analysis posted to Community Feed.')} />
+        </SectionCard>
+      )}
+
+      {/* Recommend with Media */}
+      {activeTab === 'recommend-media' && (
+        <SectionCard title="Recommend a Player with Video / CV">
+          <p className="text-muted small mb-3">Attach a highlight video or CV to your player recommendation to make it stronger.</p>
+          <RecommendWithMediaForm supabase={supabase} user={user} role="sports_analyst" onSaved={() => setNotice('Recommendation with media sent.')} />
+        </SectionCard>
+      )}
+
+      {/* Find Players */}
+      {activeTab === 'find-players' && (
+        <SectionCard title="Find Players">
+          <p className="text-muted small mb-3">Search the player directory by position, age group, region and foot to find talent for your reports.</p>
+          <div className="alert alert-info d-flex gap-2 align-items-center">
+            <i className="bi bi-info-circle flex-shrink-0" />
+            <span>Use the <strong>Players</strong> page to search and filter the full player directory.</span>
+          </div>
+        </SectionCard>
+      )}
+
+      {/* Apply for Jobs */}
+      {activeTab === 'apply-jobs' && (
+        <SectionCard title="Browse & Apply for Analyst Roles">
+          <UnverifiedGate profile={profile} message="Verified analysts can apply for roles with their verified profile.">
+            <p className="text-muted small mb-3">Browse analyst, scout and data roles posted by clubs and academies.</p>
+            <div className="alert alert-info d-flex gap-2 align-items-center">
+              <i className="bi bi-info-circle flex-shrink-0" />
+              <span>Visit the <strong>Jobs Board</strong> to browse and apply with your verified analyst profile.</span>
+            </div>
+          </UnverifiedGate>
+        </SectionCard>
+      )}
+
       {/* Upload CV */}
       {activeTab === 'cv' && (
         <SectionCard title="Upload CV / Portfolio">
@@ -1493,7 +1588,7 @@ function SportsAnalystDashboard({ supabase, user, profile }) {
       {/* Verification */}
       {activeTab === 'verify' && (
         <SectionCard title="Verification">
-          <VerifyForm supabase={supabase} user={user} role="coach" verificationStatus={profile?.verification_status} onDone={() => setNotice('Submitted for review.')} />
+          <VerifyForm supabase={supabase} user={user} role="sports_analyst" verificationStatus={profile?.verification_status} onDone={() => setNotice('Submitted for review.')} />
         </SectionCard>
       )}
 
