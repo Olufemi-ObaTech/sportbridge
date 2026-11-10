@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useCallback } from 'react'
+﻿import { useEffect, useState, useCallback, useRef } from 'react'
 import AccessRequestsPanel from './AccessRequestsPanel.jsx'
 import AcademyPlayerForm from './AcademyPlayerForm.jsx'
 import JobPostForm from './JobPostForm.jsx'
@@ -3039,20 +3039,67 @@ function AdminDashboard({ supabase, user }) {
 // ——— Account details sidebar ——————————————————————————————————————————————————
 
 function AccountDetails({ supabase, user, profile, onProfileSaved }) {
-  const [name,      setName]      = useState(profile?.full_name ?? '')
-  const [saving,    setSaving]    = useState(false)
-  const [notice,    setNotice]    = useState('')
-  const [error,     setError]     = useState('')
-  const [open,      setOpen]      = useState(false)   // collapsed by default
+  const [name,       setName]       = useState(profile?.full_name ?? '')
+  const [saving,     setSaving]     = useState(false)
+  const [notice,     setNotice]     = useState('')
+  const [error,      setError]      = useState('')
+  const [open,       setOpen]       = useState(false)
+  const [uploading,  setUploading]  = useState(false)
+  const [avatarUrl,  setAvatarUrl]  = useState(profile?.avatar_url ?? null)
+  const fileRef = useRef(null)
+
+  const isAdmin = profile?.role === 'super_admin'
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Basic validation
+    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) {
+      setError('Only JPEG, PNG or WebP images allowed.'); return
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setError('Image must be under 3 MB.'); return
+    }
+    setUploading(true); setError(''); setNotice('')
+    try {
+      const ext  = file.name.split('.').pop().toLowerCase()
+      const path = `avatars/${user.id}/profile.${ext}`
+      const { data: up, error: ue } = await supabase.storage
+        .from('uploads')
+        .upload(path, file, { upsert: true, contentType: file.type })
+      if (ue) { setError(`Upload failed: ${ue.message}`); return }
+      const { data: pub } = supabase.storage.from('uploads').getPublicUrl(up.path)
+      const url = pub?.publicUrl
+      // Save to profiles.avatar_path
+      const { error: pe } = await supabase.from('profiles')
+        .update({ avatar_path: url, updated_at: new Date().toISOString() })
+        .eq('id', user.id)
+      if (pe) { setError(`Could not save photo: ${pe.message}`); return }
+      setAvatarUrl(url)
+      onProfileSaved({ ...profile, avatar_path: url, avatar_url: url })
+      setNotice('Profile photo updated!')
+    } catch (err) {
+      setError(err.message || 'Upload failed.')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
 
   const save = async (e) => {
     e.preventDefault()
     setSaving(true); setError(''); setNotice('')
-    const { data, error: err } = await supabase.from('profiles').update({ full_name: name.trim() || null, updated_at: new Date().toISOString() }).eq('id', user.id).select('id, email, full_name, role').single()
+    const { data, error: err } = await supabase.from('profiles')
+      .update({ full_name: name.trim() || null, updated_at: new Date().toISOString() })
+      .eq('id', user.id).select('id, email, full_name, role, avatar_path').single()
     setSaving(false)
     if (err) { setError(err.message); return }
     setNotice('Saved.'); onProfileSaved(data)
   }
+
+  const displayAvatar = isAdmin
+    ? '/img/logo-mark.svg'
+    : (avatarUrl || profile?.avatar_path || null)
 
   return (
     <section className="card mb-3" style={{ overflow:'hidden' }}>
@@ -3065,10 +3112,22 @@ function AccountDetails({ supabase, user, profile, onProfileSaved }) {
         style={{ cursor:'pointer' }}
       >
         <div className="d-flex align-items-center gap-2">
-          <span className="d-inline-flex align-items-center justify-content-center rounded-circle"
-            style={{ width:32, height:32, background:'var(--fc-gradient-primary)', color:'#fff', fontSize:13, flexShrink:0 }}>
-            <i className="bi bi-person-fill" />
-          </span>
+          {/* Avatar */}
+          <div className="position-relative flex-shrink-0" style={{ width:38, height:38 }}>
+            {displayAvatar ? (
+              <img src={displayAvatar} alt="Profile"
+                className="rounded-circle"
+                style={{ width:38, height:38, objectFit: isAdmin ? 'contain' : 'cover',
+                  background: isAdmin ? 'var(--fc-gradient-primary)' : 'transparent',
+                  padding: isAdmin ? 4 : 0 }}
+              />
+            ) : (
+              <span className="d-inline-flex align-items-center justify-content-center rounded-circle"
+                style={{ width:38, height:38, background:'var(--fc-gradient-primary)', color:'#fff', fontSize:15 }}>
+                <i className="bi bi-person-fill" />
+              </span>
+            )}
+          </div>
           <div>
             <div className="fw-bold small" style={{ color:'var(--fc-blue-700)' }}>
               {profile?.full_name || user.email?.split('@')[0] || 'My account'}
@@ -3084,6 +3143,53 @@ function AccountDetails({ supabase, user, profile, onProfileSaved }) {
         <div className="px-3 pb-3 border-top pt-3">
           {error  && <div className="alert alert-danger  py-2 small mb-2" role="alert">{error}</div>}
           {notice && <div className="alert alert-success py-2 small mb-2" role="status">{notice}</div>}
+
+          {/* Photo upload */}
+          <div className="mb-3">
+            <div className="small fw-semibold mb-2">Profile photo</div>
+            <div className="d-flex align-items-center gap-3">
+              {/* Current photo */}
+              <div className="position-relative flex-shrink-0" style={{ width:64, height:64 }}>
+                {displayAvatar ? (
+                  <img src={displayAvatar} alt="Profile"
+                    className="rounded-circle"
+                    style={{ width:64, height:64, objectFit: isAdmin ? 'contain' : 'cover',
+                      background: isAdmin ? '#071a3d' : 'var(--bs-secondary-bg)',
+                      padding: isAdmin ? 8 : 0 }}
+                  />
+                ) : (
+                  <span className="d-inline-flex align-items-center justify-content-center rounded-circle"
+                    style={{ width:64, height:64, background:'var(--fc-gradient-primary)', color:'#fff', fontSize:26 }}>
+                    <i className="bi bi-person-fill" />
+                  </span>
+                )}
+              </div>
+              {/* Upload button — not for admin (admin always uses logo) */}
+              {!isAdmin && (
+                <div>
+                  <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp"
+                    className="d-none" onChange={handlePhotoChange} />
+                  <button className="btn btn-outline-primary btn-sm d-flex align-items-center gap-2"
+                    type="button" disabled={uploading}
+                    onClick={() => fileRef.current?.click()}>
+                    {uploading
+                      ? <><span className="spinner-border spinner-border-sm" />Uploading…</>
+                      : <><i className="bi bi-camera-fill" />{displayAvatar ? 'Change photo' : 'Upload photo'}</>}
+                  </button>
+                  <div className="text-muted mt-1" style={{ fontSize:10 }}>JPEG / PNG / WebP · max 3 MB</div>
+                </div>
+              )}
+              {isAdmin && (
+                <div>
+                  <span className="badge text-bg-primary px-2 py-1">
+                    <i className="bi bi-shield-check me-1" />SportBridge Logo
+                  </span>
+                  <div className="text-muted mt-1" style={{ fontSize:10 }}>Admin uses platform logo</div>
+                </div>
+              )}
+            </div>
+          </div>
+
           <form onSubmit={save} className="d-grid gap-2">
             <div>
               <label className="form-label small fw-semibold mb-1" htmlFor="acct-name">Display name</label>
@@ -3094,10 +3200,11 @@ function AccountDetails({ supabase, user, profile, onProfileSaved }) {
               <input className="form-control form-control-sm" readOnly value={profile?.email ?? user.email ?? ''} />
             </div>
             <button className="btn btn-sm btn-primary" type="submit" disabled={saving}>
-              {saving ? 'Saving…' : 'Save changes'}
+              {saving ? 'Saving…' : 'Save name'}
             </button>
           </form>
         </div>
+
       )}
     </section>
   )

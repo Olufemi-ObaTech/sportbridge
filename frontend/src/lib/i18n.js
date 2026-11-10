@@ -838,6 +838,15 @@ const entries = [
   ['Facebook page',             'Page Facebook',                   'Página Facebook',                 'صفحة فيسبوك',                       'Página de Facebook'],
   ['Instagram profile',         'Profil Instagram',                'Perfil Instagram',                'ملف إنستغرام',                      'Perfil de Instagram'],
   ['YouTube channel',           'Chaîne YouTube',                  'Canal YouTube',                   'قناة يوتيوب',                       'Canal de YouTube'],
+
+  // ── Profile photo upload ──
+  ['Profile photo',             'Photo de profil',                 'Foto de perfil',                  'صورة الملف الشخصي',                 'Foto de perfil'],
+  ['Upload photo',              'Téléverser une photo',            'Carregar foto',                   'رفع صورة',                          'Subir foto'],
+  ['Change photo',              'Changer de photo',                'Alterar foto',                    'تغيير الصورة',                      'Cambiar foto'],
+  ['JPEG / PNG / WebP · max 3 MB', 'JPEG / PNG / WebP · max 3 Mo','JPEG / PNG / WebP · máx. 3 MB',  'JPEG / PNG / WebP · أقصى 3 ميجا',   'JPEG / PNG / WebP · máx. 3 MB'],
+  ['Photo updated!',            'Photo mise à jour !',             'Foto atualizada!',                'تم تحديث الصورة!',                  '¡Foto actualizada!'],
+  ['Admin uses platform logo',  'L\'admin utilise le logo',        'Admin usa o logótipo',            'المسؤول يستخدم شعار المنصة',         'El admin usa el logo de la plataforma'],
+  ['SportBridge Logo',          'Logo SportBridge',                'Logótipo SportBridge',            'شعار SportBridge',                   'Logo de SportBridge'],
 ]
 
 const catalog = Object.fromEntries(entries.map(([source, ...values]) => [

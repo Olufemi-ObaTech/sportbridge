@@ -28,10 +28,23 @@ const TABS = [
   { key: 'sports_analyst', label: 'Analysts',  icon: 'bi-graph-up-arrow'   },
 ]
 
-// ─── Avatar component (role-colour circle with icon — no photo needed) ─────────
-function RoleAvatar({ role, size = 64, name }) {
+// ─── Avatar component (role-colour circle with icon — falls back to real photo) ─
+function RoleAvatar({ role, size = 64, name, photoUrl }) {
   const m = ROLE_META[role] ?? { icon: 'bi-person', colour: '#6c757d' }
   const initials = (name || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+
+  if (photoUrl) {
+    return (
+      <img
+        src={photoUrl}
+        alt={name || 'Profile photo'}
+        className="rounded-circle flex-shrink-0"
+        style={{ width: size, height: size, objectFit: 'cover', flexShrink: 0 }}
+        onError={(e) => { e.target.style.display = 'none' }}
+      />
+    )
+  }
+
   return (
     <div
       className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
@@ -59,6 +72,7 @@ function MemberCard({ member, role, onView }) {
   const sub2 = member.nationality || member.country || null
   const sub3 = member.current_club || null
   const verified = member.verification_status === 'verified' || member.verified_badge
+  const photo = member.photo_path || member.avatar_path || member.primary_photo_path || null
 
   return (
     <article
@@ -71,7 +85,7 @@ function MemberCard({ member, role, onView }) {
       aria-label={`View profile of ${name}`}
     >
       <div className="d-flex gap-3 align-items-start">
-        <RoleAvatar role={role} size={52} name={name} />
+        <RoleAvatar role={role} size={52} name={name} photoUrl={photo} />
         <div className="min-w-0 flex-grow-1">
           <div className="fw-bold text-truncate d-flex align-items-center gap-1" style={{ color: 'var(--fc-blue-700)', fontSize: 15 }}>
             {name}
@@ -203,7 +217,7 @@ function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role 
           {/* Profile header card */}
           <div className="card p-4 mb-4">
             <div className="d-flex gap-4 align-items-start mb-4">
-              <RoleAvatar role={role} size={88} name={member.full_name} />
+              <RoleAvatar role={role} size={88} name={member.full_name} photoUrl={member.photo_path || null} />
               <div className="flex-grow-1 min-w-0">
                 <h1 className="h3 fw-bold mb-1" style={{ color: 'var(--fc-blue-700)' }}>
                   {member.full_name}
@@ -453,7 +467,7 @@ function AgentProfile({ supabase, member, profile, user, onBack, onSignup }) {
           {/* Header card */}
           <div className="card p-4 mb-4">
             <div className="d-flex gap-4 align-items-start mb-4">
-              <RoleAvatar role="agent" size={88} name={member.agency_name} />
+              <RoleAvatar role="agent" size={88} name={member.agency_name} photoUrl={member.photo_path || null} />
               <div className="flex-grow-1 min-w-0">
                 <h1 className="h3 fw-bold mb-1" style={{ color: 'var(--fc-blue-700)' }}>
                   {member.agency_name || 'Agency'}
@@ -655,7 +669,7 @@ function ClubProfile({ supabase, member, academy, user, profile, onBack, onSignu
           {/* Header card */}
           <div className="card p-4 mb-4">
             <div className="d-flex gap-4 align-items-start mb-4">
-              <RoleAvatar role="academy" size={88} name={member.name} />
+              <RoleAvatar role="academy" size={88} name={member.name} photoUrl={member.logo_path || null} />
               <div className="flex-grow-1 min-w-0">
                 <h1 className="h3 fw-bold mb-1" style={{ color: 'var(--fc-blue-700)' }}>
                   {member.name}
