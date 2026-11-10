@@ -659,95 +659,313 @@ function AgentProfile({ supabase, member, profile, user, onBack, onSignup }) {
 // ─── Club / Academy full profile ───────────────────────────────────────────────
 function ClubProfile({ supabase, member, academy, user, profile, onBack, onSignup }) {
   const verified = member.verified_badge || profile?.verification_status === 'verified'
+  const sports   = Array.isArray(academy?.sports) ? academy.sports : (academy?.sports ? [academy.sports] : [])
+  const leagues  = Array.isArray(academy?.leagues) ? academy.leagues : []
 
   return (
-    <div className="container py-4" style={{ maxWidth: 900 }}>
+    <div className="container py-4" style={{ maxWidth: 960 }}>
       <button className="btn btn-link p-0 mb-4 text-decoration-none" type="button" onClick={onBack}>
         <i className="bi bi-arrow-left me-1" />Back to directory
       </button>
 
       <div className="row g-4">
+        {/* ── Left ── */}
         <div className="col-12 col-md-8">
+
+          {/* Header card */}
           <div className="card p-4 mb-4">
             <div className="d-flex gap-4 align-items-start mb-4">
-              <RoleAvatar role="academy" size={80} name={member.name} />
-              <div>
+              <RoleAvatar role="academy" size={88} name={member.name} />
+              <div className="flex-grow-1 min-w-0">
                 <h1 className="h3 fw-bold mb-1" style={{ color: 'var(--fc-blue-700)' }}>
                   {member.name}
-                  {verified && <i className="bi bi-patch-check-fill text-primary ms-2" style={{ fontSize: 20 }} />}
+                  {verified && <i className="bi bi-patch-check-fill text-primary ms-2" style={{ fontSize: 20 }} aria-label="Verified" />}
                 </h1>
-                <div className="d-flex flex-wrap gap-2">
+                <div className="d-flex flex-wrap gap-2 mb-3">
                   <span className="badge" style={{ background: '#6f42c1', color: '#fff' }}>
                     <i className="bi bi-building me-1" />Club / Academy
                   </span>
-                  {verified && <span className="badge text-bg-success">FIFA TMS Verified</span>}
+                  {verified && (
+                    <span className="badge text-bg-success">
+                      <i className="bi bi-award-fill me-1" />Verified Club
+                    </span>
+                  )}
+                  {sports.map((s, i) => (
+                    <span key={i} className="badge text-bg-light border">
+                      <i className="bi bi-dribbble me-1" />{s}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Quick info grid */}
+                <div className="row g-2 small">
+                  {[
+                    { icon: 'bi-geo-alt-fill', label: 'Country',      value: member.country },
+                    { icon: 'bi-pin-map',      label: 'City/State',   value: academy?.state },
+                    { icon: 'bi-calendar3',    label: 'Founded',      value: academy?.year_founded },
+                    { icon: 'bi-people-fill',  label: 'Languages',    value: Array.isArray(academy?.languages) ? academy.languages.join(', ') : academy?.languages },
+                  ].filter(r => r.value).map(({ icon, label, value }) => (
+                    <div key={label} className="col-6 d-flex align-items-center gap-1">
+                      <i className={`bi ${icon} text-primary flex-shrink-0`} style={{ fontSize: 13 }} />
+                      <span className="text-muted me-1">{label}:</span>
+                      <span className="fw-semibold text-truncate">{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="d-flex gap-2 mt-3 flex-wrap">
+                  {member.website && (
+                    <a href={member.website} target="_blank" rel="noopener noreferrer"
+                      className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2">
+                      <i className="bi bi-globe2" />{member.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                    </a>
+                  )}
+                  {member.linkedin && (
+                    <a href={member.linkedin} target="_blank" rel="noopener noreferrer"
+                      className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2">
+                      <i className="bi bi-linkedin" />LinkedIn
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="row g-2 mb-4">
-              <div className="col-12 col-sm-6">
-                <InfoRow icon="bi-geo-alt"    label="Country"       value={member.country} />
-                <InfoRow icon="bi-pin-map"    label="State / City"  value={academy?.state} />
-                <InfoRow icon="bi-calendar3"  label="Founded"       value={academy?.year_founded} />
-              </div>
-              <div className="col-12 col-sm-6">
-                <InfoRow icon="bi-telephone"  label="Phone"         value={academy?.phone} />
-                <InfoRow icon="bi-dribbble"   label="Sports"        value={Array.isArray(academy?.sports) ? academy.sports.join(', ') : null} />
-                {member.website && (
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <i className="bi bi-globe text-primary" style={{ fontSize: 14 }} />
-                    <a href={member.website} target="_blank" rel="noopener noreferrer" className="small text-truncate">
-                      {member.website.replace('https://','').replace('http://','')}
-                    </a>
-                  </div>
-                )}
+          {/* About */}
+          {member.about && (
+            <div className="card p-4 mb-4">
+              <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-building me-2 text-primary" />About the Club
+              </h2>
+              <p className="mb-0" style={{ lineHeight: 1.8, color: 'var(--fc-muted)' }}>{member.about}</p>
+            </div>
+          )}
+
+          {/* Location & Address */}
+          {(academy?.address || academy?.state || member.country) && (
+            <div className="card p-4 mb-4">
+              <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-geo-alt-fill me-2 text-primary" />Location
+              </h2>
+              <div className="d-flex align-items-start gap-3">
+                <div className="d-flex align-items-center justify-content-center rounded"
+                  style={{ width: 44, height: 44, background: '#6f42c118', color: '#6f42c1', fontSize: 20, flexShrink: 0 }}>
+                  <i className="bi bi-geo-alt-fill" />
+                </div>
+                <div>
+                  {academy?.address && <div className="fw-semibold">{academy.address}</div>}
+                  {academy?.state && <div className="text-muted small">{academy.state}{member.country ? `, ${member.country}` : ''}</div>}
+                  {!academy?.state && member.country && <div className="text-muted small">{member.country}</div>}
+                  {academy?.phone && (
+                    <div className="small mt-1 text-muted">
+                      <i className="bi bi-telephone me-1" />Contact via SportBridge secure inbox only
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
+          )}
 
-            {member.about && (
-              <div className="mb-4">
-                <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>About the club</h2>
-                <p className="small text-muted mb-0" style={{ lineHeight: 1.7 }}>{member.about}</p>
-              </div>
-            )}
+          {/* Club Details */}
+          <div className="card p-4 mb-4">
+            <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
+              <i className="bi bi-info-circle-fill me-2 text-primary" />Club Details
+            </h2>
+            <div className="row g-3">
+              {academy?.year_founded && (
+                <div className="col-6 col-sm-4">
+                  <div className="p-3 rounded text-center" style={{ background: '#6f42c10a', border: '1px solid #6f42c122' }}>
+                    <i className="bi bi-calendar3 d-block mb-1" style={{ color: '#6f42c1', fontSize: 20 }} />
+                    <div className="fw-bold" style={{ color: '#6f42c1', fontSize: 20 }}>{academy.year_founded}</div>
+                    <div className="small text-muted">Year Founded</div>
+                  </div>
+                </div>
+              )}
+              {sports.length > 0 && (
+                <div className="col-6 col-sm-4">
+                  <div className="p-3 rounded text-center" style={{ background: '#2F7DF010', border: '1px solid #2F7DF022' }}>
+                    <i className="bi bi-dribbble d-block mb-1" style={{ color: '#2F7DF0', fontSize: 20 }} />
+                    <div className="fw-bold" style={{ color: '#2F7DF0', fontSize: 18 }}>{sports.join(', ')}</div>
+                    <div className="small text-muted">Sport{sports.length > 1 ? 's' : ''}</div>
+                  </div>
+                </div>
+              )}
+              {verified && (
+                <div className="col-6 col-sm-4">
+                  <div className="p-3 rounded text-center" style={{ background: '#19875410', border: '1px solid #19875422' }}>
+                    <i className="bi bi-patch-check-fill d-block mb-1" style={{ color: '#198754', fontSize: 20 }} />
+                    <div className="fw-bold" style={{ color: '#198754', fontSize: 14 }}>Verified</div>
+                    <div className="small text-muted">SportBridge</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
-            {academy?.address && (
-              <div className="mb-2">
-                <h2 className="h6 fw-bold mb-2" style={{ color: 'var(--fc-blue-700)' }}>
-                  <i className="bi bi-geo-alt-fill me-2 text-primary" />Address
-                </h2>
-                <p className="small text-muted mb-0">{academy.address}</p>
+          {/* Leagues */}
+          {leagues.length > 0 && (
+            <div className="card p-4 mb-4">
+              <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-trophy-fill me-2 text-warning" />Leagues &amp; Competitions
+              </h2>
+              <div className="d-flex flex-wrap gap-2">
+                {leagues.map((l, i) => (
+                  <span key={i} className="badge px-3 py-2"
+                    style={{ background: '#F5B30120', color: '#b45309', border: '1px solid #F5B30155', fontSize: 12 }}>
+                    <i className="bi bi-trophy me-1" />{l}
+                  </span>
+                ))}
               </div>
-            )}
+            </div>
+          )}
+
+          {/* Opportunities */}
+          <div className="card p-4 mb-4">
+            <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
+              <i className="bi bi-briefcase-fill me-2 text-primary" />How to Work with This Club
+            </h2>
+            <div className="row g-3">
+              {[
+                { icon: 'bi-person-arms-up', colour: '#2F7DF0', title: 'Player Trials', desc: 'Express interest in tryout opportunities posted by this club on the Tryouts board.' },
+                { icon: 'bi-clipboard2-pulse', colour: '#F5B301', title: 'Staff Positions', desc: 'Coaches and analysts can apply for roles posted by this club on the Jobs board.' },
+                { icon: 'bi-send-check', colour: '#198754', title: 'Player Recommendations', desc: 'Agents can send player recommendations directly to this club via the inbox.' },
+              ].map(({ icon, colour, title, desc }) => (
+                <div key={title} className="col-12 col-sm-4">
+                  <div className="p-3 rounded h-100" style={{ background: colour + '0a', border: `1px solid ${colour}22` }}>
+                    <i className={`bi ${icon} d-block mb-2`} style={{ color: colour, fontSize: 22 }} />
+                    <div className="fw-semibold small mb-1" style={{ color: colour }}>{title}</div>
+                    <div className="small text-muted" style={{ lineHeight: 1.5 }}>{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Safety notice */}
+          <div className="alert d-flex gap-2 align-items-start"
+            style={{ background: 'rgba(47,125,240,.06)', border: '1.5px solid rgba(47,125,240,.2)' }}>
+            <i className="bi bi-shield-check text-primary flex-shrink-0 mt-1" />
+            <div className="small">
+              <strong>SportBridge Safety:</strong> This club communicates through the secure SportBridge inbox only.
+              Phone numbers, email addresses and payment requests are never shown publicly.
+              Always verify club registration documents before signing contracts.
+            </div>
           </div>
         </div>
 
+        {/* ── Right sidebar ── */}
         <div className="col-12 col-md-4">
+
+          {/* Club summary card */}
+          <div className="card p-4 mb-3" style={{ background: '#6f42c10a', border: '1px solid #6f42c122' }}>
+            <div className="d-flex align-items-center gap-3 mb-3">
+              <div className="d-flex align-items-center justify-content-center rounded-circle"
+                style={{ width: 48, height: 48, background: '#6f42c1', color: '#fff', fontSize: 20 }}>
+                <i className="bi bi-building" />
+              </div>
+              <div>
+                <div className="fw-bold small" style={{ color: '#6f42c1' }}>Club / Academy</div>
+                <div className="small text-muted">
+                  {academy?.year_founded ? `Est. ${academy.year_founded}` : 'Established club'}
+                  {member.country ? ` · ${member.country}` : ''}
+                </div>
+              </div>
+            </div>
+            {verified && (
+              <div className="alert alert-success py-2 mb-0 small d-flex align-items-center gap-2">
+                <i className="bi bi-patch-check-fill" />CAC / FA Registered &amp; Verified
+              </div>
+            )}
+          </div>
+
+          {/* Club stats */}
+          <div className="card p-4 mb-3">
+            <h2 className="h6 fw-bold mb-3">Club Stats</h2>
+            <div className="d-grid gap-1">
+              {academy?.year_founded && (
+                <div className="d-flex justify-content-between py-1" style={{ borderBottom: '1px solid var(--bs-border-color)' }}>
+                  <span className="small text-muted"><i className="bi bi-calendar3 me-1" />Founded</span>
+                  <span className="fw-bold small">{academy.year_founded}</span>
+                </div>
+              )}
+              {sports.length > 0 && (
+                <div className="d-flex justify-content-between py-1" style={{ borderBottom: '1px solid var(--bs-border-color)' }}>
+                  <span className="small text-muted"><i className="bi bi-dribbble me-1" />Sports</span>
+                  <span className="fw-bold small">{sports.join(' · ')}</span>
+                </div>
+              )}
+              {member.country && (
+                <div className="d-flex justify-content-between py-1" style={{ borderBottom: '1px solid var(--bs-border-color)' }}>
+                  <span className="small text-muted"><i className="bi bi-geo-alt me-1" />Country</span>
+                  <span className="fw-bold small">{member.country}</span>
+                </div>
+              )}
+              {leagues.length > 0 && (
+                <div className="d-flex justify-content-between py-1" style={{ borderBottom: '1px solid var(--bs-border-color)' }}>
+                  <span className="small text-muted"><i className="bi bi-trophy me-1" />Leagues</span>
+                  <span className="fw-bold small">{leagues.length}</span>
+                </div>
+              )}
+              <div className="d-flex justify-content-between py-1">
+                <span className="small text-muted"><i className="bi bi-shield-check me-1" />Verified</span>
+                <span className="fw-bold small" style={{ color: verified ? '#198754' : '#6c757d' }}>
+                  {verified ? 'Yes ✓' : 'Pending'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact */}
           <div className="card p-4 mb-3">
             <h2 className="h6 fw-bold mb-3">Contact club</h2>
             <VerifiedGate user={user} profile={profile} onSignup={onSignup}>
               <div className="p-3 rounded" style={{ background: 'var(--bs-secondary-bg)' }}>
                 <p className="small text-muted mb-2">
-                  <i className="bi bi-shield-check text-success me-1" />Contact via the secure SportBridge inbox only.
+                  <i className="bi bi-shield-check text-success me-1" />
+                  All contact via the secure SportBridge inbox. Phone numbers are never shown.
                 </p>
                 {user ? (
                   <button className="btn btn-primary w-100 btn-sm" type="button">
                     <i className="bi bi-chat-dots me-2" />Send message
                   </button>
                 ) : (
-                  <button className="btn btn-primary w-100 btn-sm" type="button" onClick={() => onSignup('player')}>
+                  <button className="btn btn-primary w-100 btn-sm" type="button" onClick={() => onSignup('agent')}>
                     <i className="bi bi-person-plus me-2" />Join to connect
                   </button>
                 )}
               </div>
             </VerifiedGate>
           </div>
-          <div className="card p-4">
+
+          {/* Verification */}
+          <div className="card p-4 mb-3">
             <h2 className="h6 fw-bold mb-3">Verification</h2>
             <VerifiedBadge status={verified ? 'verified' : 'unverified'} />
+            {verified && (
+              <div className="mt-2 small text-success d-flex align-items-center gap-1">
+                <i className="bi bi-award-fill" />CAC / FA registration verified by SportBridge
+              </div>
+            )}
+            {!verified && (
+              <p className="small text-muted mt-2 mb-0">Verification pending or not yet submitted.</p>
+            )}
           </div>
-          <div className="card p-4 mt-3">
+
+          {/* Quick links */}
+          <div className="card p-4 mb-3">
+            <h2 className="h6 fw-bold mb-3">Find opportunities</h2>
+            <div className="d-grid gap-2">
+              <a href="#jobs" className="btn btn-outline-primary btn-sm text-start d-flex align-items-center gap-2">
+                <i className="bi bi-briefcase" />View jobs from this club
+              </a>
+              <a href="#tryouts" className="btn btn-outline-success btn-sm text-start d-flex align-items-center gap-2">
+                <i className="bi bi-calendar2-plus" />View tryouts from this club
+              </a>
+            </div>
+          </div>
+
+          {/* Report */}
+          <div className="card p-4">
             <ReportProfileButton supabase={supabase} user={user}
               reportedUserId={profile?.id} reportedName={member.name} onSignup={onSignup} />
           </div>

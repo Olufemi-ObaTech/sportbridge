@@ -765,6 +765,30 @@ const entries = [
   ['Creative Passing',                 'Passes créatifs',                         'Passes criativos',                   'التمرير الإبداعي',                  'Pases creativos'],
   ['Two-Footed',                       'Ambidextre',                              'Ambidestro',                         'استخدام القدمين',                   'Ambidiestro'],
   ['Vision & Through Balls',           'Vision et passes en profondeur',          'Visão e passes em profundidade',     'الرؤية والتمريرات المتعمقة',        'Visión y pases en profundidad'],
+
+  // ── Club / Academy profile upgrade ──
+  ['About the Club',           'À propos du club',             'Sobre o clube',               'عن النادي',                  'Sobre el club'],
+  ['Club Details',             'Détails du club',              'Detalhes do clube',           'تفاصيل النادي',              'Detalles del club'],
+  ['Year Founded',             'Année de fondation',           'Ano de fundação',             'سنة التأسيس',                'Año de fundación'],
+  ['Leagues & Competitions',   'Ligues et compétitions',       'Ligas e competições',         'الدوريات والمسابقات',        'Ligas y competiciones'],
+  ['How to Work with This Club','Comment collaborer avec ce club','Como trabalhar com este clube','كيفية التعاون مع هذا النادي','Cómo colaborar con este club'],
+  ['Player Trials',            'Essais joueurs',               'Testes de jogadores',         'تجارب اللاعبين',             'Pruebas de jugadores'],
+  ['Staff Positions',          'Postes de personnel',          'Vagas para equipa técnica',   'وظائف الموظفين',             'Puestos de personal'],
+  ['CAC / FA Registered & Verified','Enregistré et vérifié CAC/FA','Registado e verificado CAC/FA','مسجّل وموثّق CAC/FA','Registrado y verificado CAC/FA'],
+  ['Find opportunities',       'Trouver des opportunités',     'Encontrar oportunidades',     'ابحث عن الفرص',              'Buscar oportunidades'],
+  ['View jobs from this club', 'Voir les offres de ce club',   'Ver vagas deste clube',       'عرض وظائف هذا النادي',       'Ver empleos de este club'],
+  ['View tryouts from this club','Voir les essais de ce club', 'Ver testes deste clube',      'عرض تجارب هذا النادي',       'Ver pruebas de este club'],
+  ['Club Stats',               'Stats du club',                'Estatísticas do clube',       'إحصائيات النادي',            'Estadísticas del club'],
+  ['Established club',         'Club établi',                  'Clube estabelecido',          'نادٍ راسخ',                  'Club establecido'],
+
+  // ── CTA band — logged-in state ──
+  ['Welcome back to SportBridge','Bon retour sur SportBridge', 'Bem-vindo de volta',          'مرحبًا بعودتك',              'Bienvenido de nuevo'],
+  ['Your next opportunity is waiting.','Votre prochaine opportunité vous attend.','A sua próxima oportunidade está à espera.','فرصتك القادمة بانتظارك.','Tu próxima oportunidad te espera.'],
+  ['Browse community',         'Parcourir la communauté',      'Explorar a comunidade',       'تصفح المجتمع',               'Explorar la comunidad'],
+  ['Go to dashboard',          'Accéder au tableau de bord',   'Ir para o painel',            'الذهاب إلى لوحة التحكم',     'Ir al panel'],
+  ['Create free account',      'Créer un compte gratuit',      'Criar conta gratuita',        'إنشاء حساب مجاني',           'Crear cuenta gratis'],
+  ['No credit card required · Players always free · 25+ countries','Sans carte · Gratuit · +25 pays','Sem cartão · Gratuito · +25 países','بدون بطاقة · مجاني · +25 دولة','Sin tarjeta · Gratis · +25 países'],
+  ['Free for players · Verified clubs · Trusted network','Gratuit pour les joueurs · Clubs vérifiés','Gratuito · Clubes verificados','مجاني للاعبين · أندية موثّقة','Gratis · Clubes verificados'],
 ]
 
 const catalog = Object.fromEntries(entries.map(([source, ...values]) => [

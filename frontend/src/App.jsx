@@ -1422,14 +1422,63 @@ function App() {
               {/* Moved below as the main directory section */}
 
               {/* —— CTA band ———————————————————————————————————————————— */}
-              <div className="rounded-4 p-5 mb-5 text-center fc-band-photo">
-                <h2 className="h3 fw-bold text-white mb-2">Ready to make your next move?</h2>
-                <p className="mb-4" style={{ color: 'rgba(255,255,255,.85)' }}>
-                  Join SportBridge today, free for players. Takes one minute.
-                </p>
-                <button type="button" className="btn btn-secondary btn-lg" onClick={() => openSignup()}>
-                  Create your free account
-                </button>
+              <div className="rounded-4 p-5 mb-5 text-center fc-band-photo position-relative overflow-hidden">
+                {user ? (
+                  /* ── Logged-in: personalised CTA ── */
+                  <>
+                    <div className="position-relative" style={{ zIndex: 1 }}>
+                      <span className="badge mb-3 d-inline-flex align-items-center gap-2 px-3 py-2"
+                        style={{ background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.3)', color: '#fff', fontSize: 12 }}>
+                        <i className="bi bi-patch-check-fill text-warning" />Welcome back to SportBridge
+                      </span>
+                      <h2 className="h3 fw-bold text-white mb-3">
+                        Your next opportunity is waiting.
+                      </h2>
+                      <p className="mb-4" style={{ color: 'rgba(255,255,255,.85)', maxWidth: 480, margin: '0 auto 24px' }}>
+                        Browse verified players, coaches, agents and clubs. Post jobs, tryouts and updates — all from your dashboard.
+                      </p>
+                      <div className="d-flex gap-3 justify-content-center flex-wrap">
+                        <button type="button" className="btn btn-warning fw-bold px-4 py-2 d-flex align-items-center gap-2"
+                          style={{ color: '#071a3d' }}
+                          onClick={() => { window.scrollTo(0,0); document.getElementById('directory-heading')?.scrollIntoView({ behavior: 'smooth' }) }}>
+                          <i className="bi bi-people-fill" />Browse community
+                        </button>
+                        <button type="button" className="btn btn-outline-light fw-semibold px-4 py-2 d-flex align-items-center gap-2"
+                          onClick={() => { }}>
+                          <i className="bi bi-grid-1x2-fill" />Go to dashboard
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  /* ── Guest: join CTA ── */
+                  <>
+                    <div className="position-relative" style={{ zIndex: 1 }}>
+                      <span className="badge mb-3 d-inline-flex align-items-center gap-2 px-3 py-2"
+                        style={{ background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.25)', color: '#fff', fontSize: 12 }}>
+                        <i className="bi bi-shield-check text-warning" />Free for players · Verified clubs · Trusted network
+                      </span>
+                      <h2 className="h3 fw-bold text-white mb-2">Ready to make your next move?</h2>
+                      <p className="mb-4" style={{ color: 'rgba(255,255,255,.85)' }}>
+                        Join SportBridge free. Build your profile, get discovered by verified clubs and agents — takes one minute.
+                      </p>
+                      <div className="d-flex gap-3 justify-content-center flex-wrap">
+                        <button type="button" className="btn btn-warning fw-bold btn-lg px-5 d-flex align-items-center gap-2"
+                          style={{ color: '#071a3d' }}
+                          onClick={() => openSignup('player')}>
+                          <i className="bi bi-person-plus" />Create free account
+                        </button>
+                        <button type="button" className="btn btn-outline-light px-4 d-flex align-items-center gap-2"
+                          onClick={() => openSignup('signin')}>
+                          <i className="bi bi-box-arrow-in-right" />Sign in
+                        </button>
+                      </div>
+                      <p className="mt-3 mb-0 small" style={{ color: 'rgba(255,255,255,.55)' }}>
+                        No credit card required · Players always free · 25+ countries
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
