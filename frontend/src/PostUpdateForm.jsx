@@ -123,9 +123,9 @@ export default function PostUpdateForm({ supabase, user, role, onSaved }) {
     for (const file of files) {
       const ext = file.name.split('.').pop()
       const p = `feed/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { data: up, error: ue } = await supabase.storage.from('uploads').upload(p, file, { upsert: false })
+      const { data: up, error: ue } = await supabase.storage.from('public-media').upload(p, file, { upsert: false })
       if (!ue && up) {
-        const { data: pub } = supabase.storage.from('uploads').getPublicUrl(up.path)
+        const { data: pub } = supabase.storage.from('public-media').getPublicUrl(up.path)
         if (pub?.publicUrl) mediaUrls.push({ url: pub.publicUrl, type: file.type.startsWith('video') ? 'video' : 'image' })
       }
     }

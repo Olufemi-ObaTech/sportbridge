@@ -1,33 +1,63 @@
--- =============================================================================
--- SportBridge — patch-photo-storage.sql
--- Creates the avatars storage bucket and sets RLS policies so users
--- can upload/update their own profile photo.
--- Run in Supabase SQL Editor (safe to run multiple times).
--- =============================================================================
+-- =============================================================
+-- patch-photo-storage.sql
+-- Uses the existing 'public-media' bucket for avatar uploads.
+-- Run this in Supabase SQL Editor.
+-- =============================================================
 
--- ── Ensure avatar_path column exists on profiles ──────────────────────────────
-alter table public.profiles
-  add column if not exists avatar_path text;
+-- 1. Add avatar_path column to profiles if it doesn't exist
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS avatar_path TEXT;
 
--- ── Allow avatar_path to be updated by authenticated users ───────────────────
--- (Already included in profiles UPDATE grant — just making sure)
--- If grant was already given in MASTER patch, this is a no-op.
-grant update (avatar_path) on public.profiles to authenticated;
+-- =============================================================
+-- 2. Storage RLS Policies for avatars folder in public-media
+-- Drop first to avoid conflicts if re-running
+-- =============================================================
 
--- ── Create avatars bucket in Supabase Storage if not already there ────────────
--- Go to: Supabase Dashboard → Storage → New bucket
--- Name: uploads (already exists)
--- Make sure the 'uploads' bucket has PUBLIC access enabled.
---
--- Then add this storage policy in Supabase Dashboard → Storage → Policies:
--- Policy name: "Users can upload their own avatar"
--- Allowed operations: INSERT, UPDATE, SELECT
--- Target roles: authenticated
--- Policy definition:
---   bucket_id = 'uploads' AND (storage.foldername(name))[1] = 'avatars' AND auth.uid()::text = (storage.foldername(name))[2]
+DROP POLICY IF EXISTS "Users can upload own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete own avatar" ON storage.objects;
 
--- ── Verify ────────────────────────────────────────────────────────────────────
-select column_name, data_type
-from information_schema.columns
-where table_schema = 'public' and table_name = 'profiles'
-  and column_name = 'avatar_path';
+-- Allow authenticated users to upload their own avatar
+CREATE POLICY "Users can upload own avatar"
+ON storage.objects
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'public-media'
+  AND (storage.foldername(name))[1] = 'avatars'
+  AND (storage.foldername(name))[2] = auth.uid()::text
+);
+
+-- Allow authenticated users to update (replace) their own avatar
+CREATE POLICY "Users can update own avatar"
+ON storage.objects
+FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'public-media'
+  AND (storage.foldername(name))[1] = 'avatars'
+  AND (storage.foldername(name))[2] = auth.uid()::text
+);
+
+-- Allow authenticated users to delete their own avatar
+CREATE POLICY "Users can delete own avatar"
+ON storage.objects
+FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'public-media'
+  AND (storage.foldername(name))[1] = 'avatars'
+  AND (storage.foldername(name))[2] = auth.uid()::text
+);
+
+-- Public read is already handled by the existing
+-- "sportbridge public media read" policy on public-media.
+
+-- =============================================================
+-- 3. Verify avatar_path column exists
+-- =============================================================
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'profiles'
+  AND column_name = 'avatar_path';

@@ -46,9 +46,9 @@ export default function RecommendWithMediaForm({ supabase, user, _role, onSaved 
     if (file && mediaType !== 'none') {
       const ext = file.name.split('.').pop()
       const path = `recommendations/${user.id}/${Date.now()}.${ext}`
-      const { data: up, error: ue } = await supabase.storage.from('uploads').upload(path, file, { upsert: false })
+      const { data: up, error: ue } = await supabase.storage.from('public-media').upload(path, file, { upsert: false })
       if (ue) { setError('File upload failed: ' + ue.message); setBusy(false); return }
-      const { data: pub } = supabase.storage.from('uploads').getPublicUrl(up.path)
+      const { data: pub } = supabase.storage.from('public-media').getPublicUrl(up.path)
       mediaUrl = pub?.publicUrl ?? null
     }
 

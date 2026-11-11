@@ -233,9 +233,9 @@ function ActivityFeedPost({ supabase, user, activityText, onDone }) {
     for (const file of files) {
       const ext  = file.name.split('.').pop()
       const p    = `feed/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { data: up, error: ue } = await supabase.storage.from('uploads').upload(p, file, { upsert: false })
+      const { data: up, error: ue } = await supabase.storage.from('public-media').upload(p, file, { upsert: false })
       if (!ue && up) {
-        const { data: pub } = supabase.storage.from('uploads').getPublicUrl(up.path)
+        const { data: pub } = supabase.storage.from('public-media').getPublicUrl(up.path)
         if (pub?.publicUrl) mediaUrls.push({ url: pub.publicUrl, type: file.type.startsWith('video') ? 'video' : 'image' })
       }
     }
@@ -3065,10 +3065,10 @@ function AccountDetails({ supabase, user, profile, onProfileSaved }) {
       const ext  = file.name.split('.').pop().toLowerCase()
       const path = `avatars/${user.id}/profile.${ext}`
       const { data: up, error: ue } = await supabase.storage
-        .from('uploads')
+        .from('public-media')
         .upload(path, file, { upsert: true, contentType: file.type })
       if (ue) { setError(`Upload failed: ${ue.message}`); return }
-      const { data: pub } = supabase.storage.from('uploads').getPublicUrl(up.path)
+      const { data: pub } = supabase.storage.from('public-media').getPublicUrl(up.path)
       const url = pub?.publicUrl
       // Save to profiles.avatar_path
       const { error: pe } = await supabase.from('profiles')
