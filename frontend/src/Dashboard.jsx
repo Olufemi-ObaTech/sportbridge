@@ -515,8 +515,6 @@ function PlayerDashboard({ supabase, user, profile }) {
                   <option value="Senior">Senior</option>
                 </select>
               </Field>
-              <Field label="LinkedIn URL" col="col-12"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} placeholder="https://linkedin.com/in/yourname" /></Field>
-              <SocialMediaFields draft={draft} upd={upd} />
               <Field label="About / Bio" col="col-12">
                 <textarea className="form-control" rows={4} value={draft.bio} onChange={upd('bio')} placeholder="Playing style, experience and goals…" />
                 {blockContactInfo(draft.bio) && <div className="small text-danger mt-1"><i className="bi bi-exclamation-circle me-1" />{blockContactInfo(draft.bio)}</div>}
@@ -1154,7 +1152,7 @@ function AcademyDashboard({ supabase, user, profile }) {
   useEffect(() => {
     let alive = true
     supabase.from('academy_profiles')
-      .select('id, club_id, sports, country, state, address, phone, year_founded, linkedin, leagues, languages, facebook_url, instagram_url, twitter_url, youtube_url, tiktok_url')
+      .select('id, club_id, sports, country, state, address, phone, year_founded, linkedin, leagues, languages, facebook_url, instagram_url, twitter_url, youtube_url, tiktok_url, website_url')
       .eq('user_id', user.id).maybeSingle()
       .then(async ({ data: ac, error: ae }) => {
         if (!alive) return
@@ -1187,6 +1185,7 @@ function AcademyDashboard({ supabase, user, profile }) {
           twitter_url:  a.twitter_url   ?? '',
           youtube_url:  a.youtube_url   ?? '',
           tiktok_url:   a.tiktok_url    ?? '',
+          website_url:  a.website_url   ?? '',
         })
         setLoading(false)
       })
@@ -1209,7 +1208,7 @@ function AcademyDashboard({ supabase, user, profile }) {
       const { error: ce } = await supabase.from('clubs').update({ name: draft.club_name.trim() || profile.full_name, about: draft.about.trim() || null, website: draft.website.trim() || null, sports: draft.sports, updated_at: new Date().toISOString() }).eq('id', club.id)
       if (ce) { setError(ce.message); setSaving(false); return }
     }
-    const apPayload = { user_id: user.id, sports: draft.sports, country: draft.country || null, state: draft.state.trim() || null, address: draft.address.trim() || null, phone: draft.phone.trim() || null, year_founded: draft.year_founded ? Number(draft.year_founded) : null, linkedin: draft.linkedin.trim() || null, facebook_url: draft.facebook_url?.trim()||null, instagram_url: draft.instagram_url?.trim()||null, twitter_url: draft.twitter_url?.trim()||null, youtube_url: draft.youtube_url?.trim()||null, tiktok_url: draft.tiktok_url?.trim()||null, updated_at: new Date().toISOString() }
+    const apPayload = { user_id: user.id, sports: draft.sports, country: draft.country || null, state: draft.state.trim() || null, address: draft.address.trim() || null, phone: draft.phone.trim() || null, year_founded: draft.year_founded ? Number(draft.year_founded) : null, linkedin: draft.linkedin.trim() || null, facebook_url: draft.facebook_url?.trim()||null, instagram_url: draft.instagram_url?.trim()||null, twitter_url: draft.twitter_url?.trim()||null, youtube_url: draft.youtube_url?.trim()||null, tiktok_url: draft.tiktok_url?.trim()||null, website_url: draft.website_url?.trim()||null, updated_at: new Date().toISOString() }
     const q = academy ? supabase.from('academy_profiles').update(apPayload).eq('id', academy.id) : supabase.from('academy_profiles').insert(apPayload)
     const { data, error: ae } = await q.select().single()
     setSaving(false)
