@@ -828,6 +828,7 @@ function App() {
   const [view,            setView]            = useState('home')
   const [selectedPlayerId,setSelectedPlayerId]= useState(null)
   const [selectedMember,  setSelectedMember]  = useState(null) // { type, item } for Members Directory
+  const [inboxRecipient,  setInboxRecipient]  = useState(null) // { id, name, role } — pre-open a conversation
   const [user,            setUser]            = useState(null)
   const [accountStatus,   setAccountStatus]   = useState(null)
   const [statusCheckKey,  setStatusCheckKey]  = useState(0)
@@ -1212,7 +1213,10 @@ function App() {
         ) : view === 'feed' ? (
           <FeedPage supabase={supabase} user={user} onSignup={openSignup} />
         ) : view === 'inbox' ? (
-          <InboxPage supabase={supabase} user={user} onSignup={openSignup} />
+          <InboxPage supabase={supabase} user={user} onSignup={openSignup}
+            startConvWith={inboxRecipient}
+            onConvStarted={() => setInboxRecipient(null)}
+          />
         ) : view === 'members' ? (
           <MembersDirectory
             supabase={supabase}
@@ -1220,6 +1224,11 @@ function App() {
             onSignup={openSignup}
             initialSelection={selectedMember}
             onBack={() => { setSelectedMember(null); setView('home'); window.scrollTo(0,0) }}
+            onMessageUser={(recipientId, recipientName, recipientRole) => {
+              setInboxRecipient({ id: recipientId, name: recipientName, role: recipientRole })
+              setView('inbox')
+              window.scrollTo(0, 0)
+            }}
           />
         ) : view === 'pricing' ? (
           <PaymentPage user={user} onSignup={openSignup} onBack={() => setView('home')} />

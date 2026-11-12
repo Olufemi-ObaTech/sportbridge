@@ -1095,7 +1095,6 @@ const entries = [
   ['Professional Profile',          'Profil professionnel',              'Perfil profissional',              'الملف المهني',                      'Perfil profesional'],
   ['Try adjusting your filters.',   'Essayez de modifier vos filtres.',  'Tente ajustar os seus filtros.',  'جرّب تعديل عوامل التصفية.',          'Intenta ajustar los filtros.'],
 ]
-
 const catalog = Object.fromEntries(entries.map(([source, ...values]) => [
   source,
   Object.fromEntries(Object.entries(languageIndexes).map(([language, index]) => [language, values[index - 1]])),
@@ -1204,3 +1203,28 @@ export function observeLocalization(root, language) {
 
   return () => observer.disconnect()
 }
+
+// ── Additional strings: career history, club logo, inbox, email notifications ──
+;[
+  ['Career History',                'Historique de carrière',            'Histórico de carreira',           'السجل المهني',                      'Historial de carrera'],
+  ['Add season',                    'Ajouter une saison',                'Adicionar época',                 'إضافة موسم',                        'Añadir temporada'],
+  ['New season',                    'Nouvelle saison',                   'Nueva época',                     'موسم جديد',                         'Nueva temporada'],
+  ['Edit entry',                    'Modifier l\'entrée',                'Editar entrada',                  'تعديل الإدخال',                     'Editar entrada'],
+  ['Save entry',                    'Sauvegarder',                       'Guardar entrada',                 'حفظ الإدخال',                       'Guardar entrada'],
+  ['Add first season',              'Ajouter la première saison',        'Adicionar primeira época',        'أضف الموسم الأول',                  'Añadir primera temporada'],
+  ['Club / Team name',              'Nom du club / équipe',              'Nome do clube / equipa',          'اسم النادي / الفريق',               'Nombre del club / equipo'],
+  ['Season from',                   'Saison de',                        'Época de',                        'الموسم من',                         'Temporada desde'],
+  ['Season to',                     'Saison à',                         'Época até',                       'الموسم إلى',                        'Temporada hasta'],
+  ['No career entries yet',         'Aucune entrée de carrière',         'Nenhuma entrada de carreira',     'لا توجد إدخالات مهنية',             'No hay entradas de carrera'],
+  ['Add your club seasons to build your career timeline.', 'Ajoutez vos saisons pour construire votre chronologie.', 'Adicione as suas épocas para construir a sua linha do tempo.', 'أضف مواسمك الكروية لبناء مسيرتك المهنية.', 'Añade tus temporadas para construir tu línea de tiempo.'],
+  ['Career entry updated.',         'Entrée de carrière mise à jour.',   'Entrada de carreira atualizada.', 'تم تحديث الإدخال المهني.',           'Entrada de carrera actualizada.'],
+  ['Career entry added.',           'Entrée de carrière ajoutée.',       'Entrada de carreira adicionada.', 'تم إضافة الإدخال المهني.',           'Entrada de carrera añadida.'],
+  ['Entry deleted.',                'Entrée supprimée.',                 'Entrada eliminada.',              'تم حذف الإدخال.',                   'Entrada eliminada.'],
+  ['Upload logo',                   'Téléverser le logo',                'Carregar logótipo',              'رفع الشعار',                         'Subir logotipo'],
+  ['Change logo',                   'Changer le logo',                   'Alterar logótipo',               'تغيير الشعار',                       'Cambiar logotipo'],
+  ['Club logo updated!',            'Logo du club mis à jour !',         'Logótipo do clube atualizado!',  'تم تحديث شعار النادي!',              '¡Logotipo del club actualizado!'],
+  ['JPEG · PNG · WebP · SVG · max 2 MB', 'JPEG · PNG · WebP · SVG · max 2 Mo', 'JPEG · PNG · WebP · SVG · máx. 2 MB', 'JPEG · PNG · WebP · SVG · أقصى 2 ميجا', 'JPEG · PNG · WebP · SVG · máx. 2 MB'],
+  ['Opening conversation…',         'Ouverture de la conversation…',     'A abrir conversa…',              'جارٍ فتح المحادثة…',                 'Abriendo conversación…'],
+  ['Write a message…',              'Écrire un message…',                'Escrever uma mensagem…',          'اكتب رسالة…',                       'Escribe un mensaje…'],
+  ['Never share personal details — use verified profiles to arrange meetings.', 'Ne partagez jamais vos coordonnées personnelles.', 'Nunca partilhe dados pessoais — use perfis verificados.', 'لا تشارك بياناتك الشخصية — استخدم الملفات الموثّقة.', 'Nunca compartas datos personales — usa perfiles verificados.'],
+].forEach(([en, fr, pt, ar, es]) => { catalog[en] = { fr, pt, ar, es } })

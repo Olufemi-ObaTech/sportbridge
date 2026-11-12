@@ -170,7 +170,7 @@ function InfoRow({ icon, label, value }) {
 }
 
 // ─── Coach / Analyst full profile ──────────────────────────────────────────────
-function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role }) {
+function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role, onMessageUser }) {
   const m = ROLE_META[role] ?? ROLE_META.coach
   const verified = profile?.verification_status === 'verified'
   const badges = Array.isArray(member.badges) ? member.badges : []
@@ -384,7 +384,8 @@ function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role 
                   Contact details are protected. All communication goes through the secure SportBridge inbox.
                 </p>
                 {user ? (
-                  <button className="btn btn-primary w-100 btn-sm" type="button">
+                  <button className="btn btn-primary w-100 btn-sm" type="button"
+                    onClick={() => onMessageUser?.(profile?.id, member.full_name, role)}>
                     <i className="bi bi-chat-dots me-2" />Send message
                   </button>
                 ) : (
@@ -451,7 +452,7 @@ function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role 
 }
 
 // ─── Agent full profile ────────────────────────────────────────────────────────
-function AgentProfile({ supabase, member, profile, user, onBack, onSignup }) {
+function AgentProfile({ supabase, member, profile, user, onBack, onSignup, onMessageUser }) {
   const verified = profile?.verification_status === 'verified'
   const regions  = Array.isArray(member.regions) ? member.regions : []
 
@@ -621,7 +622,8 @@ function AgentProfile({ supabase, member, profile, user, onBack, onSignup }) {
                   All contact goes through the secure SportBridge inbox.
                 </p>
                 {user ? (
-                  <button className="btn btn-primary w-100 btn-sm" type="button">
+                  <button className="btn btn-primary w-100 btn-sm" type="button"
+                    onClick={() => onMessageUser?.(profile?.id, member.agency_name || 'Agent', 'agent')}>
                     <i className="bi bi-chat-dots me-2" />Send message
                   </button>
                 ) : (
@@ -651,7 +653,7 @@ function AgentProfile({ supabase, member, profile, user, onBack, onSignup }) {
 }
 
 // ─── Club / Academy full profile ───────────────────────────────────────────────
-function ClubProfile({ supabase, member, academy, user, profile, onBack, onSignup }) {
+function ClubProfile({ supabase, member, academy, user, profile, onBack, onSignup, onMessageUser }) {
   const verified = member.verified_badge || profile?.verification_status === 'verified'
   const sports   = Array.isArray(academy?.sports) ? academy.sports : (academy?.sports ? [academy.sports] : [])
   const leagues  = Array.isArray(academy?.leagues) ? academy.leagues : []
@@ -669,7 +671,7 @@ function ClubProfile({ supabase, member, academy, user, profile, onBack, onSignu
           {/* Header card */}
           <div className="card p-4 mb-4">
             <div className="d-flex gap-4 align-items-start mb-4">
-              <RoleAvatar role="academy" size={88} name={member.name} photoUrl={member.logo_path || null} />
+              <RoleAvatar role="academy" size={88} name={member.name} photoUrl={member.logo_path || profile?.avatar_path || null} />
               <div className="flex-grow-1 min-w-0">
                 <h1 className="h3 fw-bold mb-1" style={{ color: 'var(--fc-blue-700)' }}>
                   {member.name}
@@ -924,7 +926,8 @@ function ClubProfile({ supabase, member, academy, user, profile, onBack, onSignu
                   All contact via the secure SportBridge inbox. Phone numbers are never shown.
                 </p>
                 {user ? (
-                  <button className="btn btn-primary w-100 btn-sm" type="button">
+                  <button className="btn btn-primary w-100 btn-sm" type="button"
+                    onClick={() => onMessageUser?.(profile?.id, member.name, 'academy')}>
                     <i className="bi bi-chat-dots me-2" />Send message
                   </button>
                 ) : (
@@ -998,7 +1001,7 @@ function SkeletonCard() {
 }
 
 // ─── Main MembersDirectory component ──────────────────────────────────────────
-export default function MembersDirectory({ supabase, user, onSignup, onBack, initialSelection }) {
+export default function MembersDirectory({ supabase, user, onSignup, onBack, initialSelection, onMessageUser }) {
   const [activeTab,    setActiveTab]    = useState('coach')
   const [coaches,      setCoaches]      = useState([])
   const [agents,       setAgents]       = useState([])
@@ -1146,6 +1149,7 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
           onBack={handleBack}
           onSignup={onSignup}
           role={selected.type}
+          onMessageUser={onMessageUser}
         />
       )
     }
@@ -1158,6 +1162,7 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
           user={user}
           onBack={handleBack}
           onSignup={onSignup}
+          onMessageUser={onMessageUser}
         />
       )
     }
@@ -1171,6 +1176,7 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
           user={user}
           onBack={handleBack}
           onSignup={onSignup}
+          onMessageUser={onMessageUser}
         />
       )
     }

@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import { sendNotification } from './lib/notify'
 
 function timeAgo(isoString) {
   if (!isoString) return ''
@@ -19,13 +20,14 @@ function timeAgo(isoString) {
   return new Date(isoString).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
-export default function InboxPage({ supabase, user, onSignup }) {
+export default function InboxPage({ supabase, user, onSignup, startConvWith, onConvStarted }) {
   const [conversations, setConversations] = useState([])
   const [activeConv,    setActiveConv]    = useState(null)
   const [messages,      setMessages]      = useState([])
   const [newMsg,        setNewMsg]        = useState('')
   const [loading,       setLoading]       = useState(true)
   const [sending,       setSending]       = useState(false)
+  const [starting,      setStarting]      = useState(false)
   const [error,         setError]         = useState('')
   const msgEndRef = useRef(null)
 
@@ -50,6 +52,55 @@ export default function InboxPage({ supabase, user, onSignup }) {
 
     return () => { alive = false }
   }, [supabase, user])
+
+  // ── Auto-start a conversation when navigated from a profile ───────────
+  useEffect(() => {
+    if (!startConvWith || !user || !supabase || loading) return
+    let alive = true
+
+    const openOrCreate = async () => {
+      setStarting(true)
+      // Check for existing conversation
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id, subject, last_message_at, created_at, initiator:profiles!initiator_id(id,full_name,role,verification_status), recipient:profiles!recipient_id(id,full_name,role,verification_status)')
+        .or(`and(initiator_id.eq.${user.id},recipient_id.eq.${startConvWith.id}),and(initiator_id.eq.${startConvWith.id},recipient_id.eq.${user.id})`)
+        .maybeSingle()
+
+      if (!alive) return
+
+      if (existing) {
+        setActiveConv(existing)
+        setStarting(false)
+        onConvStarted?.()
+        return
+      }
+
+      // Create new conversation
+      const { data: newConv, error: ce } = await supabase
+        .from('conversations')
+        .insert({
+          initiator_id:    user.id,
+          recipient_id:    startConvWith.id,
+          subject:         `Message from SportBridge member`,
+          last_message_at: new Date().toISOString(),
+        })
+        .select('id, subject, last_message_at, created_at, initiator:profiles!initiator_id(id,full_name,role,verification_status), recipient:profiles!recipient_id(id,full_name,role,verification_status)')
+        .single()
+
+      if (!alive) return
+      if (ce) { setError(`Could not start conversation: ${ce.message}`); setStarting(false); return }
+
+      // Add to conversations list
+      setConversations((prev) => [newConv, ...prev])
+      setActiveConv(newConv)
+      setStarting(false)
+      onConvStarted?.()
+    }
+
+    openOrCreate()
+    return () => { alive = false }
+  }, [startConvWith, user, supabase, loading, onConvStarted])
 
   // ── Load messages for active conversation ──────────────────────────────
   useEffect(() => {
@@ -101,6 +152,22 @@ export default function InboxPage({ supabase, user, onSignup }) {
     setNewMsg('')
     // Update last_message_at
     await supabase.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', activeConv.id)
+
+    // Send email notification to the recipient (non-blocking)
+    const other = getOther(activeConv)
+    if (other?.id) {
+      const { data: recipProfile } = await supabase.from('profiles')
+        .select('email, full_name').eq('id', other.id).maybeSingle()
+      if (recipProfile?.email) {
+        const myProfile = conversations.find(c => c.id === activeConv.id)
+        const myName = myProfile?.initiator?.id === user.id ? myProfile?.initiator?.full_name : myProfile?.recipient?.full_name
+        sendNotification('new_message', {
+          to:   recipProfile.email,
+          name: recipProfile.full_name,
+          data: { senderName: myName || 'A SportBridge member', preview: content },
+        })
+      }
+    }
   }
 
   // ── Not signed in ──────────────────────────────────────────────────────
@@ -131,6 +198,8 @@ export default function InboxPage({ supabase, user, onSignup }) {
 
           {loading ? (
             <div className="p-4 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
+          ) : starting ? (
+            <div className="p-4 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Opening conversation…</div>
           ) : conversations.length === 0 ? (
             <div className="p-4 text-center text-muted">
               <i className="bi bi-chat-square-dots fs-3 d-block mb-2" />

@@ -10,6 +10,7 @@ import TryoutForm from './TryoutForm.jsx'
 import VerifyForm, { CvOnlyForm } from './VerifyForm.jsx'
 import { blockContactInfo } from './lib/uploadGuards'
 import { FOOTBALL_POSITIONS, REGIONS, STAFF_ROLES } from './lib/features'
+import { sendNotification } from './lib/notify'
 // ——— constants ————————————————————————————————————————————————————————————————
 
 const ROLE_LABELS = {
@@ -300,7 +301,14 @@ function PlayerDashboard({ supabase, user, profile }) {
   const [error,       setError]    = useState('')
   const [loading,     setLoading]  = useState(true)
   const [activeTab,   setActiveTab]= useState('profile')
-  const [feedPrompt,  setFeedPrompt]= useState('')  // 'profile' | 'uploads'
+  const [feedPrompt,  setFeedPrompt]= useState('')
+  // Career history state
+  const [history,     setHistory]  = useState([])
+  const [histLoading, setHistLoading] = useState(false)
+  const [editingEntry,setEditingEntry]= useState(null) // null=hidden, {}=new, {id,..}=editing
+  const [histSaving,  setHistSaving]  = useState(false)
+  const [histError,   setHistError]   = useState('')
+  const EMPTY_ENTRY = { club_name:'', season_from:'', season_to:'', appearances:'', goals:'', assists:'', clean_sheets:'', notes:'' }
 
   useEffect(() => {
     let alive = true
@@ -400,7 +408,61 @@ function PlayerDashboard({ supabase, user, profile }) {
     )
   }
 
+  // Load career history when Career tab is opened
+  useEffect(() => {
+    if (activeTab === 'career' && player?.id && history.length === 0 && !histLoading) {
+      loadHistory()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, player?.id])
+
   const positions = POSITIONS_FOOTBALL
+
+  // ── Career history helpers ────────────────────────────────────────────
+  const loadHistory = async () => {
+    if (!player?.id) return
+    setHistLoading(true)
+    const { data } = await supabase.from('player_history')
+      .select('id,club_name,season_from,season_to,appearances,goals,assists,clean_sheets,notes,sort_order')
+      .eq('player_id', player.id).order('sort_order')
+    setHistory(data ?? [])
+    setHistLoading(false)
+  }
+
+  const saveHistoryEntry = async (entry) => {
+    if (!player?.id) return
+    if (!entry.club_name?.trim()) { setHistError('Club name is required.'); return }
+    if (!entry.season_from?.trim()) { setHistError('Season start is required.'); return }
+    setHistSaving(true); setHistError('')
+    const payload = {
+      player_id:    player.id,
+      club_name:    entry.club_name.trim(),
+      season_from:  entry.season_from.trim(),
+      season_to:    entry.season_to?.trim() || null,
+      appearances:  entry.appearances ? Number(entry.appearances) : null,
+      goals:        entry.goals       ? Number(entry.goals)       : null,
+      assists:      entry.assists      ? Number(entry.assists)     : null,
+      clean_sheets: entry.clean_sheets ? Number(entry.clean_sheets): null,
+      notes:        entry.notes?.trim() || null,
+      sort_order:   entry.sort_order ?? (history.length + 1),
+    }
+    if (entry.id) {
+      await supabase.from('player_history').update(payload).eq('id', entry.id)
+    } else {
+      await supabase.from('player_history').insert(payload)
+    }
+    setHistSaving(false)
+    setEditingEntry(null)
+    await loadHistory()
+    setNotice(entry.id ? 'Career entry updated.' : 'Career entry added.')
+  }
+
+  const deleteHistoryEntry = async (id) => {
+    if (!window.confirm('Delete this career entry?')) return
+    await supabase.from('player_history').delete().eq('id', id)
+    setHistory((h) => h.filter((e) => e.id !== id))
+    setNotice('Entry deleted.')
+  }
 
   if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
 
@@ -422,7 +484,7 @@ function PlayerDashboard({ supabase, user, profile }) {
 
       {/* Tab switcher */}
       <ul className="nav nav-tabs mb-4" role="tablist">
-        {[['profile','bi-person-vcard','My Profile'],['post-update','bi-megaphone','Post Update'],['uploads','bi-cloud-upload','Upload CV & Media'],['requests','bi-shield-lock','Access Requests'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
+        {[['profile','bi-person-vcard','My Profile'],['career','bi-clock-history','Career History'],['post-update','bi-megaphone','Post Update'],['uploads','bi-cloud-upload','Upload CV & Media'],['requests','bi-shield-lock','Access Requests'],['verify','bi-patch-check','Get Verified']].map(([tab, icon, label]) => (
           <li className="nav-item" key={tab}>
             <button
               className={`nav-link d-flex align-items-center gap-2${activeTab === tab ? ' active' : ''}`}
@@ -546,6 +608,142 @@ function PlayerDashboard({ supabase, user, profile }) {
       {activeTab === 'uploads' && (
         <SectionCard title="Upload CV & Media">
           <PlayerUploadForm supabase={supabase} user={user} player={player} onSaved={() => setNotice('Files uploaded.')} />
+        </SectionCard>
+      )}
+
+      {activeTab === 'career' && (
+        <SectionCard title="Career History">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <p className="text-muted small mb-0">Add your club seasons. This builds your public career timeline visible on your profile.</p>
+            <button className="btn btn-primary btn-sm d-flex align-items-center gap-2" type="button"
+              onClick={() => { if (history.length === 0 && !histLoading) loadHistory(); setEditingEntry(EMPTY_ENTRY) }}>
+              <i className="bi bi-plus-lg" />Add season
+            </button>
+          </div>
+
+          {histError && <div className="alert alert-danger py-2 small mb-3">{histError}</div>}
+
+          {/* Add / Edit form */}
+          {editingEntry && (
+            <div className="card p-4 mb-4" style={{ borderLeft: '4px solid var(--fc-blue-500)', background: 'rgba(47,125,240,.03)' }}>
+              <h3 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
+                <i className="bi bi-pencil me-2" />{editingEntry.id ? 'Edit entry' : 'New season'}
+              </h3>
+              <div className="row g-3">
+                <div className="col-12 col-md-6">
+                  <label className="form-label small fw-semibold">Club / Team name <span className="text-danger">*</span></label>
+                  <input className="form-control form-control-sm" value={editingEntry.club_name}
+                    onChange={e => setEditingEntry(d => ({ ...d, club_name: e.target.value }))}
+                    placeholder="e.g. FC Barcelona" />
+                </div>
+                <div className="col-6 col-md-3">
+                  <label className="form-label small fw-semibold">Season from <span className="text-danger">*</span></label>
+                  <input className="form-control form-control-sm" value={editingEntry.season_from}
+                    onChange={e => setEditingEntry(d => ({ ...d, season_from: e.target.value }))}
+                    placeholder="e.g. 2022" />
+                </div>
+                <div className="col-6 col-md-3">
+                  <label className="form-label small fw-semibold">Season to</label>
+                  <input className="form-control form-control-sm" value={editingEntry.season_to}
+                    onChange={e => setEditingEntry(d => ({ ...d, season_to: e.target.value }))}
+                    placeholder="e.g. 2024 (blank = Present)" />
+                </div>
+                <div className="col-6 col-sm-3">
+                  <label className="form-label small fw-semibold">Appearances</label>
+                  <input className="form-control form-control-sm" type="number" min="0" max="999" value={editingEntry.appearances}
+                    onChange={e => setEditingEntry(d => ({ ...d, appearances: e.target.value }))} placeholder="0" />
+                </div>
+                <div className="col-6 col-sm-3">
+                  <label className="form-label small fw-semibold">Goals</label>
+                  <input className="form-control form-control-sm" type="number" min="0" max="999" value={editingEntry.goals}
+                    onChange={e => setEditingEntry(d => ({ ...d, goals: e.target.value }))} placeholder="0" />
+                </div>
+                <div className="col-6 col-sm-3">
+                  <label className="form-label small fw-semibold">Assists</label>
+                  <input className="form-control form-control-sm" type="number" min="0" max="999" value={editingEntry.assists}
+                    onChange={e => setEditingEntry(d => ({ ...d, assists: e.target.value }))} placeholder="0" />
+                </div>
+                <div className="col-6 col-sm-3">
+                  <label className="form-label small fw-semibold">Clean sheets</label>
+                  <input className="form-control form-control-sm" type="number" min="0" max="999" value={editingEntry.clean_sheets}
+                    onChange={e => setEditingEntry(d => ({ ...d, clean_sheets: e.target.value }))} placeholder="0" />
+                </div>
+                <div className="col-12">
+                  <label className="form-label small fw-semibold">Notes <span className="text-muted fw-normal">(optional)</span></label>
+                  <textarea className="form-control form-control-sm" rows={2} value={editingEntry.notes}
+                    onChange={e => setEditingEntry(d => ({ ...d, notes: e.target.value }))}
+                    placeholder="e.g. Won league title, top scorer, promoted to first team…" />
+                </div>
+              </div>
+              <div className="d-flex gap-2 mt-3">
+                <button className="btn btn-primary btn-sm" type="button" disabled={histSaving}
+                  onClick={() => saveHistoryEntry(editingEntry)}>
+                  {histSaving ? <><span className="spinner-border spinner-border-sm me-1" />Saving…</> : <><i className="bi bi-check2 me-1" />Save entry</>}
+                </button>
+                <button className="btn btn-outline-secondary btn-sm" type="button"
+                  onClick={() => { setEditingEntry(null); setHistError('') }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* History list */}
+          {histLoading ? (
+            <div className="text-center py-4 text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>
+          ) : history.length === 0 && !editingEntry ? (
+            <div className="text-center py-5 text-muted">
+              <i className="bi bi-clock-history fs-2 d-block mb-2" style={{ opacity: .3 }} />
+              <p className="fw-semibold mb-1">No career entries yet</p>
+              <p className="small mb-3">Add your club seasons to build your career timeline.</p>
+              <button className="btn btn-primary btn-sm" type="button"
+                onClick={() => setEditingEntry(EMPTY_ENTRY)}>
+                <i className="bi bi-plus-lg me-1" />Add first season
+              </button>
+            </div>
+          ) : (
+            <div className="d-grid gap-3">
+              {history.map((h) => (
+                <div key={h.id} className="card p-3 d-flex flex-row align-items-start gap-3"
+                  style={{ border: '1px solid var(--bs-border-color)' }}>
+                  <div className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                    style={{ width: 40, height: 40, background: 'var(--fc-blue-500)', color: '#fff' }}>
+                    <i className="bi bi-building" style={{ fontSize: 16 }} />
+                  </div>
+                  <div className="flex-grow-1">
+                    <div className="fw-bold" style={{ color: 'var(--fc-blue-700)' }}>{h.club_name}</div>
+                    <div className="small text-muted mb-2">
+                      {h.season_from}{h.season_to ? ` – ${h.season_to}` : ' – Present'}
+                    </div>
+                    <div className="d-flex flex-wrap gap-3">
+                      {[
+                        { label:'Apps',    value:h.appearances,  colour:'#2F7DF0' },
+                        { label:'Goals',   value:h.goals,        colour:'#198754' },
+                        { label:'Assists', value:h.assists,      colour:'#F5B301' },
+                        { label:'CS',      value:h.clean_sheets, colour:'#6f42c1' },
+                      ].filter(s => s.value != null).map(({ label, value, colour }) => (
+                        <span key={label} className="badge px-2 py-1"
+                          style={{ background: colour + '14', color: colour, border: `1px solid ${colour}44`, fontSize: 12 }}>
+                          {value} {label}
+                        </span>
+                      ))}
+                    </div>
+                    {h.notes && <p className="small text-muted mt-1 mb-0 fst-italic">{h.notes}</p>}
+                  </div>
+                  <div className="d-flex gap-1 flex-shrink-0">
+                    <button className="btn btn-sm btn-outline-primary" type="button"
+                      onClick={() => setEditingEntry({ ...h, appearances: h.appearances ?? '', goals: h.goals ?? '', assists: h.assists ?? '', clean_sheets: h.clean_sheets ?? '' })}>
+                      <i className="bi bi-pencil" />
+                    </button>
+                    <button className="btn btn-sm btn-outline-danger" type="button"
+                      onClick={() => deleteHistoryEntry(h.id)}>
+                      <i className="bi bi-trash" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </SectionCard>
       )}
 
@@ -1148,7 +1346,11 @@ function AcademyDashboard({ supabase, user, profile }) {
   const [error,   setError]   = useState('')
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('profile')
-  const [feedPrompt, setFeedPrompt] = useState('') // 'profile' | 'post-job'
+  const [feedPrompt, setFeedPrompt] = useState('')
+  // Logo upload state
+  const [logoUrl,    setLogoUrl]    = useState(null)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const logoRef = useRef(null)
 
   useEffect(() => {
     let alive = true
@@ -1161,7 +1363,7 @@ function AcademyDashboard({ supabase, user, profile }) {
         let clubData = null, playerCount = null, jobCount = null
         if (ac?.club_id) {
           const [{ data: cl }, { count: pc }, { count: jc }] = await Promise.all([
-            supabase.from('clubs').select('id, name, country, about, website, sports, status').eq('id', ac.club_id).maybeSingle(),
+            supabase.from('clubs').select('id, name, country, about, website, sports, status, logo_path').eq('id', ac.club_id).maybeSingle(),
             supabase.from('players').select('id', { count: 'exact', head: true }).eq('academy_id', ac.id),
             supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('posted_by', user.id).eq('status', 'open'),
           ])
@@ -1169,6 +1371,7 @@ function AcademyDashboard({ supabase, user, profile }) {
         }
         if (!alive) return
         setAcademy(ac); setClub(clubData); setStats({ players: playerCount, jobs: jobCount })
+        setLogoUrl(clubData?.logo_path || null)
         const a = ac ?? {}, c = clubData ?? {}
         setDraft({
           club_name:    c.name         ?? profile.full_name ?? '',
@@ -1199,6 +1402,31 @@ function AcademyDashboard({ supabase, user, profile }) {
     return { ...d, sports: has ? d.sports.filter((x) => x !== s) : [...d.sports, s] }
   })
 
+  const handleLogoChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!['image/jpeg','image/png','image/webp','image/svg+xml'].includes(file.type)) {
+      setError('Only JPEG, PNG, WebP or SVG allowed.'); return
+    }
+    if (file.size > 2 * 1024 * 1024) { setError('Logo must be under 2 MB.'); return }
+    setLogoUploading(true); setError('')
+    try {
+      const ext  = file.name.split('.').pop().toLowerCase()
+      const path = `logos/${user.id}/club-logo.${ext}`
+      const { data: up, error: ue } = await supabase.storage.from('public-media')
+        .upload(path, file, { upsert: true, contentType: file.type })
+      if (ue) { setError(`Logo upload failed: ${ue.message}`); return }
+      const { data: pub } = supabase.storage.from('public-media').getPublicUrl(up.path)
+      const url = pub?.publicUrl
+      // Save to clubs.logo_path and profiles.avatar_path
+      if (club) await supabase.from('clubs').update({ logo_path: url, updated_at: new Date().toISOString() }).eq('id', club.id)
+      await supabase.from('profiles').update({ avatar_path: url, updated_at: new Date().toISOString() }).eq('id', user.id)
+      setLogoUrl(url)
+      setNotice('Club logo updated!')
+    } catch (err) { setError(err.message || 'Upload failed.') }
+    finally { setLogoUploading(false); e.target.value = '' }
+  }
+
   const save = async (e) => {
     e.preventDefault()
     const ci = blockContactInfo(draft.about, 'About')
@@ -1207,8 +1435,7 @@ function AcademyDashboard({ supabase, user, profile }) {
     if (club) {
       const { error: ce } = await supabase.from('clubs').update({ name: draft.club_name.trim() || profile.full_name, about: draft.about.trim() || null, website: draft.website_url?.trim() || null, sports: draft.sports, updated_at: new Date().toISOString() }).eq('id', club.id)
       if (ce) { setError(ce.message); setSaving(false); return }
-    }
-    const apPayload = { user_id: user.id, sports: draft.sports, country: draft.country || null, state: draft.state.trim() || null, address: draft.address.trim() || null, phone: draft.phone.trim() || null, year_founded: draft.year_founded ? Number(draft.year_founded) : null, linkedin: draft.linkedin.trim() || null, facebook_url: draft.facebook_url?.trim()||null, instagram_url: draft.instagram_url?.trim()||null, twitter_url: draft.twitter_url?.trim()||null, youtube_url: draft.youtube_url?.trim()||null, tiktok_url: draft.tiktok_url?.trim()||null, website_url: draft.website_url?.trim()||null, updated_at: new Date().toISOString() }
+    }    const apPayload = { user_id: user.id, sports: draft.sports, country: draft.country || null, state: draft.state.trim() || null, address: draft.address.trim() || null, phone: draft.phone.trim() || null, year_founded: draft.year_founded ? Number(draft.year_founded) : null, linkedin: draft.linkedin.trim() || null, facebook_url: draft.facebook_url?.trim()||null, instagram_url: draft.instagram_url?.trim()||null, twitter_url: draft.twitter_url?.trim()||null, youtube_url: draft.youtube_url?.trim()||null, tiktok_url: draft.tiktok_url?.trim()||null, website_url: draft.website_url?.trim()||null, updated_at: new Date().toISOString() }
     const q = academy ? supabase.from('academy_profiles').update(apPayload).eq('id', academy.id) : supabase.from('academy_profiles').insert(apPayload)
     const { data, error: ae } = await q.select().single()
     setSaving(false)
@@ -1250,6 +1477,40 @@ function AcademyDashboard({ supabase, user, profile }) {
       {activeTab === 'profile' && draft && (
         <form onSubmit={save}>
           <SectionCard title="Club / academy profile">
+
+            {/* ── Club Logo ── */}
+            <div className="col-12 mb-3">
+              <div className="card p-3" style={{ background: 'var(--bs-secondary-bg)', border: 'none' }}>
+                <div className="fw-semibold small mb-2" style={{ color: 'var(--fc-blue-700)' }}>
+                  <i className="bi bi-image me-2 text-primary" />Club / Academy Logo
+                </div>
+                <div className="d-flex align-items-center gap-3">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Club logo"
+                      className="rounded flex-shrink-0"
+                      style={{ width: 72, height: 72, objectFit: 'contain', border: '1px solid var(--bs-border-color)', padding: 4, background: '#fff' }} />
+                  ) : (
+                    <div className="d-flex align-items-center justify-content-center rounded flex-shrink-0"
+                      style={{ width: 72, height: 72, background: '#6f42c133', border: '1px dashed #6f42c1' }}>
+                      <i className="bi bi-building" style={{ fontSize: 28, color: '#6f42c1' }} />
+                    </div>
+                  )}
+                  <div>
+                    <input ref={logoRef} type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                      className="d-none" onChange={handleLogoChange} />
+                    <button className="btn btn-outline-primary btn-sm d-flex align-items-center gap-2 mb-1"
+                      type="button" disabled={logoUploading} onClick={() => logoRef.current?.click()}>
+                      {logoUploading
+                        ? <><span className="spinner-border spinner-border-sm" />Uploading…</>
+                        : <><i className="bi bi-upload" />{logoUrl ? 'Change logo' : 'Upload logo'}</>
+                      }
+                    </button>
+                    <div className="text-muted" style={{ fontSize: 11 }}>JPEG · PNG · WebP · SVG · max 2 MB</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <FormRow>
               <Field label="Club / academy name" col="col-12 col-md-8"><input className="form-control" value={draft.club_name} onChange={upd('club_name')} required /></Field>
               <Field label="Year founded" col="col-12 col-md-4"><input className="form-control" type="number" min="1800" max={new Date().getFullYear()} value={draft.year_founded} onChange={upd('year_founded')} /></Field>
@@ -1952,6 +2213,13 @@ function AdminDashboard({ supabase, user }) {
     setVerifQueue((q) => q.filter((r) => r.id !== req.id))
     setUsers((u) => u.map((row) => row.id === req.user_id ? { ...row, verification_status: 'verified' } : row))
     setSaving(false); setNotice(`Verified: ${req.profiles?.email}`)
+    // Send email notification
+    if (req.profiles?.email) {
+      sendNotification('verification_approved', {
+        to:   req.profiles.email,
+        name: req.profiles.full_name,
+      })
+    }
   }
 
   const rejectVerif = async (req) => {
@@ -1961,6 +2229,14 @@ function AdminDashboard({ supabase, user }) {
     await supabase.from('profiles').update({ verification_status: 'rejected' }).eq('id', req.user_id)
     setVerifQueue((q) => q.filter((r) => r.id !== req.id))
     setSaving(false); setNotice(`Rejected: ${req.profiles?.email}`)
+    // Send email notification
+    if (req.profiles?.email) {
+      sendNotification('verification_rejected', {
+        to:   req.profiles.email,
+        name: req.profiles.full_name,
+        data: { reason: note },
+      })
+    }
   }
 
   const saveRole = async (uid) => {
