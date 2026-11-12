@@ -217,7 +217,7 @@ function CoachProfile({ supabase, member, profile, user, onBack, onSignup, role 
           {/* Profile header card */}
           <div className="card p-4 mb-4">
             <div className="d-flex gap-4 align-items-start mb-4">
-              <RoleAvatar role={role} size={88} name={member.full_name} photoUrl={member.photo_path || null} />
+              <RoleAvatar role={role} size={88} name={member.full_name} photoUrl={member.photo_path || profile?.avatar_path || null} />
               <div className="flex-grow-1 min-w-0">
                 <h1 className="h3 fw-bold mb-1" style={{ color: 'var(--fc-blue-700)' }}>
                   {member.full_name}
@@ -467,7 +467,7 @@ function AgentProfile({ supabase, member, profile, user, onBack, onSignup }) {
           {/* Header card */}
           <div className="card p-4 mb-4">
             <div className="d-flex gap-4 align-items-start mb-4">
-              <RoleAvatar role="agent" size={88} name={member.agency_name} photoUrl={member.photo_path || null} />
+              <RoleAvatar role="agent" size={88} name={member.agency_name} photoUrl={member.photo_path || profile?.avatar_path || null} />
               <div className="flex-grow-1 min-w-0">
                 <h1 className="h3 fw-bold mb-1" style={{ color: 'var(--fc-blue-700)' }}>
                   {member.agency_name || 'Agency'}
@@ -713,10 +713,10 @@ function ClubProfile({ supabase, member, academy, user, profile, onBack, onSignu
                 </div>
 
                 <div className="d-flex gap-2 mt-3 flex-wrap">
-                  {member.website && (
+                  {member.website && /^https?:\/\//i.test(member.website) && (
                     <a href={member.website} target="_blank" rel="noopener noreferrer"
                       className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2">
-                      <i className="bi bi-globe2" />{member.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                      <i className="bi bi-globe2" />{member.website.replace(/^https?:\/\//i, '').replace(/\/$/, '').slice(0, 30)}
                     </a>
                   )}
                   {member.linkedin && (
@@ -1025,13 +1025,12 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
     Promise.all([
       // Coach profiles (includes sports_analyst — we split by profiles.role)
       supabase.from('coach_profiles')
-        .select('id,user_id,full_name,sport,preferred_role,experience_years,current_club,nationality,gender,about,achievements,badges,open_to_work,linkedin,is_public')
-        .eq('is_public', true)
+        .select('id,user_id,full_name,sport,preferred_role,experience_years,current_club,nationality,gender,about,achievements,badges,open_to_work,linkedin,is_public,photo_path,facebook_url,instagram_url,twitter_url,youtube_url,tiktok_url,website_url')        .eq('is_public', true)
         .order('full_name'),
 
       // Agent profiles
       supabase.from('agent_profiles')
-        .select('id,user_id,agency_name,sport,nationality,experience_years,regions,about,achievements,linkedin,is_public,verified_badge')
+        .select('id,user_id,agency_name,sport,nationality,experience_years,regions,about,achievements,linkedin,is_public,verified_badge,photo_path,facebook_url,instagram_url,twitter_url,youtube_url,tiktok_url,website_url')
         .eq('is_public', true)
         .order('agency_name'),
 
@@ -1041,9 +1040,9 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
         .eq('status', 'active')
         .order('name'),
 
-      // Profiles for verification status
+      // Profiles for verification status + avatar_path
       supabase.from('profiles')
-        .select('id,email,role,verification_status,status')
+        .select('id,email,role,verification_status,status,avatar_path')
         .eq('status', 'active')
         .neq('role', 'super_admin'),
 
@@ -1076,7 +1075,7 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
     if (!initialSelection || !supabase) { setInitialProfileFetched(true); return }
     const userId = initialSelection.item?.user_id || initialSelection.item?.owner_id
     if (!userId) { setInitialProfileFetched(true); return }
-    supabase.from('profiles').select('id, role, verification_status, status')
+    supabase.from('profiles').select('id, role, verification_status, status, avatar_path')
       .eq('id', userId).maybeSingle()
       .then(({ data }) => {
         if (data) setProfiles((prev) => ({ ...prev, [userId]: data }))
@@ -1178,11 +1177,27 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
   }
 
   // ── Current tab data ────────────────────────────────────────────────────────
+  // ── Visibility rule ────────────────────────────────────────────────────────
+  // Verified members see ALL profiles. Unverified members see only unverified profiles.
+  // Guests (not logged in) also see only unverified profiles as a teaser.
+  const viewerIsVerified = user ? (profiles[user.id]?.verification_status === 'verified') : false
+
+  const applyVisibility = (list) => {
+    if (viewerIsVerified) return list
+    // Unverified viewer: only show unverified members (hide verified ones)
+    return list.filter((item) => {
+      const profId = item.user_id || item.owner_id || item.id
+      const prof = profiles[profId]
+      const memberVerified = prof?.verification_status === 'verified' || item.verified_badge === true
+      return !memberVerified
+    })
+  }
+
   const tabData = {
-    coach:          filterCoaches(coaches),
-    agent:          filterAgents(agents),
-    academy:        filterClubs(clubs),
-    sports_analyst: filterCoaches(analysts),
+    coach:          applyVisibility(filterCoaches(coaches)),
+    agent:          applyVisibility(filterAgents(agents)),
+    academy:        applyVisibility(filterClubs(clubs)),
+    sports_analyst: applyVisibility(filterCoaches(analysts)),
   }
 
   const counts = {
@@ -1212,6 +1227,24 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
           </button>
         )}
       </div>
+
+      {/* Verified-only notice for unverified viewers */}
+      {!viewerIsVerified && (
+        <div className="alert d-flex gap-3 align-items-start mb-4"
+          style={{ background: 'rgba(47,125,240,.07)', border: '1.5px solid rgba(47,125,240,.2)', borderRadius: 10 }}>
+          <i className="bi bi-patch-check-fill text-primary flex-shrink-0 mt-1" style={{ fontSize: 20 }} />
+          <div>
+            <div className="fw-bold small mb-1" style={{ color: 'var(--fc-blue-700)' }}>
+              {user ? 'Get verified to see all members' : 'Join to see all members'}
+            </div>
+            <div className="small text-muted mb-0">
+              {user
+                ? 'You are currently seeing unverified members only. Complete identity verification in your dashboard to unlock all verified coaches, agents, clubs and analysts.'
+                : 'Verified SportBridge members can see all profiles. Create a free account and complete verification to access the full directory.'}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab navigation */}
       <ul className="nav nav-tabs mb-4" role="tablist">
@@ -1307,11 +1340,17 @@ export default function MembersDirectory({ supabase, user, onSignup, onBack, ini
           <p className="fw-semibold mb-1">No {TABS.find((t) => t.key === activeTab)?.label ?? 'members'} found</p>
           {search || filterRole || filterCountry
             ? <p className="small mb-3">Try adjusting your filters.</p>
-            : <p className="small mb-3">Be the first to join SportBridge as a {TABS.find((t) => t.key === activeTab)?.label ?? 'member'}!</p>
+            : !viewerIsVerified
+              ? <p className="small mb-3">Verified profiles are only visible to verified members.{' '}
+                  {user ? 'Complete identity verification in your dashboard to unlock the full directory.'
+                        : 'Create a free account and complete verification to see all members.'}</p>
+              : <p className="small mb-3">Be the first to join SportBridge as a {TABS.find((t) => t.key === activeTab)?.label ?? 'member'}!</p>
           }
-          <button className="btn btn-primary btn-sm" type="button" onClick={() => onSignup(activeTab)}>
-            <i className="bi bi-person-plus me-2" />Join free
-          </button>
+          {!user && (
+            <button className="btn btn-primary btn-sm" type="button" onClick={() => onSignup(activeTab)}>
+              <i className="bi bi-person-plus me-2" />Join free
+            </button>
+          )}
         </div>
       ) : (
         <>

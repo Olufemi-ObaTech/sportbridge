@@ -747,7 +747,7 @@ export default function VerifyForm({ supabase, user, role, verificationStatus, o
           <div className="fw-bold">{badgeLabels[role] ?? 'Account Verified ✓'}</div>
           <div className="small mb-3">Your verified badge is visible on your public profile.</div>
           <div className="fw-semibold small mb-2">Upload / update your CV:</div>
-          <CvOnlyForm supabase={supabase} user={user} />
+          <CvOnlyForm supabase={supabase} user={user} onDone={onDone} />
         </div>
       </div>
     )
@@ -761,7 +761,7 @@ export default function VerifyForm({ supabase, user, role, verificationStatus, o
           <div className="fw-bold">Verification in review</div>
           <div className="small mb-3">Our team is reviewing your documents. You&apos;ll be notified within 48 hours.</div>
           <div className="fw-semibold small mb-2">Upload / update your CV while you wait:</div>
-          <CvOnlyForm supabase={supabase} user={user} />
+          <CvOnlyForm supabase={supabase} user={user} onDone={onDone} />
         </div>
       </div>
     )

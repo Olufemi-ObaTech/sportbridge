@@ -13,7 +13,7 @@
 import { useState } from 'react'
 import { blockContactInfo } from './lib/uploadGuards'
 
-export default function RecommendWithMediaForm({ supabase, user, _role, onSaved }) {
+export default function RecommendWithMediaForm({ supabase, user, role, onSaved }) {
   const [search,      setSearch]      = useState('')
   const [players,     setPlayers]     = useState([])
   const [selectedId,  setSelectedId]  = useState('')
@@ -62,7 +62,7 @@ export default function RecommendWithMediaForm({ supabase, user, _role, onSaved 
       player_id:            selectedId,
       recommended_to_name:  targetName.trim(),
       note:                 note.trim() || null,
-      recommended_to_type:  agentData ? 'agent' : 'agent', // defaults to 'agent' if found; academy lookup TODO
+      recommended_to_type:  agentData ? 'agent' : 'club',
       sport:                'football',
     }
     if (agentData) payload.agent_profile_id = agentData.id

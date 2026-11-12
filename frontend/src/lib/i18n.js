@@ -1055,6 +1055,45 @@ const entries = [
   ['SportBridge Safety: Legitimate agents never charge players fees to represent them.', 'Sécurité SportBridge : Les agents légitimes ne facturent jamais de frais aux joueurs.', 'Segurança SportBridge: Agentes legítimos nunca cobram taxas aos jogadores.', 'سلامة SportBridge: الوكلاء الشرعيون لا يتقاضون أموالاً من اللاعبين.', 'Seguridad SportBridge: Los agentes legítimos nunca cobran honorarios a los jugadores.'],
   ['Report',                       'Signaler',                          'Denunciar',                       'الإبلاغ',                           'Denunciar'],
   ['Verification required',        'Vérification requise',              'Verificação necessária',          'التحقق مطلوب',                      'Verificación requerida'],
+
+  // ── Verified visibility rules ──
+  ['Get verified to see all members', 'Vérifiez-vous pour voir tous les membres', 'Verifique-se para ver todos os membros', 'تحقق للاطلاع على جميع الأعضاء', 'Verifica tu cuenta para ver todos los miembros'],
+  ['Join to see all members',       'Rejoindre pour voir tous les membres', 'Junte-se para ver todos os membros', 'انضم لرؤية جميع الأعضاء',          'Únete para ver todos los miembros'],
+  ['You are currently seeing unverified members only. Complete identity verification in your dashboard to unlock all verified coaches, agents, clubs and analysts.', 'Vous voyez uniquement les membres non vérifiés. Complétez la vérification pour accéder à tous les membres.', 'Está a ver apenas membros não verificados. Complete a verificação para ver todos.', 'أنت تشاهد الأعضاء غير الموثّقين فقط. أكمل التحقق للوصول إلى جميع الأعضاء.', 'Estás viendo solo miembros no verificados. Completa la verificación para ver todos.'],
+  ['Verified SportBridge members can see all profiles. Create a free account and complete verification to access the full directory.', 'Les membres vérifiés voient tous les profils. Créez un compte gratuit pour accéder au répertoire complet.', 'Os membros verificados veem todos os perfis. Crie uma conta gratuita para aceder ao diretório completo.', 'الأعضاء الموثّقون يرون جميع الملفات. أنشئ حسابًا مجانيًا للوصول إلى الدليل الكامل.', 'Los miembros verificados ven todos los perfiles. Crea una cuenta gratuita para acceder al directorio completo.'],
+  ['Members Directory',             'Annuaire des membres',              'Diretório de membros',             'دليل الأعضاء',                      'Directorio de miembros'],
+  ['Verified coaches, agents, clubs and analysts from around the world.', 'Entraîneurs, agents, clubs et analystes vérifiés du monde entier.', 'Treinadores, agentes, clubes e analistas verificados de todo o mundo.', 'مدربون ووكلاء وأندية ومحللون موثّقون من حول العالم.', 'Entrenadores, agentes, clubes y analistas verificados de todo el mundo.'],
+  ['Back to home',                  'Retour à l\'accueil',               'Voltar ao início',                 'العودة إلى الصفحة الرئيسية',        'Volver al inicio'],
+
+  // ── Admin dashboard ──
+  ['All Profiles',                  'Tous les profils',                  'Todos os perfis',                  'جميع الملفات الشخصية',              'Todos los perfiles'],
+  ['All Accounts',                  'Tous les comptes',                  'Todas as contas',                  'جميع الحسابات',                     'Todas las cuentas'],
+  ['Admin View',                    'Vue admin',                         'Vista de admin',                   'عرض المسؤول',                       'Vista de administrador'],
+  ['Admin View — Full Profile',     'Vue admin — Profil complet',        'Vista admin — Perfil completo',    'عرض المسؤول — الملف الكامل',        'Vista admin — Perfil completo'],
+  ['Admin-Only Information',        'Informations réservées à l\'admin', 'Informação apenas para admin',    'معلومات حصرية للمسؤول',              'Información solo para admin'],
+  ['No profile found.',             'Aucun profil trouvé.',              'Nenhum perfil encontrado.',        'لم يُعثر على أي ملف.',              'No se encontró ningún perfil.'],
+  ['No profiles match your filters','Aucun profil ne correspond',         'Nenhum perfil corresponde',        'لا توجد ملفات تطابق الفلاتر',       'Ningún perfil coincide con los filtros'],
+  ['Loading profiles…',             'Chargement des profils…',           'A carregar perfis…',               'جارٍ تحميل الملفات…',               'Cargando perfiles…'],
+  ['Loading accounts…',             'Chargement des comptes…',           'A carregar contas…',               'جارٍ تحميل الحسابات…',              'Cargando cuentas…'],
+  ['All roles',                     'Tous les rôles',                    'Todas as funções',                 'جميع الأدوار',                      'Todos los roles'],
+  ['All statuses',                  'Tous les statuts',                  'Todos os estados',                 'جميع الحالات',                      'Todos los estados'],
+  ['Verified only',                 'Vérifiés seulement',                'Apenas verificados',               'الموثّقون فقط',                     'Solo verificados'],
+  ['Private',                       'Privé',                             'Privado',                          'خاص',                               'Privado'],
+  ['Active',                        'Actif',                             'Ativo',                            'نشط',                               'Activo'],
+  ['Suspended',                     'Suspendu',                          'Suspenso',                         'موقوف',                             'Suspendido'],
+  ['Restore account',               'Restaurer le compte',               'Restaurar conta',                  'استعادة الحساب',                    'Restaurar cuenta'],
+  ['Suspend account',               'Suspendre le compte',               'Suspender conta',                  'تعليق الحساب',                      'Suspender cuenta'],
+  ['Review now',                    'Examiner maintenant',               'Rever agora',                      'مراجعة الآن',                       'Revisar ahora'],
+  ['Approve — Mark Verified',       'Approuver — Marquer Vérifié',       'Aprovar — Marcar Verificado',      'الموافقة — وضع علامة موثّق',         'Aprobar — Marcar verificado'],
+  ['Reject verification',           'Rejeter la vérification',           'Rejeitar verificação',             'رفض التحقق',                        'Rechazar verificación'],
+  ['Send message',                  'Envoyer un message',                'Enviar mensagem',                  'إرسال رسالة',                       'Enviar mensaje'],
+
+  // ── Club/Academy Logo ──
+  ['Club / Academy Logo',           'Logo club / académie',              'Logótipo do clube / academia',    'شعار النادي / الأكاديمية',          'Logotipo del club / academia'],
+
+  // ── Profile completeness ──
+  ['Professional Profile',          'Profil professionnel',              'Perfil profissional',              'الملف المهني',                      'Perfil profesional'],
+  ['Try adjusting your filters.',   'Essayez de modifier vos filtres.',  'Tente ajustar os seus filtros.',  'جرّب تعديل عوامل التصفية.',          'Intenta ajustar los filtros.'],
 ]
 
 const catalog = Object.fromEntries(entries.map(([source, ...values]) => [

@@ -1,6 +1,6 @@
 # Netlify configuration for SportBridge
 # Live URL: https://sportbridge-com-ng.netlify.app
-# Custom domain: sportbridge.online (activate after DNS is configured)
+# Custom domain: sportbridge.online
 #
 # Required env vars — set in Netlify UI (Site configuration → Environment variables):
 #   VITE_SUPABASE_URL      = https://pzfohowzaeunywaqukwe.supabase.co
@@ -8,7 +8,7 @@
 #   SUPABASE_URL           = https://pzfohowzaeunywaqukwe.supabase.co
 #   SUPABASE_ANON_KEY      = eyJ...  (same anon key, used by health function)
 #   BREVO_API_KEY          = xkeysib-...  (Brevo API key — NOT the SMTP key)
-#   MAIL_FROM_EMAIL        = noreply@sportbridge.com.ng
+#   MAIL_FROM_EMAIL        = noreply@sportbridge.online
 #   MAIL_FROM_NAME         = SportBridge
 # Do NOT put the actual key values in this file — it is committed to GitHub.
 

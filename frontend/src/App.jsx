@@ -140,30 +140,30 @@ function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberC
     if (!supabase) { setLoading(false); return }
 
     Promise.all([
-      // All active profiles (for the "All" tab cards)
+      // All active profiles (for the "All" tab cards + photo lookup)
       supabase.from('profiles')
-        .select('id, full_name, role, verification_status, created_at, sport')
+        .select('id, full_name, role, verification_status, created_at, sport, avatar_path')
         .neq('role', 'super_admin')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(48),
 
-      // Public players with position/country
+      // Public players with position/country + photo
       supabase.from('players')
-        .select('id, display_name, position, country, nationality, is_public, views_count, profile_id, current_club')
+        .select('id, display_name, position, country, nationality, is_public, views_count, profile_id, current_club, primary_photo_path')
         .eq('is_public', true)
         .order('views_count', { ascending: false })
         .limit(48),
 
-      // Public coaches
+      // Public coaches + photo
       supabase.from('coach_profiles')
-        .select('id, full_name, preferred_role, nationality, current_club, is_public, user_id')
+        .select('id, full_name, preferred_role, nationality, current_club, is_public, user_id, photo_path')
         .eq('is_public', true)
         .limit(24),
 
-      // Public agents
+      // Public agents + photo
       supabase.from('agent_profiles')
-        .select('id, agency_name, nationality, experience_years, is_public, user_id')
+        .select('id, agency_name, nationality, experience_years, is_public, user_id, photo_path')
         .eq('is_public', true)
         .limit(24),
 
@@ -220,6 +220,7 @@ function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberC
           sub3:     p.current_club || null,
           role:     'player',
           verified: profileMap[p.profile_id]?.verification_status === 'verified',
+          photoUrl: p.primary_photo_path || profileMap[p.profile_id]?.avatar_path || null,
           onClick:  onPlayerClick ? () => onPlayerClick(p.profile_id) : null,
           cta:      'View profile →',
         }))
@@ -233,6 +234,7 @@ function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberC
           sub3:     c.current_club || null,
           role:     'coach',
           verified: profileMap[c.user_id]?.verification_status === 'verified',
+          photoUrl: c.photo_path || profileMap[c.user_id]?.avatar_path || null,
           onClick:  onMemberClick ? () => onMemberClick('coach', c) : null,
           cta:      'View profile →',
         }))
@@ -246,6 +248,7 @@ function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberC
           sub3:     null,
           role:     'agent',
           verified: profileMap[a.user_id]?.verification_status === 'verified',
+          photoUrl: a.photo_path || profileMap[a.user_id]?.avatar_path || null,
           onClick:  onMemberClick ? () => onMemberClick('agent', a) : null,
           cta:      'View profile →',
         }))
@@ -259,6 +262,7 @@ function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberC
           sub3:     null,
           role:     'academy',
           verified: ac.verified_badge,
+          photoUrl: null,
           onClick:  onMemberClick ? () => onMemberClick('academy', ac) : null,
           cta:      'View profile →',
         }))
@@ -272,6 +276,7 @@ function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberC
           sub3:     null,
           role:     'sports_analyst',
           verified: a.verification_status === 'verified',
+          photoUrl: profileMap[a.id]?.avatar_path || null,
           onClick:  onMemberClick ? () => onMemberClick('sports_analyst', a) : null,
           cta:      'View profile →',
         }))
@@ -280,6 +285,15 @@ function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberC
         return profiles.slice(0, 12).map((p) => {
           const pl = playerMap[p.id]
           const isPlayer = p.role === 'player'
+          // For non-player roles, find the matching role-specific item so we can deep-link
+          const roleItem = !isPlayer && coaches.find(c => c.user_id === p.id)
+                        || !isPlayer && agents.find(a => a.user_id === p.id)
+                        || !isPlayer && academies.find(a => a.owner_id === p.id)
+                        || null
+          const roleType = p.role === 'coach' || p.role === 'sports_analyst' ? p.role
+                         : p.role === 'agent' ? 'agent'
+                         : p.role === 'academy' ? 'academy'
+                         : null
           return {
             id:       p.id,
             name:     p.full_name || 'Member',
@@ -288,11 +302,12 @@ function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberC
             sub3:     pl?.current_club ?? null,
             role:     p.role,
             verified: p.verification_status === 'verified',
-            // Players: open full player profile. Others: navigate to Members Directory
-            // (we don't pass the item for profiles rows since they lack user_id field)
+            photoUrl: pl?.primary_photo_path || p.avatar_path || null,
             onClick:  isPlayer && onPlayerClick
                         ? () => onPlayerClick(p.id)
-                        : (onMemberClick ? () => onMemberClick(null, null) : null),
+                        : (onMemberClick && roleType && roleItem
+                            ? () => onMemberClick(roleType, roleItem)
+                            : (onMemberClick ? () => onMemberClick(null, null) : null)),
             cta:      isPlayer ? 'View profile →' : 'View in directory →',
           }
         })
@@ -384,9 +399,28 @@ function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberC
                     tabIndex={card.onClick ? 0 : undefined}
                     onKeyDown={card.onClick ? (e) => e.key === 'Enter' && card.onClick() : undefined}
                   >
-                    {/* Role avatar */}
-                    <div className="d-flex align-items-center justify-content-center rounded-circle mx-auto mb-2"
-                      style={{ width: 52, height: 52, background: m.colour, color: '#fff', fontSize: '1.25rem', flexShrink: 0 }}>
+                    {/* Role avatar — real photo if available, role-colour circle as fallback */}
+                    {card.photoUrl ? (
+                      <img
+                        src={card.photoUrl}
+                        alt={card.name}
+                        className="rounded-circle mx-auto mb-2 d-block"
+                        style={{ width: 52, height: 52, objectFit: 'cover', flexShrink: 0, border: `2px solid ${m.colour}` }}
+                        onError={(e) => {
+                          e.target.style.display = 'none'
+                          e.target.nextSibling.style.display = 'flex'
+                        }}
+                      />
+                    ) : null}
+                    <div className="align-items-center justify-content-center rounded-circle mx-auto mb-2"
+                      style={{
+                        width: 52, height: 52,
+                        background: m.colour,
+                        color: '#fff',
+                        fontSize: '1.25rem',
+                        flexShrink: 0,
+                        display: card.photoUrl ? 'none' : 'flex',
+                      }}>
                       <i className={`bi ${m.icon}`} aria-hidden="true" />
                     </div>
 
@@ -1444,7 +1478,7 @@ function App() {
                           <i className="bi bi-people-fill" />Browse community
                         </button>
                         <button type="button" className="btn btn-outline-light fw-semibold px-4 py-2 d-flex align-items-center gap-2"
-                          onClick={() => { }}>
+                          onClick={() => { setView('dashboard'); window.scrollTo(0, 0) }}>
                           <i className="bi bi-grid-1x2-fill" />Go to dashboard
                         </button>
                       </div>

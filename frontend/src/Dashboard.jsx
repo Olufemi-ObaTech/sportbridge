@@ -2,6 +2,7 @@
 import AccessRequestsPanel from './AccessRequestsPanel.jsx'
 import AcademyPlayerForm from './AcademyPlayerForm.jsx'
 import JobPostForm from './JobPostForm.jsx'
+import PlayerProfile from './PlayerProfile.jsx'
 import PlayerUploadForm from './PlayerUploadForm.jsx'
 import PostUpdateForm from './PostUpdateForm.jsx'
 import RecommendWithMediaForm from './RecommendWithMediaForm.jsx'
@@ -1178,7 +1179,6 @@ function AcademyDashboard({ supabase, user, profile }) {
           year_founded: a.year_founded != null ? String(a.year_founded) : '',
           linkedin:     a.linkedin     ?? '',
           about:        c.about        ?? '',
-          website:      c.website      ?? '',
           sports:       Array.isArray(a.sports) ? a.sports : ['football'],
           facebook_url: a.facebook_url  ?? '',
           instagram_url:a.instagram_url ?? '',
@@ -1205,7 +1205,7 @@ function AcademyDashboard({ supabase, user, profile }) {
     if (ci) { setError(ci); return }
     setSaving(true); setError(''); setNotice('')
     if (club) {
-      const { error: ce } = await supabase.from('clubs').update({ name: draft.club_name.trim() || profile.full_name, about: draft.about.trim() || null, website: draft.website.trim() || null, sports: draft.sports, updated_at: new Date().toISOString() }).eq('id', club.id)
+      const { error: ce } = await supabase.from('clubs').update({ name: draft.club_name.trim() || profile.full_name, about: draft.about.trim() || null, website: draft.website_url?.trim() || null, sports: draft.sports, updated_at: new Date().toISOString() }).eq('id', club.id)
       if (ce) { setError(ce.message); setSaving(false); return }
     }
     const apPayload = { user_id: user.id, sports: draft.sports, country: draft.country || null, state: draft.state.trim() || null, address: draft.address.trim() || null, phone: draft.phone.trim() || null, year_founded: draft.year_founded ? Number(draft.year_founded) : null, linkedin: draft.linkedin.trim() || null, facebook_url: draft.facebook_url?.trim()||null, instagram_url: draft.instagram_url?.trim()||null, twitter_url: draft.twitter_url?.trim()||null, youtube_url: draft.youtube_url?.trim()||null, tiktok_url: draft.tiktok_url?.trim()||null, website_url: draft.website_url?.trim()||null, updated_at: new Date().toISOString() }
@@ -1261,7 +1261,6 @@ function AcademyDashboard({ supabase, user, profile }) {
               <Field label="State / Region"><input className="form-control" value={draft.state} onChange={upd('state')} /></Field>
               <Field label="Address" col="col-12"><input className="form-control" value={draft.address} onChange={upd('address')} /></Field>
               <Field label="Phone"><input className="form-control" type="tel" value={draft.phone} onChange={upd('phone')} /></Field>
-              <Field label="Website"><input className="form-control" type="url" value={draft.website} onChange={upd('website')} /></Field>
               <Field label="LinkedIn URL"><input className="form-control" type="url" value={draft.linkedin} onChange={upd('linkedin')} /></Field>
               <SocialMediaFields draft={draft} upd={upd} />
               <div className="col-12">
@@ -1769,8 +1768,18 @@ function AdminDashboard({ supabase, user }) {
   const [verifNote,    setVerifNote]   = useState({})
   const [reportQueue,  setReportQueue] = useState([])
   const [reportNote,   setReportNote]  = useState({})
-  const [reportFilter, setReportFilter]= useState('all') // 'all'|'pending'|'investigating'|'confirmed_scam'|'dismissed'
+  const [reportFilter, setReportFilter]= useState('all')
   const [reportLoading,setReportLoading]= useState(false)
+  // ── Admin profile viewer state ──
+  const [profileSearch,  setProfileSearch]  = useState('')
+  const [profileRole,    setProfileRole]    = useState('all') // 'all'|'player'|'coach'|'agent'|'academy'|'sports_analyst'
+  const [profileVerif,   setProfileVerif]   = useState('all') // 'all'|'verified'|'pending'|'unverified'
+  const [viewingProfile, setViewingProfile] = useState(null) // { type, userId, item }
+  const [allPlayers,     setAllPlayers]     = useState([])
+  const [allCoaches,     setAllCoaches]     = useState([])
+  const [allAgents,      setAllAgents]      = useState([])
+  const [allClubs,       setAllClubs]       = useState([])
+  const [profilesLoaded, setProfilesLoaded] = useState(false)
 
   // Fetch reports flat (no embedded FK joins) then enrich with profiles in JS.
   // This avoids "Could not find relationship" errors when PostgREST schema cache
@@ -1883,6 +1892,20 @@ function AdminDashboard({ supabase, user }) {
   }, [supabase])
 
   useEffect(() => {
+    if (activeTab === 'profiles' && !profilesLoaded) {
+      setProfilesLoaded(true)
+      Promise.all([
+        supabase.from('players').select('id,profile_id,display_name,position,country,nationality,current_club,is_public,primary_photo_path,availability,age_group').order('display_name').limit(500),
+        supabase.from('coach_profiles').select('id,user_id,full_name,preferred_role,nationality,current_club,sport,open_to_work,is_public,photo_path').order('full_name').limit(500),
+        supabase.from('agent_profiles').select('id,user_id,agency_name,nationality,experience_years,is_public,photo_path').order('agency_name').limit(500),
+        supabase.from('clubs').select('id,owner_id,name,country,sports,status,verified_badge').order('name').limit(500),
+      ]).then(([{data:pl},{data:co},{data:ag},{data:cl}]) => {
+        setAllPlayers(pl ?? [])
+        setAllCoaches(co ?? [])
+        setAllAgents(ag ?? [])
+        setAllClubs(cl ?? [])
+      })
+    }
     if (activeTab === 'duplicates' && duplicates.length === 0) {
       supabase.from('uploads').select('id, user_id, file_hash, file_type, url, is_duplicate, created_at')
         .eq('is_duplicate', true).order('created_at', { ascending: false }).limit(100)
@@ -1902,7 +1925,7 @@ function AdminDashboard({ supabase, user }) {
     if (activeTab === 'reports' && reportQueue.length === 0) {
       loadReports()
     }
-  }, [activeTab, supabase, loadReports, duplicates.length, flagged.length, verifQueue.length, reportQueue.length])
+  }, [activeTab, supabase, loadReports, duplicates.length, flagged.length, verifQueue.length, reportQueue.length, profilesLoaded])
 
   const approveOpp = async (id) => {
     await supabase.from('opportunities').update({ status: 'open', is_fee_flagged: false }).eq('id', id)
@@ -2120,6 +2143,7 @@ function AdminDashboard({ supabase, user }) {
 
   const TABS = [
     ['users',        'bi-people',              `Users (${users.length})`],
+    ['profiles',     'bi-person-vcard',        'All Profiles'],
     ['analytics',    'bi-graph-up-arrow',      'Analytics'],
     ['verification', 'bi-patch-check',         `Verify${pendingVerif > 0 ? ` (${pendingVerif})` : ''}`],
     ['reports',      'bi-flag-fill',           `Reports${reportQueue.length > 0 ? ` (${reportQueue.length})` : ''}`],
@@ -2568,6 +2592,266 @@ function AdminDashboard({ supabase, user }) {
         </div>
       )}
 
+      {/* ── All Profiles tab ── */}
+      {activeTab==='profiles' && (() => {
+        // Build unified profile list for admin: ALL roles, ALL verification states
+        const profMap = Object.fromEntries(users.map(u => [u.id, u]))
+        const playerRows = allPlayers.map(p => ({
+          id:       p.id,
+          userId:   p.profile_id,
+          role:     'player',
+          name:     p.display_name || profMap[p.profile_id]?.full_name || '(no name)',
+          sub1:     p.position,
+          sub2:     p.country || p.nationality,
+          sub3:     p.current_club,
+          photo:    p.primary_photo_path || profMap[p.profile_id]?.avatar_path || null,
+          verified: profMap[p.profile_id]?.verification_status === 'verified',
+          verifStatus: profMap[p.profile_id]?.verification_status ?? 'unverified',
+          email:    profMap[p.profile_id]?.email,
+          public:   p.is_public,
+          item:     p,
+          type:     'player',
+        }))
+        const coachRows = allCoaches.map(c => ({
+          id:       c.id,
+          userId:   c.user_id,
+          role:     profMap[c.user_id]?.role ?? 'coach',
+          name:     c.full_name || profMap[c.user_id]?.full_name || '(no name)',
+          sub1:     c.preferred_role,
+          sub2:     c.nationality,
+          sub3:     c.current_club,
+          photo:    c.photo_path || profMap[c.user_id]?.avatar_path || null,
+          verified: profMap[c.user_id]?.verification_status === 'verified',
+          verifStatus: profMap[c.user_id]?.verification_status ?? 'unverified',
+          email:    profMap[c.user_id]?.email,
+          public:   c.is_public,
+          item:     c,
+          type:     profMap[c.user_id]?.role === 'sports_analyst' ? 'sports_analyst' : 'coach',
+        }))
+        const agentRows = allAgents.map(a => ({
+          id:       a.id,
+          userId:   a.user_id,
+          role:     'agent',
+          name:     a.agency_name || profMap[a.user_id]?.full_name || '(no name)',
+          sub1:     'Agent / Scout',
+          sub2:     a.nationality,
+          sub3:     a.experience_years ? `${a.experience_years} yrs exp` : null,
+          photo:    a.photo_path || profMap[a.user_id]?.avatar_path || null,
+          verified: profMap[a.user_id]?.verification_status === 'verified',
+          verifStatus: profMap[a.user_id]?.verification_status ?? 'unverified',
+          email:    profMap[a.user_id]?.email,
+          public:   a.is_public,
+          item:     a,
+          type:     'agent',
+        }))
+        const clubRows = allClubs.map(cl => ({
+          id:       cl.id,
+          userId:   cl.owner_id,
+          role:     'academy',
+          name:     cl.name || '(no name)',
+          sub1:     'Club / Academy',
+          sub2:     cl.country,
+          sub3:     null,
+          photo:    profMap[cl.owner_id]?.avatar_path || null,
+          verified: cl.verified_badge || profMap[cl.owner_id]?.verification_status === 'verified',
+          verifStatus: profMap[cl.owner_id]?.verification_status ?? 'unverified',
+          email:    profMap[cl.owner_id]?.email,
+          public:   cl.status === 'active',
+          item:     cl,
+          type:     'academy',
+        }))
+
+        // If the user has no role-specific profile yet, still show them
+        const profiledIds = new Set([
+          ...playerRows.map(r => r.userId),
+          ...coachRows.map(r => r.userId),
+          ...agentRows.map(r => r.userId),
+          ...clubRows.map(r => r.userId),
+        ])
+        const noProfileRows = users
+          .filter(u => !profiledIds.has(u.id) && u.role !== 'super_admin')
+          .map(u => ({
+            id:          u.id,
+            userId:      u.id,
+            role:        u.role,
+            name:        u.full_name || '(no name)',
+            sub1:        ROLE_LABELS[u.role],
+            sub2:        null,
+            sub3:        null,
+            photo:       u.avatar_path || null,
+            verified:    u.verification_status === 'verified',
+            verifStatus: u.verification_status ?? 'unverified',
+            email:       u.email,
+            public:      u.status === 'active',
+            item:        null,
+            type:        u.role,
+          }))
+
+        const allRows = [...playerRows, ...coachRows, ...agentRows, ...clubRows, ...noProfileRows]
+
+        // Apply filters
+        const pSearch = profileSearch.toLowerCase()
+        const visible = allRows.filter(r => {
+          if (profileRole !== 'all' && r.role !== profileRole && r.type !== profileRole) return false
+          if (profileVerif !== 'all' && r.verifStatus !== profileVerif) return false
+          if (pSearch) return [r.name, r.email, r.sub1, r.sub2, r.sub3].some(f => f?.toLowerCase().includes(pSearch))
+          return true
+        })
+
+        const ROLE_COLOURS_MAP = { player:'#2F7DF0',coach:'#F5B301',agent:'#198754',academy:'#6f42c1',sports_analyst:'#fd7e14' }
+        const ROLE_ICON_MAP    = { player:'bi-person-arms-up',coach:'bi-clipboard2-pulse',agent:'bi-binoculars',academy:'bi-building',sports_analyst:'bi-graph-up-arrow' }
+
+        return (
+          <div>
+            {/* ── Filters ── */}
+            <div className="card p-3 mb-4">
+              <div className="row g-2 align-items-end">
+                <div className="col-12 col-md-4">
+                  <label className="form-label small fw-semibold mb-1">Search</label>
+                  <div className="input-group input-group-sm">
+                    <span className="input-group-text"><i className="bi bi-search" /></span>
+                    <input className="form-control" type="search"
+                      placeholder="Name, email, club, position…"
+                      value={profileSearch} onChange={e => setProfileSearch(e.target.value)} />
+                  </div>
+                </div>
+                <div className="col-6 col-md-3">
+                  <label className="form-label small fw-semibold mb-1">Role</label>
+                  <select className="form-select form-select-sm" value={profileRole} onChange={e => setProfileRole(e.target.value)}>
+                    <option value="all">All roles</option>
+                    <option value="player">Players</option>
+                    <option value="coach">Coaches</option>
+                    <option value="sports_analyst">Analysts</option>
+                    <option value="agent">Agents</option>
+                    <option value="academy">Clubs / Academies</option>
+                  </select>
+                </div>
+                <div className="col-6 col-md-3">
+                  <label className="form-label small fw-semibold mb-1">Verification</label>
+                  <select className="form-select form-select-sm" value={profileVerif} onChange={e => setProfileVerif(e.target.value)}>
+                    <option value="all">All statuses</option>
+                    <option value="verified">Verified only</option>
+                    <option value="pending">Pending</option>
+                    <option value="unverified">Unverified</option>
+                  </select>
+                </div>
+                <div className="col-auto">
+                  <label className="form-label small fw-semibold mb-1 opacity-0">x</label>
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="small text-muted text-nowrap">{visible.length} profiles</span>
+                    {(profileSearch || profileRole !== 'all' || profileVerif !== 'all') && (
+                      <button className="btn btn-outline-secondary btn-sm" type="button"
+                        onClick={() => { setProfileSearch(''); setProfileRole('all'); setProfileVerif('all') }}>
+                        <i className="bi bi-x-circle me-1" />Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Summary badges ── */}
+            <div className="d-flex flex-wrap gap-2 mb-4">
+              {[
+                { label:'Players',   count:playerRows.length,  colour:'#2F7DF0' },
+                { label:'Coaches',   count:coachRows.filter(r=>r.type==='coach').length, colour:'#F5B301' },
+                { label:'Analysts',  count:coachRows.filter(r=>r.type==='sports_analyst').length, colour:'#fd7e14' },
+                { label:'Agents',    count:agentRows.length,   colour:'#198754' },
+                { label:'Clubs',     count:clubRows.length,    colour:'#6f42c1' },
+                { label:'No profile', count:noProfileRows.length, colour:'#6c757d' },
+                { label:'Verified',  count:allRows.filter(r=>r.verified).length, colour:'#198754' },
+                { label:'Unverified',count:allRows.filter(r=>!r.verified).length, colour:'#adb5bd' },
+              ].map(({ label, count, colour }) => (
+                <span key={label} className="badge px-3 py-2 fw-semibold"
+                  style={{ background: colour + '1a', color: colour, border: `1px solid ${colour}44`, fontSize: 12 }}>
+                  {label}: {count}
+                </span>
+              ))}
+            </div>
+
+            {/* ── Profile grid ── */}
+            {!profilesLoaded ? (
+              <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading profiles…</div>
+            ) : visible.length === 0 ? (
+              <div className="text-center py-5 text-muted">
+                <i className="bi bi-person-x fs-1 d-block mb-2" style={{ opacity:.25 }} />
+                <p className="fw-semibold mb-1">No profiles match your filters</p>
+              </div>
+            ) : (
+              <div className="row g-3">
+                {visible.map(row => {
+                  const colour = ROLE_COLOURS_MAP[row.role] ?? '#6c757d'
+                  const icon   = ROLE_ICON_MAP[row.role]   ?? 'bi-person'
+                  const verifColour = row.verifStatus==='verified'?'#198754':row.verifStatus==='pending'?'#F5B301':'#6c757d'
+                  const verifIcon   = row.verifStatus==='verified'?'bi-patch-check-fill':row.verifStatus==='pending'?'bi-hourglass-split':'bi-patch-question'
+                  return (
+                    <div key={`${row.type}-${row.id}`} className="col-6 col-sm-4 col-md-3 col-lg-2">
+                      <div className="card h-100 p-3 text-center"
+                        style={{ border:'none', boxShadow:'0 1px 6px rgba(0,0,0,.08)', cursor:'pointer', transition:'transform .15s, box-shadow .15s' }}
+                        onClick={() => {
+                          if (row.type === 'player') {
+                            setViewingProfile({ type:'player', userId:row.userId, item:row.item })
+                          } else if (row.item) {
+                            setViewingProfile({ type:row.type, userId:row.userId, item:row.item, profile:profMap[row.userId] })
+                          }
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 4px 16px rgba(0,0,0,.14)' }}
+                        onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow='0 1px 6px rgba(0,0,0,.08)' }}
+                        role="button" tabIndex={0}
+                        onKeyDown={e => e.key==='Enter' && e.currentTarget.click()}
+                      >
+                        {/* Photo / avatar */}
+                        {row.photo ? (
+                          <img src={row.photo} alt={row.name}
+                            className={row.role==='academy'?'rounded mx-auto mb-2 d-block':'rounded-circle mx-auto mb-2 d-block'}
+                            style={{ width:52, height:52, objectFit:'cover', border:`2px solid ${colour}44` }}
+                            onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }} />
+                        ) : null}
+                        <div className={`align-items-center justify-content-center mx-auto mb-2 ${row.role==='academy'?'rounded':'rounded-circle'}`}
+                          style={{ width:52, height:52, background:colour, color:row.role==='coach'?'#000':'#fff', fontSize:'1.1rem', display: row.photo ? 'none' : 'flex', flexShrink:0 }}>
+                          <i className={`bi ${icon}`} aria-hidden="true" />
+                        </div>
+
+                        {/* Name */}
+                        <div className="fw-semibold text-truncate" style={{ fontSize:12, color:'var(--fc-blue-700)' }}>
+                          {row.name}
+                        </div>
+
+                        {/* Sub info */}
+                        {row.sub1 && <div className="small text-muted text-truncate" style={{ fontSize:11 }}>{row.sub1}</div>}
+                        {row.sub2 && <div className="small text-muted text-truncate" style={{ fontSize:11 }}>{row.sub2}</div>}
+
+                        {/* Role badge */}
+                        <span className="badge mt-1" style={{ background:colour, color:row.role==='coach'?'#000':'#fff', fontSize:9 }}>
+                          {ROLE_LABELS[row.role]}
+                        </span>
+
+                        {/* Verified status */}
+                        <div className="mt-1">
+                          <span className="badge" style={{ background:verifColour+'18', color:verifColour, fontSize:9 }}>
+                            <i className={`bi ${verifIcon} me-1`} style={{ fontSize:9 }} />
+                            {row.verifStatus === 'verified' ? 'Verified' : row.verifStatus === 'pending' ? 'Pending' : 'Unverified'}
+                          </span>
+                        </div>
+
+                        {/* Public/private indicator */}
+                        {!row.public && (
+                          <div className="mt-1">
+                            <span className="badge text-bg-secondary" style={{ fontSize:9 }}>
+                              <i className="bi bi-eye-slash me-1" />Private
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
       {/* ── Users table ── */}
       {activeTab==='users' && (
         <div className="card p-4">
@@ -2677,6 +2961,28 @@ function AdminDashboard({ supabase, user }) {
                             disabled={u.id===user.id||saving||(roleDrafts[u.id]??u.role)===u.role}
                             onClick={() => saveRole(u.id)} type="button">
                             <i className="bi bi-check2 me-1" />Save
+                          </button>
+                          <button className="btn btn-sm btn-outline-secondary"
+                            type="button"
+                            title="View this user's profile"
+                            onClick={() => {
+                              // Find their role-specific item and switch to Profiles tab
+                              const rItem = allPlayers.find(p=>p.profile_id===u.id)
+                                         || allCoaches.find(c=>c.user_id===u.id)
+                                         || allAgents.find(a=>a.user_id===u.id)
+                                         || allClubs.find(cl=>cl.owner_id===u.id)
+                              if (rItem) {
+                                const type = u.role === 'player' ? 'player'
+                                           : u.role === 'agent' ? 'agent'
+                                           : u.role === 'academy' ? 'academy'
+                                           : u.role === 'sports_analyst' ? 'sports_analyst' : 'coach'
+                                setViewingProfile({ type, userId:u.id, item:rItem, profile:u })
+                                setActiveTab('profiles')
+                              } else {
+                                setNotice(`No role profile found for ${u.full_name||u.email}. They may not have set one up yet.`)
+                              }
+                            }}>
+                            <i className="bi bi-eye" />
                           </button>
                           {u.id!==user.id && (
                             <button
@@ -3031,11 +3337,268 @@ function AdminDashboard({ supabase, user }) {
           ))}
         </div>
       )}
+      {/* ── Admin Profile Viewer Overlay ── */}
+      {viewingProfile && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column"
+          style={{ zIndex:1050, background:'rgba(7,26,61,.55)', backdropFilter:'blur(4px)', overflowY:'auto' }}
+          onClick={e => { if (e.target===e.currentTarget) setViewingProfile(null) }}
+        >
+          <div className="container py-4" style={{ maxWidth:1100 }}>
+            {/* Close bar */}
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <div className="d-flex align-items-center gap-2">
+                <span className="badge text-bg-warning px-3 py-2 fw-semibold" style={{ fontSize:12 }}>
+                  <i className="bi bi-shield-check me-1" />Admin View — Full Profile
+                </span>
+                <span className="text-white-50 small">Viewing as admin. All data visible regardless of privacy settings.</span>
+              </div>
+              <button
+                className="btn btn-light btn-sm d-flex align-items-center gap-2 fw-semibold"
+                type="button"
+                onClick={() => setViewingProfile(null)}
+              >
+                <i className="bi bi-x-lg" />Close
+              </button>
+            </div>
+
+            {/* Player profile */}
+            {viewingProfile.type === 'player' && (
+              <PlayerProfile
+                supabase={supabase}
+                user={user}
+                playerId={viewingProfile.userId}
+                onBack={() => setViewingProfile(null)}
+                onSignup={() => {}}
+              />
+            )}
+
+            {/* Coach / Analyst profile */}
+            {(viewingProfile.type === 'coach' || viewingProfile.type === 'sports_analyst') && viewingProfile.item && (
+              <AdminProfileCard
+                supabase={supabase}
+                user={user}
+                member={viewingProfile.item}
+                profile={viewingProfile.profile}
+                role={viewingProfile.type}
+                onClose={() => setViewingProfile(null)}
+              />
+            )}
+
+            {/* Agent profile */}
+            {viewingProfile.type === 'agent' && viewingProfile.item && (
+              <AdminProfileCard
+                supabase={supabase}
+                user={user}
+                member={viewingProfile.item}
+                profile={viewingProfile.profile}
+                role="agent"
+                onClose={() => setViewingProfile(null)}
+              />
+            )}
+
+            {/* Club / Academy profile */}
+            {viewingProfile.type === 'academy' && viewingProfile.item && (
+              <AdminProfileCard
+                supabase={supabase}
+                user={user}
+                member={viewingProfile.item}
+                profile={viewingProfile.profile}
+                role="academy"
+                onClose={() => setViewingProfile(null)}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
     </>
   )
 }
 
-// ——— Account details sidebar ——————————————————————————————————————————————————
+// ── AdminProfileCard — rich profile view used inside the admin overlay ─────────
+// Shows all data for coach/analyst/agent/club regardless of is_public setting.
+function AdminProfileCard({ supabase, user, member, profile, role, onClose }) {
+  const ROLE_META_ADMIN = {
+    coach:          { icon:'bi-clipboard2-pulse', colour:'#F5B301', label:'Coach / Manager',  darkText:true  },
+    sports_analyst: { icon:'bi-graph-up-arrow',   colour:'#fd7e14', label:'Sports Analyst',   darkText:false },
+    agent:          { icon:'bi-binoculars',        colour:'#198754', label:'Agent / Scout',    darkText:false },
+    academy:        { icon:'bi-building',          colour:'#6f42c1', label:'Club / Academy',   darkText:false },
+  }
+  const m = ROLE_META_ADMIN[role] ?? ROLE_META_ADMIN.coach
+  const verified = profile?.verification_status === 'verified'
+  const badges   = Array.isArray(member.badges) ? member.badges : []
+  const name     = member.full_name || member.agency_name || member.name || '(No name)'
+  const photo    = member.photo_path || member.logo_path || profile?.avatar_path || null
+  const initials = name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()
+  const regions  = Array.isArray(member.regions) ? member.regions : (member.regions ? member.regions.split(',').map(r=>r.trim()) : [])
+  const sports   = Array.isArray(member.sports)  ? member.sports  : []
+
+  // Social links helper
+  const socials = [
+    { key:'linkedin',      icon:'bi-linkedin',   colour:'#0A66C2', label:'LinkedIn',  url: member.linkedin },
+    { key:'website_url',   icon:'bi-globe2',     colour:'#2F7DF0', label:'Website',   url: member.website_url || member.website },
+    { key:'facebook_url',  icon:'bi-facebook',   colour:'#1877F2', label:'Facebook',  url: member.facebook_url },
+    { key:'instagram_url', icon:'bi-instagram',  colour:'#E4405F', label:'Instagram', url: member.instagram_url },
+    { key:'twitter_url',   icon:'bi-twitter-x',  colour:'#000',    label:'X/Twitter', url: member.twitter_url },
+    { key:'youtube_url',   icon:'bi-youtube',    colour:'#FF0000', label:'YouTube',   url: member.youtube_url },
+    { key:'tiktok_url',    icon:'bi-tiktok',     colour:'#010101', label:'TikTok',    url: member.tiktok_url },
+  ].filter(s => s.url)
+
+  return (
+    <div className="bg-white rounded-4 p-4" style={{ boxShadow:'0 8px 40px rgba(0,0,0,.18)' }}>
+      {/* Header */}
+      <div className="d-flex gap-4 align-items-start mb-4">
+        {/* Avatar */}
+        {photo ? (
+          <img src={photo} alt={name}
+            className={role==='academy'?'rounded flex-shrink-0':'rounded-circle flex-shrink-0'}
+            style={{ width:96, height:96, objectFit:'cover', border:`3px solid ${m.colour}44` }} />
+        ) : (
+          <div className={`d-flex align-items-center justify-content-center flex-shrink-0 ${role==='academy'?'rounded':'rounded-circle'}`}
+            style={{ width:96, height:96, background:m.colour, color:m.darkText?'#212529':'#fff', fontSize:36, fontWeight:700 }}>
+            {initials || <i className={`bi ${m.icon}`} />}
+          </div>
+        )}
+
+        <div className="flex-grow-1 min-w-0">
+          {/* Admin badge */}
+          <div className="mb-2">
+            <span className="badge text-bg-danger me-2" style={{ fontSize:10 }}>
+              <i className="bi bi-shield-fill-check me-1" />Admin View
+            </span>
+            <span className="badge" style={{ background:m.colour, color:m.darkText?'#000':'#fff', fontSize:11 }}>
+              <i className={`bi ${m.icon} me-1`} />{m.label}
+            </span>
+            {member.preferred_role && (
+              <span className="badge text-bg-light border ms-1" style={{ fontSize:11 }}>{member.preferred_role}</span>
+            )}
+            {verified && (
+              <span className="badge text-bg-success ms-1" style={{ fontSize:11 }}>
+                <i className="bi bi-patch-check-fill me-1" />Verified
+              </span>
+            )}
+          </div>
+
+          <h1 className="h3 fw-bold mb-1" style={{ color:'var(--fc-blue-700)' }}>{name}</h1>
+
+          {/* Meta info grid */}
+          <div className="row g-2 small mt-2">
+            {[
+              { icon:'bi-envelope',       label:'Email',       value: profile?.email },
+              { icon:'bi-globe2',         label:'Nationality', value: member.nationality || member.country },
+              { icon:'bi-briefcase',      label:'Experience',  value: member.experience_years ? `${member.experience_years} yrs` : null },
+              { icon:'bi-building',       label:'Club',        value: member.current_club || member.name },
+              { icon:'bi-dribbble',       label:'Sport',       value: member.sport || (sports.length ? sports.join(', ') : null) },
+              { icon:'bi-gender-ambiguous',label:'Gender',     value: member.gender },
+              { icon:'bi-calendar3',      label:'Founded',     value: member.year_founded ? String(member.year_founded) : null },
+              { icon:'bi-telephone',      label:'Phone',       value: member.phone },
+              { icon:'bi-geo-alt',        label:'Address',     value: [member.address, member.state, member.country].filter(Boolean).join(', ') || null },
+              { icon:'bi-eye',            label:'Public',      value: member.is_public ? 'Yes' : member.status === 'active' ? 'Active' : 'Private' },
+            ].filter(r=>r.value).map(({ icon, label, value }) => (
+              <div key={label} className="col-6 d-flex align-items-center gap-1">
+                <i className={`bi ${icon} text-primary flex-shrink-0`} style={{ fontSize:12 }} />
+                <span className="text-muted me-1">{label}:</span>
+                <span className="fw-semibold text-truncate">{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* About */}
+      {member.about && (
+        <div className="card p-3 mb-3" style={{ background:'#f8f9fa' }}>
+          <div className="fw-semibold small mb-2" style={{ color:'var(--fc-blue-700)' }}>
+            <i className="bi bi-person-lines-fill me-2 text-primary" />About
+          </div>
+          <p className="small mb-0" style={{ lineHeight:1.8 }}>{member.about}</p>
+        </div>
+      )}
+
+      {/* Achievements */}
+      {member.achievements && (
+        <div className="card p-3 mb-3" style={{ background:'#f8f9fa' }}>
+          <div className="fw-semibold small mb-2" style={{ color:'var(--fc-blue-700)' }}>
+            <i className="bi bi-trophy-fill me-2 text-warning" />Achievements
+          </div>
+          <p className="small mb-0" style={{ lineHeight:1.8 }}>{member.achievements}</p>
+        </div>
+      )}
+
+      {/* Badges */}
+      {badges.length > 0 && (
+        <div className="card p-3 mb-3" style={{ background:'#f8f9fa' }}>
+          <div className="fw-semibold small mb-2" style={{ color:'var(--fc-blue-700)' }}>
+            <i className="bi bi-award-fill me-2 text-primary" />Badges &amp; Licences
+          </div>
+          <div className="d-flex flex-wrap gap-2">
+            {badges.map((b,i) => (
+              <span key={i} className="badge px-3 py-2"
+                style={{ background:'#2F7DF014', color:'#2F7DF0', border:'1px solid #2F7DF033', fontSize:11 }}>
+                <i className="bi bi-award me-1" />{b}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Regions (agents) */}
+      {regions.length > 0 && (
+        <div className="card p-3 mb-3" style={{ background:'#f8f9fa' }}>
+          <div className="fw-semibold small mb-2" style={{ color:'var(--fc-blue-700)' }}>
+            <i className="bi bi-geo-alt-fill me-2 text-primary" />Operating Regions
+          </div>
+          <div className="d-flex flex-wrap gap-2">
+            {regions.map((r,i) => (
+              <span key={i} className="badge text-bg-light border px-3 py-2" style={{ fontSize:11 }}>{r}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Social links */}
+      {socials.length > 0 && (
+        <div className="card p-3 mb-3" style={{ background:'#f8f9fa' }}>
+          <div className="fw-semibold small mb-2" style={{ color:'var(--fc-blue-700)' }}>
+            <i className="bi bi-share-fill me-2 text-primary" />Social Media &amp; Links
+          </div>
+          <div className="d-flex flex-wrap gap-2">
+            {socials.map(({ key, icon, colour, label, url }) => (
+              <a key={key} href={url} target="_blank" rel="noopener noreferrer"
+                className="btn btn-sm fw-semibold d-inline-flex align-items-center gap-2"
+                style={{ background:colour+'18', color:colour, border:`1px solid ${colour}44` }}>
+                <i className={`bi ${icon}`} />{label}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Admin info panel */}
+      <div className="card p-3" style={{ background:'rgba(220,53,69,.04)', border:'1px solid rgba(220,53,69,.15)' }}>
+        <div className="fw-semibold small mb-2 text-danger">
+          <i className="bi bi-shield-lock-fill me-2" />Admin-Only Information
+        </div>
+        <div className="row g-2 small">
+          {[
+            { label:'User ID',      value: member.user_id || member.owner_id },
+            { label:'Profile ID',   value: profile?.id },
+            { label:'Email',        value: profile?.email },
+            { label:'Verification', value: profile?.verification_status ?? 'unverified' },
+            { label:'Account',      value: profile?.status ?? 'active' },
+            { label:'Role DB',      value: profile?.role },
+          ].filter(r=>r.value).map(({ label, value }) => (
+            <div key={label} className="col-6">
+              <span className="text-muted">{label}: </span>
+              <span className="fw-semibold font-monospace" style={{ fontSize:11 }}>{value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function AccountDetails({ supabase, user, profile, onProfileSaved }) {
   const [name,       setName]       = useState(profile?.full_name ?? '')
@@ -3115,15 +3678,15 @@ function AccountDetails({ supabase, user, profile, onProfileSaved }) {
           <div className="position-relative flex-shrink-0" style={{ width:38, height:38 }}>
             {displayAvatar ? (
               <img src={displayAvatar} alt="Profile"
-                className="rounded-circle"
+                className={profile?.role === 'academy' ? 'rounded' : 'rounded-circle'}
                 style={{ width:38, height:38, objectFit: isAdmin ? 'contain' : 'cover',
                   background: isAdmin ? 'var(--fc-gradient-primary)' : 'transparent',
-                  padding: isAdmin ? 4 : 0 }}
+                  padding: isAdmin ? 4 : (profile?.role === 'academy' ? 2 : 0) }}
               />
             ) : (
-              <span className="d-inline-flex align-items-center justify-content-center rounded-circle"
-                style={{ width:38, height:38, background:'var(--fc-gradient-primary)', color:'#fff', fontSize:15 }}>
-                <i className="bi bi-person-fill" />
+              <span className={`d-inline-flex align-items-center justify-content-center ${profile?.role === 'academy' ? 'rounded' : 'rounded-circle'}`}
+                style={{ width:38, height:38, background: profile?.role === 'academy' ? '#6f42c1' : 'var(--fc-gradient-primary)', color:'#fff', fontSize:15 }}>
+                <i className={profile?.role === 'academy' ? 'bi bi-building' : 'bi bi-person-fill'} />
               </span>
             )}
           </div>
@@ -3145,21 +3708,24 @@ function AccountDetails({ supabase, user, profile, onProfileSaved }) {
 
           {/* Photo upload */}
           <div className="mb-3">
-            <div className="small fw-semibold mb-2">Profile photo</div>
+            <div className="small fw-semibold mb-2">
+              {profile?.role === 'academy' ? 'Club / Academy Logo' : 'Profile photo'}
+            </div>
             <div className="d-flex align-items-center gap-3">
               {/* Current photo */}
               <div className="position-relative flex-shrink-0" style={{ width:64, height:64 }}>
                 {displayAvatar ? (
                   <img src={displayAvatar} alt="Profile"
-                    className="rounded-circle"
+                    className={profile?.role === 'academy' ? 'rounded' : 'rounded-circle'}
                     style={{ width:64, height:64, objectFit: isAdmin ? 'contain' : 'cover',
                       background: isAdmin ? '#071a3d' : 'var(--bs-secondary-bg)',
-                      padding: isAdmin ? 8 : 0 }}
+                      padding: isAdmin ? 8 : (profile?.role === 'academy' ? 4 : 0),
+                      border: profile?.role === 'academy' ? '1px solid var(--bs-border-color)' : 'none' }}
                   />
                 ) : (
-                  <span className="d-inline-flex align-items-center justify-content-center rounded-circle"
-                    style={{ width:64, height:64, background:'var(--fc-gradient-primary)', color:'#fff', fontSize:26 }}>
-                    <i className="bi bi-person-fill" />
+                  <span className={`d-inline-flex align-items-center justify-content-center ${profile?.role === 'academy' ? 'rounded' : 'rounded-circle'}`}
+                    style={{ width:64, height:64, background: profile?.role === 'academy' ? '#6f42c1' : 'var(--fc-gradient-primary)', color:'#fff', fontSize:26 }}>
+                    <i className={profile?.role === 'academy' ? 'bi bi-building' : 'bi bi-person-fill'} />
                   </span>
                 )}
               </div>

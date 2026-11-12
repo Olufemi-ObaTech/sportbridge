@@ -150,7 +150,8 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
       bio, is_public, sport, gender, foot, preferred_foot, dominant_hand,
       height_cm, weight_kg, current_club, achievements, achievements_data,
       linkedin, views_count, availability, region, age_group, stats,
-      primary_photo_path, profile_id`
+      primary_photo_path, profile_id,
+      facebook_url, instagram_url, twitter_url, youtube_url, tiktok_url, website_url`
 
     const load = async () => {
       let { data: p, error: pe } = await supabase.from('players').select(FIELDS).eq('id', playerId).maybeSingle()
@@ -166,7 +167,7 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
         supabase.from('player_history').select('*').eq('player_id', p.id).order('sort_order'),
         supabase.from('media_assets').select('*').eq('player_id', p.id).order('sort_order'),
         p.profile_id
-          ? supabase.from('profiles').select('role,verification_status,verification_badge').eq('id', p.profile_id).maybeSingle()
+          ? supabase.from('profiles').select('role,verification_status,verification_badge,avatar_path').eq('id', p.profile_id).maybeSingle()
           : Promise.resolve({ data: null }),
       ])
       if (!alive) return
@@ -264,8 +265,8 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
           <div className="card p-4 mb-4">
             <div className="d-flex flex-wrap gap-4 align-items-start">
               <div className="flex-shrink-0">
-                {player.primary_photo_path
-                  ? <img src={player.primary_photo_path} alt={fullName} className="rounded"
+                {(player.primary_photo_path || profile?.avatar_path)
+                  ? <img src={player.primary_photo_path || profile?.avatar_path} alt={fullName} className="rounded"
                       style={{ width: 100, height: 100, objectFit: 'cover' }} loading="lazy" />
                   : <div className="rounded d-flex align-items-center justify-content-center"
                       style={{ width: 100, height: 100, background: 'var(--fc-gradient-primary)' }}>
@@ -415,6 +416,38 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
                     className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2">
                     <i className="bi bi-box-arrow-up-right" />View LinkedIn Profile
                   </a>
+                </div>
+              )}
+
+              {/* Social media links */}
+              {[
+                { key: 'website_url',   label: 'Website',    icon: 'bi-globe2',    colour: '#2F7DF0', url: player.website_url },
+                { key: 'facebook_url',  label: 'Facebook',   icon: 'bi-facebook',  colour: '#1877F2', url: player.facebook_url },
+                { key: 'instagram_url', label: 'Instagram',  icon: 'bi-instagram', colour: '#E4405F', url: player.instagram_url },
+                { key: 'twitter_url',   label: 'X / Twitter',icon: 'bi-twitter-x', colour: '#000',    url: player.twitter_url },
+                { key: 'youtube_url',   label: 'YouTube',    icon: 'bi-youtube',   colour: '#FF0000', url: player.youtube_url },
+                { key: 'tiktok_url',    label: 'TikTok',     icon: 'bi-tiktok',    colour: '#000',    url: player.tiktok_url },
+              ].filter(s => s.url).length > 0 && (
+                <div className="card p-4">
+                  <h2 className="h6 fw-bold mb-3" style={{ color: 'var(--fc-blue-700)' }}>
+                    <i className="bi bi-share-fill me-2 text-primary" />Social Media &amp; Links
+                  </h2>
+                  <div className="d-flex flex-wrap gap-2">
+                    {[
+                      { label: 'Website',    icon: 'bi-globe2',    colour: '#2F7DF0', url: player.website_url },
+                      { label: 'Facebook',   icon: 'bi-facebook',  colour: '#1877F2', url: player.facebook_url },
+                      { label: 'Instagram',  icon: 'bi-instagram', colour: '#E4405F', url: player.instagram_url },
+                      { label: 'X / Twitter',icon: 'bi-twitter-x', colour: '#000',    url: player.twitter_url },
+                      { label: 'YouTube',    icon: 'bi-youtube',   colour: '#FF0000', url: player.youtube_url },
+                      { label: 'TikTok',     icon: 'bi-tiktok',    colour: '#010101', url: player.tiktok_url },
+                    ].filter(s => s.url).map(({ label, icon, colour, url }) => (
+                      <a key={label} href={url} target="_blank" rel="noopener noreferrer"
+                        className="btn btn-sm d-inline-flex align-items-center gap-2 fw-semibold"
+                        style={{ background: colour + '14', color: colour, border: `1px solid ${colour}44` }}>
+                        <i className={`bi ${icon}`} />{label}
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
