@@ -1,24 +1,28 @@
 # Netlify configuration for SportBridge
-# Live URL: https://sportbridge-com-ng.netlify.app
-# Custom domain: sportbridge.online
+# Live URL: https://sportbridgeonline.netlify.app
+# Production domain: sportbridge.online
+# Supabase project: qnueqhlxmtkvecppygrk
+# Official email: sportbridge.online@gmail.com
 #
 # Required env vars — set in Netlify UI (Site configuration → Environment variables):
-#   VITE_SUPABASE_URL      = https://pzfohowzaeunywaqukwe.supabase.co
-#   VITE_SUPABASE_ANON_KEY = eyJ...  (anon/public key from Supabase dashboard)
-#   SUPABASE_URL           = https://pzfohowzaeunywaqukwe.supabase.co
-#   SUPABASE_ANON_KEY      = eyJ...  (same anon key, used by health function)
-#   BREVO_API_KEY          = xkeysib-...  (Brevo API key — NOT the SMTP key)
+#   VITE_SUPABASE_URL      = https://qnueqhlxmtkvecppygrk.supabase.co
+#   VITE_SUPABASE_ANON_KEY = eyJ...  (anon/public key from new Supabase project)
+#   SUPABASE_URL           = https://qnueqhlxmtkvecppygrk.supabase.co
+#   SUPABASE_ANON_KEY      = eyJ...  (same anon key)
+#   BREVO_API_KEY          = xkeysib-...  (Brevo API key)
 #   MAIL_FROM_EMAIL        = noreply@sportbridge.online
 #   MAIL_FROM_NAME         = SportBridge
-# Do NOT put the actual key values in this file — it is committed to GitHub.
+#   SITE_URL               = https://sportbridge.online
+#   NOTIFY_SECRET          = (random secret string)
+# Do NOT put actual key values here — this file is committed to GitHub.
 
 [build]
   command = "cd frontend && npm ci && npm run build"
   publish = "frontend/dist"
 
 [build.environment]
-  VITE_SUPABASE_URL      = "https://pzfohowzaeunywaqukwe.supabase.co"
-  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6Zm9ob3d6YWV1bnl3YXF1a3dlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxNzQ0NTksImV4cCI6MjEwNTc1MDQ1OX0.kTcQgqGgB9Fgs9q_13PeQgzNxpuxH_foK8we5JrFZik"
+  VITE_SUPABASE_URL      = "https://qnueqhlxmtkvecppygrk.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFudWVxaGx4bXRrdmVjcHB5Z3JrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2NTgwNjcsImV4cCI6MjExMDIzNDA2N30.zH5_vV2buGNILYyg6Regk8eLo60-cIV66SdvCD6x9to"
   NODE_VERSION           = "22"
 
 [functions]
