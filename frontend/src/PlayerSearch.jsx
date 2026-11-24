@@ -372,7 +372,13 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
 
       {error ? (
         <div className="alert alert-danger" role="alert">
-          Could not load players: {error}
+          {error.toLowerCase().includes('permission denied') ? (
+            <>
+              Player search is blocked by Supabase permissions. Run <code>supabase/patch-player-search-permissions.sql</code> in the Supabase SQL Editor, then refresh.
+            </>
+          ) : (
+            <>Could not load players: {error}</>
+          )}
         </div>
       ) : loading ? (
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">

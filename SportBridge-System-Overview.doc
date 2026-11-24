@@ -1,0 +1,567 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 15">
+<meta name=Originator content="Microsoft Word 15">
+<!--[if gte mso 9]>
+<xml>
+  <w:WordDocument>
+    <w:View>Print</w:View>
+    <w:Zoom>100</w:Zoom>
+    <w:DoNotOptimizeForBrowser/>
+    <w:SpellingState>Clean</w:SpellingState>
+    <w:GrammarState>Clean</w:GrammarState>
+    <w:TrackMoves>false</w:TrackMoves>
+    <w:TrackFormatting/>
+    <w:ValidateAgainstSchemas/>
+    <w:SaveIfXMLInvalid>false</w:SaveIfXMLInvalid>
+    <w:IgnoreMixedContent>false</w:IgnoreMixedContent>
+    <w:AlwaysShowPlaceholderText>false</w:AlwaysShowPlaceholderText>
+    <w:DoNotPromoteQF/>
+    <w:LidThemeOther>EN-GB</w:LidThemeOther>
+    <w:LidThemeAsian>X-NONE</w:LidThemeAsian>
+    <w:LidThemeComplexScript>X-NONE</w:LidThemeComplexScript>
+    <w:Compatibility>
+      <w:BreakWrappedTables/>
+      <w:SnapToGridInCell/>
+      <w:WrapTextWithPunct/>
+      <w:UseAsianBreakRules/>
+      <w:DontGrowAutofit/>
+      <w:SplitPgBreakAndParaMark/>
+      <w:EnableOpenTypeKerning/>
+      <w:DontFlipMirrorIndents/>
+      <w:OverrideTableStyleHps/>
+    </w:Compatibility>
+  </w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+  /* ── Page Setup ── */
+  @page WordSection1 {
+    size: 595.3pt 841.9pt;       /* A4 */
+    margin: 72pt 57.6pt 72pt 57.6pt;
+    mso-header-margin: 35.4pt;
+    mso-footer-margin: 35.4pt;
+    mso-paper-source: 0;
+  }
+  div.WordSection1 { page: WordSection1; }
+
+  /* ── Base ── */
+  body {
+    font-family: Calibri, "Segoe UI", Arial, sans-serif;
+    font-size: 11pt;
+    color: #1a1a2e;
+    line-height: 1.5;
+    mso-default-font-size: 11pt;
+  }
+
+  /* ── Headings ── */
+  h1 {
+    font-family: Calibri, Arial, sans-serif;
+    font-size: 28pt;
+    font-weight: 700;
+    color: #0d2460;
+    margin-top: 0pt;
+    margin-bottom: 6pt;
+    border-bottom: 3pt solid #2F7DF0;
+    padding-bottom: 6pt;
+    mso-style-name: "Heading 1";
+    page-break-after: avoid;
+  }
+  h2 {
+    font-family: Calibri, Arial, sans-serif;
+    font-size: 16pt;
+    font-weight: 700;
+    color: #2F7DF0;
+    margin-top: 22pt;
+    margin-bottom: 6pt;
+    mso-style-name: "Heading 2";
+    page-break-after: avoid;
+  }
+  h3 {
+    font-family: Calibri, Arial, sans-serif;
+    font-size: 12pt;
+    font-weight: 700;
+    color: #1e3a5f;
+    margin-top: 14pt;
+    margin-bottom: 4pt;
+    mso-style-name: "Heading 3";
+    page-break-after: avoid;
+  }
+
+  /* ── Paragraphs ── */
+  p {
+    font-family: Calibri, Arial, sans-serif;
+    font-size: 11pt;
+    margin-top: 4pt;
+    margin-bottom: 4pt;
+    mso-style-name: Normal;
+  }
+  .tagline {
+    font-size: 13pt;
+    color: #475569;
+    font-style: italic;
+    margin-bottom: 16pt;
+  }
+  .footer-note {
+    font-size: 9pt;
+    color: #94a3b8;
+    margin-top: 24pt;
+    padding-top: 6pt;
+    border-top: 1pt solid #e2e8f0;
+    text-align: center;
+  }
+
+  /* ── Info Box ── */
+  .key-points {
+    background: #EFF6FF;
+    border-left: 4pt solid #2F7DF0;
+    padding: 8pt 14pt;
+    margin: 12pt 0 16pt 0;
+    mso-border-left-alt: solid #2F7DF0 4pt;
+    mso-background-source: auto;
+    mso-pattern: auto;
+  }
+  .key-points p {
+    margin: 3pt 0;
+    font-size: 10.5pt;
+    color: #1e3a5f;
+  }
+  .flow-box {
+    background: #fff8f0;
+    border: 1pt solid #fed7aa;
+    padding: 10pt 14pt;
+    margin: 10pt 0;
+    mso-background-source: auto;
+  }
+  .flow-box p {
+    margin: 4pt 0;
+    font-size: 10.5pt;
+  }
+
+  /* ── Divider ── */
+  hr.section-divider {
+    border: none;
+    border-top: 1.5pt solid #e2e8f0;
+    margin: 20pt 0 10pt;
+    mso-style-type: export-only;
+  }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10pt 0 16pt 0;
+    font-size: 10pt;
+    mso-table-lspace: 0pt;
+    mso-table-rspace: 0pt;
+  }
+  th {
+    background: #1e3a5f;
+    color: #ffffff;
+    padding: 7pt 9pt;
+    text-align: left;
+    font-size: 10pt;
+    font-weight: 700;
+    mso-background-source: auto;
+  }
+  td {
+    padding: 6pt 9pt;
+    border: 1pt solid #cbd5e1;
+    vertical-align: top;
+    font-size: 10pt;
+  }
+  tr.even td { background: #f8faff; }
+  .role-name { font-weight: 700; color: #1e3a5f; }
+  .subroles { font-size: 9pt; color: #64748b; font-style: italic; }
+  .limit { color: #dc3545; font-size: 9.5pt; }
+  .highlight {
+    background: #dbeafe;
+    padding: 1pt 3pt;
+  }
+  .warn { color: #b45309; font-size: 9.5pt; }
+</style>
+</head>
+<body>
+<div class="WordSection1">
+
+<!-- ═══════════════════ COVER ═══════════════════ -->
+<h1>SportBridge</h1>
+<p class="tagline">Verified Sports Talent Platform &mdash; Full System Overview</p>
+
+<div class="key-points">
+  <p>&#x1F512; <strong>All contact through secure inbox</strong> &mdash; no phone numbers or emails ever shown publicly</p>
+  <p>&#x2705; <strong>6 roles</strong> &nbsp;&#183;&nbsp; <strong>5 languages</strong> (EN / FR / PT / AR / ES) &nbsp;&#183;&nbsp; Verified badges (human-reviewed)</p>
+  <p>&#x1F4CD; Demo site: <strong>sportbridge.netlify.app</strong> &nbsp;&#183;&nbsp; Production: <strong>sportbridge.online</strong></p>
+</div>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ SECTION 1: ROLES ═══════════════════ -->
+<h2>1. User Roles &amp; All Capabilities</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:18%">Role</th>
+      <th style="width:57%">All Capabilities</th>
+      <th style="width:25%">Limits</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="role-name">&#x1F3C3; Player</span><br><span class="subroles">Free forever</span></td>
+      <td>
+        Public profile &middot; video &amp; CV upload &middot; match results (goals, assists, minutes) &middot;
+        upcoming matches &amp; tournaments &middot; achievements &amp; milestones &middot;
+        apply for jobs &middot; express interest in tryouts &middot;
+        <span class="highlight">access request management (approve/deny agents)</span> &middot;
+        Community Feed posts &middot; 30-min live sessions &middot;
+        secure inbox &middot; get verified (NIN or passport) &middot; report any profile
+      </td>
+      <td class="limit">
+        Live sessions max 30 min &middot;
+        Cannot post jobs or tryouts directly &middot;
+        Contact details only shown after player approves agent access
+      </td>
+    </tr>
+    <tr class="even">
+      <td><span class="role-name">&#x1F4CB; Coach / Manager</span><br><span class="subroles">35 sub-roles incl. Head Coach, Sporting Director, Technical Director, Fitness Coach, Goalkeeping Coach, U18/U23 Coach, Loan Manager and more</span></td>
+      <td>
+        Full coaching profile (preferred role from 35 options) &middot; badges &amp; licences &middot;
+        upload CV &middot; apply for coaching &amp; director jobs &middot;
+        <span class="highlight">recommend players to agents &amp; clubs</span> &middot;
+        <span class="highlight">recommend players with video / CV attached</span> &middot;
+        post upcoming events &amp; tournaments &middot;
+        post earned certificates (UEFA, CAF, FIFA, FA) &middot;
+        post tournament tryouts &middot; post match results &middot;
+        Community Feed &middot; secure inbox &middot; get verified &middot; report any profile
+      </td>
+      <td class="limit">
+        No direct player contact without player approval &middot;
+        Cannot modify player profiles &middot;
+        Paid tryouts go to admin review
+      </td>
+    </tr>
+    <tr>
+      <td><span class="role-name">&#x1F52D; Agent / Scout</span><br><span class="subroles">FIFA-verified agents &amp; scouts</span></td>
+      <td>
+        Agency profile (name, regions, specialisation) &middot; upload CV &middot;
+        <span class="highlight">search full player directory</span> (filter: position, age, region, nationality, foot) &middot;
+        <span class="highlight">player watchlist</span> &middot; send access requests to players &middot;
+        post Player Needed jobs &middot; post tryout opportunities &middot;
+        post upcoming events &amp; certificates &middot;
+        browse &amp; apply for agent / scout / director roles &middot;
+        receive player recommendations from coaches &amp; analysts &middot;
+        Community Feed &middot; secure inbox &middot; get verified (FIFA Agents ID) &middot; report any profile
+      </td>
+      <td class="limit">
+        Player contact only after player approval &middot;
+        Paid tryouts held for admin approval &middot;
+        Cannot edit player data
+      </td>
+    </tr>
+    <tr class="even">
+      <td><span class="role-name">&#x1F3DF;&#xFE0F; Academy / Club</span><br><span class="subroles">Verified clubs &amp; academies (CAC / FA registered)</span></td>
+      <td>
+        Club profile (country, address, year founded, sports) &middot;
+        <span class="highlight">squad roster management</span> (add players with admin-approved documents) &middot;
+        post Player Needed jobs &middot; post Staff Needed jobs &middot;
+        post match results with goals, assists &amp; scorers &middot;
+        post upcoming fixtures &amp; tournaments &middot; post player highlights &middot;
+        post free &amp; paid trials &middot;
+        <span class="highlight">recommend players with video / CV</span> &middot;
+        Community Feed &middot; secure inbox &middot; get verified (CAC / company registration) &middot; report any profile
+      </td>
+      <td class="limit">
+        Roster additions require admin review of identity + contract documents &middot;
+        Paid tryouts admin-reviewed &middot;
+        Cannot view player private CV without approval
+      </td>
+    </tr>
+    <tr>
+      <td><span class="role-name">&#x1F4CA; Sports Analyst</span><br><span class="subroles">7 specialisations: Performance &middot; Video &middot; Data &middot; Recruitment &middot; Tactical &middot; Opposition &middot; Head of Analysis</span></td>
+      <td>
+        Analyst profile (specialisation, tools: Wyscout, StatsBomb, Python, R) &middot;
+        upload CV &amp; analysis portfolio &middot;
+        <span class="highlight">apply for analyst roles</span> &middot;
+        <span class="highlight">find players in directory</span> &middot; recommend players &middot;
+        <span class="highlight">recommend players with video / CV</span> &middot;
+        post match analyses &amp; tactical reviews &middot;
+        post upcoming courses, workshops &amp; training &middot;
+        post earned certificates (Wyscout, StatsBomb IQ, UEFA Analysis) &middot;
+        share publications &amp; reports to Community Feed &middot;
+        secure inbox &middot; get verified &middot; report any profile
+      </td>
+      <td class="limit">
+        Same contact limits as Coach &middot;
+        Cannot post tryouts independently &middot;
+        No direct player contact without approval
+      </td>
+    </tr>
+    <tr class="even">
+      <td><span class="role-name">&#x1F6E1;&#xFE0F; Super Admin</span><br><span class="subroles">Full platform control</span></td>
+      <td>
+        View all accounts (search by name, email, role, location) &middot;
+        view role distribution &amp; staff roles breakdown &middot;
+        change any user&rsquo;s role &middot; suspend or restore any account &middot;
+        verification queue (approve / reject with notes) &middot;
+        reports &amp; disputes queue (investigate, confirm, dismiss) &middot;
+        3-party notifications on all outcomes &middot;
+        duplicate file detector (SHA-256) &middot;
+        fee-flagged tryout review &middot; view verification statistics &middot;
+        latest members with sub-roles shown
+      </td>
+      <td class="limit">
+        Cannot permanently delete accounts &middot;
+        Confirming scam sets account to &ldquo;denied&rdquo; &mdash; data and history preserved
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ SECTION 2: REPORTS ═══════════════════ -->
+<h2>2. Reports &amp; Disputes System</h2>
+
+<div class="flow-box">
+  <p><strong>Any user can report any other profile at any time.</strong></p>
+  <p>Five report reasons: Scam / Fraud &nbsp;&middot;&nbsp; Fake profile &nbsp;&middot;&nbsp; Harassment &nbsp;&middot;&nbsp; Inappropriate content &nbsp;&middot;&nbsp; Other</p>
+  <p><strong>Flow:</strong> User files report &rarr; Admin + reported user + reporter all notified &rarr; Admin investigates &rarr; Confirms scam (account denied) or Dismisses &rarr; All parties notified on outcome</p>
+  <p><em>Reporter identity is always kept confidential from the reported user.</em></p>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:22%">When</th>
+      <th style="width:28%">Who Gets Notified</th>
+      <th>Message</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Report filed</td><td>All Super Admins</td><td>New report filed against [name]: [reason]</td></tr>
+    <tr class="even"><td>Report filed</td><td>Reported user</td><td>A report has been filed against your profile and is under review</td></tr>
+    <tr><td>Report filed</td><td>Reporter</td><td>Your report has been received &mdash; review within 48 hours</td></tr>
+    <tr class="even"><td>Admin investigates</td><td>Reporter</td><td>Your report is now under active investigation</td></tr>
+    <tr><td>Scam confirmed</td><td>Reporter + Reported user</td><td>Account actioned / Your account has been actioned</td></tr>
+    <tr class="even"><td>Report dismissed</td><td>Reporter + Reported user</td><td>No action taken / Report dismissed &mdash; you are cleared</td></tr>
+  </tbody>
+</table>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ SECTION 3: RULES ═══════════════════ -->
+<h2>3. Platform Rules</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:35%">Rule</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>&#x1F6AB; No contact info in public fields</td>
+      <td>Phone numbers and email addresses are automatically blocked in all public text fields (bio, achievements, captions, match updates)</td>
+    </tr>
+    <tr class="even">
+      <td>&#x1F4EC; All contact via secure inbox</td>
+      <td>No phone numbers or emails ever shown anywhere. Every interaction goes through the platform inbox.</td>
+    </tr>
+    <tr>
+      <td>&#x1F4B3; No payment requests</td>
+      <td>Agents and scouts cannot charge players. Requests flagged automatically and sent to admin review.</td>
+    </tr>
+    <tr class="even">
+      <td>&#x2705; Verified badge = human reviewed</td>
+      <td>Badges are not automatic. An admin reviews and approves all submitted identity and licence documents.</td>
+    </tr>
+    <tr>
+      <td>&#x1F4B0; Paid tryouts admin-reviewed</td>
+      <td>All fee-bearing tryout posts are held in admin moderation queue before going live on the platform.</td>
+    </tr>
+    <tr class="even">
+      <td>&#x1F3AC; Full-match video required</td>
+      <td>Players must upload at least one video classified as &ldquo;Full Match&rdquo; before verification can be approved.</td>
+    </tr>
+    <tr>
+      <td>&#x1F510; Password minimum 12 characters</td>
+      <td>Enforced at registration. Auth errors do not distinguish unknown accounts from wrong passwords.</td>
+    </tr>
+    <tr class="even">
+      <td>&#x1F4C1; SHA-256 duplicate detection</td>
+      <td>Duplicate file uploads are flagged automatically and visible to the admin in the Duplicates tab.</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ SECTION 4: STACK ═══════════════════ -->
+<h2>4. Technical Stack</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:20%">Layer</th>
+      <th style="width:35%">Technology</th>
+      <th>Responsibility</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Frontend</td><td>React 19, Vite 8, Bootstrap 5</td><td>All UI &mdash; dashboards, profiles, search, feed</td></tr>
+    <tr class="even"><td>Database</td><td>Supabase PostgreSQL</td><td>Profiles, players, clubs, jobs, reports, notifications</td></tr>
+    <tr><td>Auth</td><td>Supabase Auth + Brevo SMTP</td><td>Registration, sign-in, email confirmation</td></tr>
+    <tr class="even"><td>Authorization</td><td>Row-Level Security (RLS)</td><td>Ownership, role permissions, admin-only access</td></tr>
+    <tr><td>File Storage</td><td>Supabase Storage</td><td>Videos, CVs, photos, identity documents</td></tr>
+    <tr class="even"><td>Hosting</td><td>Netlify</td><td>Demo site (sportbridge.netlify.app)</td></tr>
+    <tr><td>Languages</td><td>English, Fran&ccedil;ais, Portugu&ecirc;s, &#x0627;&#x0644;&#x0639;&#x0631;&#x0628;&#x064A;&#x0629;, Espa&ntilde;ol</td><td>Full interface translation incl. RTL for Arabic</td></tr>
+    <tr class="even"><td>Deployment</td><td>GitHub Actions CI/CD</td><td>Automated build &amp; deploy on every push to main</td></tr>
+  </tbody>
+</table>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ SECTION 5: DEMO ACCOUNTS ═══════════════════ -->
+<h2>5. Demo Accounts</h2>
+
+<p><strong>Password for all demo accounts:</strong> <span class="highlight">Demo@SportBridge1!</span></p>
+<p><strong>Admin password:</strong> <span class="highlight">SportBridge2026!</span></p>
+
+<br>
+<table>
+  <thead>
+    <tr>
+      <th style="width:30%">Role</th>
+      <th style="width:45%">Email</th>
+      <th>Password</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Super Admin</td><td>sportbridge.com.ng@gmail.com</td><td>SportBridge2026!</td></tr>
+    <tr class="even"><td>Head Coach (Brazil)</td><td>carlos.mendes@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Sporting Director (Spain)</td><td>javier.morales@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Assistant Coach (Italy)</td><td>marco.rossi@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>First Team Manager (Turkey)</td><td>emre.demir@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>S&amp;C Coach (Australia)</td><td>sarah.mitchell@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Head Coach (Serbia)</td><td>nemanja.petrovic@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Performance Analyst (France)</td><td>sophie.laurent@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Video Analyst (England)</td><td>james.clarke@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Data Analyst (Japan)</td><td>hiroshi.nakamura@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Recruitment Analyst (USA)</td><td>alicia.washington@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Agent (Germany)</td><td>scouting@global-talent.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Agent (Argentina)</td><td>contact@sabridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Agent (UAE)</td><td>info@desertsports.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Agent (Netherlands)</td><td>scout@ajaxnetwork.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Agent (Ivory Coast)</td><td>info@wascouts.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Academy / Club (England)</td><td>admin@elitelondonfc.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Academy / Club (France)</td><td>info@academie-paris.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Academy / Club (Ghana)</td><td>contact@ghanafinstitute.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Academy / Club (Portugal)</td><td>academy@sportinglisboa.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Academy / Club (Nigeria)</td><td>admin@riversunited.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (England)</td><td>marcus.thompson@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (Brazil)</td><td>gabriel.santos@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (France)</td><td>antoine.dubois@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (Germany)</td><td>lukas.muller@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (Ghana)</td><td>kwame.asante@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (Morocco)</td><td>yassine.benali@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (Argentina)</td><td>alejandro.rios@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (Senegal)</td><td>moussa.diallo@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (Japan)</td><td>kenji.tanaka@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (South Korea)</td><td>jiho.park@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (Spain)</td><td>diego.hernandez@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (USA)</td><td>tyler.jackson@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (Nigeria)</td><td>femi.adeyemi@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (Ukraine)</td><td>ivan.petrenko@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (Algeria)</td><td>nabil.amrani@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (Mexico)</td><td>edson.reyes@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (Serbia)</td><td>aleksander.jovic@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (Egypt)</td><td>omar.elshenawy@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (Ivory Coast)</td><td>koffi.kouassi@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (Norway)</td><td>lars.odegaard@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (Portugal)</td><td>joao.costa@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (Iran)</td><td>amir.shafiei@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (Ghana)</td><td>bernard.owusu@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (Colombia)</td><td>roberto.nunez@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (Japan)</td><td>takehiro.sato@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (Nigeria)</td><td>chukwuemeka.okafor@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr class="even"><td>Player (Ukraine)</td><td>vladislav.koval@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+    <tr><td>Player (Greece)</td><td>christos.papadopoulos@sportbridge.demo</td><td>Demo@SportBridge1!</td></tr>
+  </tbody>
+</table>
+
+<p class="warn">&#x26A0;&#xFE0F; Run <strong>supabase/fix-roles.sql</strong> &rarr; <strong>supabase/seed.sql</strong> &rarr; <strong>supabase/patch-profile-badges.sql</strong> in Supabase SQL Editor to activate all demo accounts.</p>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ SECTION 6: MEMBERS DIRECTORY ═══════════════════ -->
+<h2>6. Members Directory</h2>
+
+<p>The Members Directory allows any logged-in user to browse and discover verified professionals across four categories:</p>
+
+<table>
+  <thead>
+    <tr><th style="width:20%">Tab</th><th>Who Is Shown</th><th>Profile Contains</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>&#x1F4CB; Coaches</td><td>All public coach profiles</td><td>Name, preferred role, nationality, experience, current club, UEFA/CAF licences, open to work status</td></tr>
+    <tr class="even"><td>&#x1F52D; Agents</td><td>All public agent profiles</td><td>Agency name, regions covered, experience, nationalities, about &amp; achievements</td></tr>
+    <tr><td>&#x1F3DF;&#xFE0F; Clubs</td><td>All public clubs &amp; academies</td><td>Club name, country, year founded, sports, verified badge status</td></tr>
+    <tr class="even"><td>&#x1F4CA; Analysts</td><td>All public sports analyst profiles</td><td>Name, specialisation, tools used, open-to-work status, certifications</td></tr>
+  </tbody>
+</table>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ SECTION 7: VERIFICATION ═══════════════════ -->
+<h2>7. Verification Process</h2>
+
+<table>
+  <thead>
+    <tr><th style="width:20%">Role</th><th>Documents Required</th><th>Admin Action</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Player</td><td>NIN or passport (clear photo)</td><td>Review &rarr; Approve/Reject with notes</td></tr>
+    <tr class="even"><td>Coach</td><td>Licence certificates (UEFA/CAF/FA/FIFA)</td><td>Review &rarr; Approve/Reject with notes</td></tr>
+    <tr><td>Agent</td><td>FIFA Agents licence or national equivalent</td><td>Review &rarr; Approve/Reject with notes</td></tr>
+    <tr class="even"><td>Academy / Club</td><td>CAC registration or FA club licence</td><td>Review &rarr; Approve/Reject with notes</td></tr>
+    <tr><td>Sports Analyst</td><td>University degree or professional certificate</td><td>Review &rarr; Approve/Reject with notes</td></tr>
+  </tbody>
+</table>
+
+<p>All approved accounts receive a blue verified badge &#x2705; visible on their public profile and in the Members Directory. Verification is not automatic &mdash; an admin must review and approve every submission.</p>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ SECTION 8: LANGUAGES ═══════════════════ -->
+<h2>8. Languages &amp; Localisation</h2>
+
+<table>
+  <thead>
+    <tr><th>Language</th><th>Code</th><th>Direction</th><th>Coverage</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>English</td><td>en</td><td>LTR</td><td>Full (default)</td></tr>
+    <tr class="even"><td>Fran&ccedil;ais (French)</td><td>fr</td><td>LTR</td><td>Full</td></tr>
+    <tr><td>Portugu&ecirc;s (Portuguese)</td><td>pt</td><td>LTR</td><td>Full</td></tr>
+    <tr class="even"><td>&#x0627;&#x0644;&#x0639;&#x0631;&#x0628;&#x064A;&#x0629; (Arabic)</td><td>ar</td><td>RTL</td><td>Full (RTL layout)</td></tr>
+    <tr><td>Espa&ntilde;ol (Spanish)</td><td>es</td><td>LTR</td><td>Full</td></tr>
+  </tbody>
+</table>
+
+<p>The language selector is shown in the top navigation bar on every page. Selected language persists across sessions via localStorage. All dashboard tabs, form labels, error messages, notifications and role descriptions are translated.</p>
+
+<div class="footer-note">
+  SportBridge &nbsp;&middot;&nbsp; Verified Sports Talent Platform &nbsp;&middot;&nbsp; Confidential System Overview Document &nbsp;&middot;&nbsp; &copy; 2026
+</div>
+
+</div><!-- WordSection1 -->
+</body>
+</html>

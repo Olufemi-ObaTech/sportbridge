@@ -277,7 +277,7 @@ export default function PlayerProfile({ playerId, supabase, user, onBack, onSign
               <div className="flex-grow-1 min-w-0">
                 <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
                   <h1 className="h3 fw-bold mb-0" style={{ color: 'var(--fc-blue-700)' }}>{fullName}</h1>
-                  <VerifiedBadge status={vsStatus} role={profile?.role} label={profile?.verification_badge} className="px-2 py-1" />
+                  <VerifiedBadge status={vsStatus} role={profile?.role} label={profile?.verification_badge} userId={profile?.id} showId={vsStatus === 'verified'} className="px-2 py-1" />
                 </div>
                 <div className="d-flex flex-wrap gap-2 mb-3">
                   <AvailabilityBadge availability={player.availability} />

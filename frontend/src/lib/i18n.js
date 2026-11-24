@@ -1227,4 +1227,30 @@ export function observeLocalization(root, language) {
   ['Opening conversation…',         'Ouverture de la conversation…',     'A abrir conversa…',              'جارٍ فتح المحادثة…',                 'Abriendo conversación…'],
   ['Write a message…',              'Écrire un message…',                'Escrever uma mensagem…',          'اكتب رسالة…',                       'Escribe un mensaje…'],
   ['Never share personal details — use verified profiles to arrange meetings.', 'Ne partagez jamais vos coordonnées personnelles.', 'Nunca partilhe dados pessoais — use perfis verificados.', 'لا تشارك بياناتك الشخصية — استخدم الملفات الموثّقة.', 'Nunca compartas datos personales — usa perfiles verificados.'],
+
+  // ── Verification ID + Member status ──
+  ['Verified Player',               'Joueur vérifié',                    'Jogador verificado',              'لاعب موثّق',                        'Jugador verificado'],
+  ['Verified Coach',                'Entraîneur vérifié',                'Treinador verificado',            'مدرب موثّق',                        'Entrenador verificado'],
+  ['Verified Agent',                'Agent vérifié',                     'Agente verificado',               'وكيل موثّق',                        'Agente verificado'],
+  ['Verified Club / Academy',       'Club / académie vérifié(e)',        'Clube / academia verificado',     'نادٍ / أكاديمية موثّقة',            'Club / academia verificado'],
+  ['Verified Sports Analyst',       'Analyste sportif vérifié',          'Analista desportivo verificado',  'محلل رياضي موثّق',                  'Analista deportivo verificado'],
+  ['Verified Member',               'Membre vérifié',                    'Membro verificado',               'عضو موثّق',                         'Miembro verificado'],
+  ['SportBridge Admin',             'Admin SportBridge',                 'Admin SportBridge',               'مسؤول SportBridge',                 'Admin SportBridge'],
+  ['VERIFICATION ID',               'ID DE VÉRIFICATION',                'ID DE VERIFICAÇÃO',               'رقم التحقق',                        'ID DE VERIFICACIÓN'],
+  ['Member since',                  'Membre depuis',                     'Membro desde',                    'عضو منذ',                           'Miembro desde'],
+  ['Verification Pending',          'Vérification en attente',           'Verificação pendente',            'التحقق معلّق',                      'Verificación pendiente'],
+  ['Verification Rejected',         'Vérification rejetée',              'Verificação rejeitada',           'تم رفض التحقق',                     'Verificación rechazada'],
+  ['Unverified',                    'Non vérifié',                       'Não verificado',                  'غير موثّق',                         'No verificado'],
+  ['Our team is reviewing your documents. You\'ll be notified within 48 hours.', 'Notre équipe examine vos documents. Vous serez notifié sous 48 heures.', 'A nossa equipa está a rever os seus documentos. Será notificado em 48 horas.', 'فريقنا يراجع مس��نداتك. ستُبلَّغ خلال 48 ساعة.', 'Nuestro equipo está revisando tus documentos. Te notificaremos en 48 horas.'],
+
+  // ── Dashboard header + account ──
+  ['SportBridge account',           'Compte SportBridge',                'Conta SportBridge',               'حساب SportBridge',                  'Cuenta SportBridge'],
+  ['Admin Control Panel',           'Panneau de contrôle admin',         'Painel de controlo admin',        'لوحة تحكم المسؤول',                 'Panel de control de administrador'],
+  ['Back to home',                  'Retour à l\'accueil',               'Voltar ao início',                'العودة إلى الرئيسية',               'Volver al inicio'],
+  ['Dashboard',                     'Tableau de bord',                   'Painel',                          'لوحة التحكم',                       'Panel'],
+  ['Notifications',                 'Notifications',                     'Notificações',                    'الإشعارات',                         'Notificaciones'],
+  ['Inbox',                         'Boîte de réception',                'Caixa de entrada',                'الوارد',                            'Bandeja de entrada'],
+  ['Profile completeness',          'Complétude du profil',              'Completude do perfil',            'اكتمال الملف الشخصي',               'Perfil completado'],
+  ['Strong profile',                'Profil solide',                     'Perfil sólido',                   'ملف شخصي قوي',                      'Perfil sólido'],
+  ['Add more details to improve visibility', 'Ajoutez plus de détails pour améliorer la visibilité', 'Adicione mais detalhes para melhorar a visibilidade', 'أضف تفاصيل لتحسين ظهورك', 'Añade más detalles para mejorar la visibilidad'],
 ].forEach(([en, fr, pt, ar, es]) => { catalog[en] = { fr, pt, ar, es } })

@@ -409,4 +409,4 @@ union all select
 union all select
   'admin confirmed',                  exists(select 1 from public.profiles where email='sportbridge.com.ng@gmail.com' and role='super_admin')
 union all select
-  'demo accounts confirmed',          (select count(*)::text from auth.users where email_confirmed_at is not null and (email like '%@sportbridge.demo' or email like '%@elitelondonfc.demo')) || ' confirmed';
+  'demo accounts confirmed',          (select count(*) > 0 from auth.users where email_confirmed_at is not null and (email like '%@sportbridge.demo' or email like '%@elitelondonfc.demo'));

@@ -11,6 +11,7 @@ import VerifyForm, { CvOnlyForm } from './VerifyForm.jsx'
 import { blockContactInfo } from './lib/uploadGuards'
 import { FOOTBALL_POSITIONS, REGIONS, STAFF_ROLES } from './lib/features'
 import { sendNotification } from './lib/notify'
+import { generateVerificationId } from './lib/verificationId'
 // ——— constants ————————————————————————————————————————————————————————————————
 
 const ROLE_LABELS = {
@@ -186,11 +187,70 @@ function completenessScore(profile, roleData) {
   return Math.round((checks.filter(Boolean).length / checks.length) * 100)
 }
 
+// ── Verification Status Card — shown on all verified dashboards ──────────────
+function VerificationStatusCard({ profile, user }) {
+  const isVerified = profile?.verification_status === 'verified'
+  const isPending  = profile?.verification_status === 'pending'
+  if (!isVerified && !isPending) return null
+
+  const verifId   = generateVerificationId(user?.id)
+  const memberSince = profile?.created_at
+    ? new Date(profile.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null
+
+  const ROLE_LABELS_VERIF = {
+    player:         'Verified Player',
+    coach:          'Verified Coach',
+    agent:          'Verified Agent',
+    academy:        'Verified Club / Academy',
+    sports_analyst: 'Verified Sports Analyst',
+    super_admin:    'SportBridge Admin',
+  }
+
+  if (isPending) {
+    return (
+      <div className="card p-4 mb-4 d-flex flex-row align-items-center gap-3"
+        style={{ background: 'rgba(245,179,1,.06)', border: '1.5px solid rgba(245,179,1,.35)', borderRadius: 12 }}>
+        <i className="bi bi-hourglass-split flex-shrink-0" style={{ fontSize: 28, color: '#F5B301' }} />
+        <div>
+          <div className="fw-bold" style={{ color: '#b45309' }}>Verification Pending</div>
+          <div className="small text-muted">Our team is reviewing your documents. You'll be notified within 48 hours.</div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="card p-4 mb-4"
+      style={{ background: 'linear-gradient(135deg,#198754,#20c997)', border: 'none', borderRadius: 12, color: '#fff' }}>
+      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div className="d-flex align-items-center gap-3">
+          <div className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+            style={{ width: 52, height: 52, background: 'rgba(255,255,255,.2)' }}>
+            <i className="bi bi-patch-check-fill" style={{ fontSize: 26 }} />
+          </div>
+          <div>
+            <div className="fw-bold" style={{ fontSize: 16 }}>
+              {ROLE_LABELS_VERIF[profile?.role] ?? 'Verified Member'}
+            </div>
+            {memberSince && (
+              <div style={{ fontSize: 12, opacity: .85 }}>Member since {memberSince}</div>
+            )}
+          </div>
+        </div>
+        <div className="text-end">
+          <div style={{ fontSize: 11, opacity: .75, letterSpacing: 1 }}>VERIFICATION ID</div>
+          <div className="fw-bold font-monospace" style={{ fontSize: 18, letterSpacing: 2 }}>{verifId}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function CompletenessBar({ score }) {
   const colour = score >= 80 ? '#198754' : score >= 50 ? '#f5b301' : '#dc3545'
   return (
-    <div className="mb-4">
-      <div className="d-flex justify-content-between align-items-center mb-1">
+    <div className="mb-4">      <div className="d-flex justify-content-between align-items-center mb-1">
         <span className="small fw-semibold">Profile completeness</span>
         <span className="small fw-bold" style={{ color: colour }}>{score}%</span>
       </div>
@@ -471,6 +531,9 @@ function PlayerDashboard({ supabase, user, profile }) {
   return (
     <>
       <CompletenessBar score={score} />
+
+      {/* Verification Status Card */}
+      <VerificationStatusCard profile={profile} user={user} />
 
       <div className="row g-3 mb-4">
         <StatCard icon="bi-eye"           label="Profile views"   value={player?.views_count ?? 0}  colour="var(--fc-gradient-primary)" />
@@ -923,6 +986,8 @@ function CoachDashboard({ supabase, user, profile }) {
   return (
     <>
       <CompletenessBar score={completenessScore(profile, draft)} />
+      {/* Verification Status Card */}
+      <VerificationStatusCard profile={profile} user={user} />
       <div className="row g-3 mb-4">
         <StatCard icon="bi-briefcase" label="Applications sent" value="—" colour="var(--fc-gradient-primary)" />
         <StatCard icon="bi-star"      label="Shortlisted"        value="—" colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
@@ -1211,6 +1276,8 @@ function AgentDashboard({ supabase, user, profile }) {
 
   return (
     <>
+      {/* Verification Status Card */}
+      <VerificationStatusCard profile={profile} user={user} />
       <div className="row g-3 mb-4">
         <StatCard icon="bi-bookmark-star"   label="Watchlisted players"  value={watchlistCount ?? '—'} colour="var(--fc-gradient-primary)" />
         <StatCard icon="bi-shield-check"    label="Access granted"       value="—"                     colour="linear-gradient(135deg,#198754,#20c997)" />
@@ -1450,6 +1517,8 @@ function AcademyDashboard({ supabase, user, profile }) {
   return (
     <>
       <CompletenessBar score={completenessScore(profile, { ...draft, bio: draft?.about })} />
+      {/* Verification Status Card */}
+      <VerificationStatusCard profile={profile} user={user} />
       <div className="row g-3 mb-4">
         <StatCard icon="bi-people"         label="Players"         value={stats.players ?? '—'} colour="var(--fc-gradient-primary)" />
         <StatCard icon="bi-briefcase"      label="Active jobs"     value={stats.jobs    ?? '—'} colour="var(--fc-gradient-gold)" />
@@ -1745,6 +1814,8 @@ function SportsAnalystDashboard({ supabase, user, profile }) {
   return (
     <>
       <CompletenessBar score={completenessScore(profile, draft)} />
+      {/* Verification Status Card */}
+      <VerificationStatusCard profile={profile} user={user} />
       <div className="row g-3 mb-4">
         <StatCard icon="bi-graph-up-arrow" label="Reports filed"     value="—" colour="var(--fc-gradient-primary)" />
         <StatCard icon="bi-camera-video"   label="Clips analysed"    value="—" colour="linear-gradient(135deg,#6f42c1,#9d63e8)" />
