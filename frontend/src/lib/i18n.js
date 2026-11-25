@@ -1254,3 +1254,22 @@ export function observeLocalization(root, language) {
   ['Strong profile',                'Profil solide',                     'Perfil sólido',                   'ملف شخصي قوي',                      'Perfil sólido'],
   ['Add more details to improve visibility', 'Ajoutez plus de détails pour améliorer la visibilité', 'Adicione mais detalhes para melhorar a visibilidade', 'أضف تفاصيل لتحسين ظهورك', 'Añade más detalles para mejorar la visibilidad'],
 ].forEach(([en, fr, pt, ar, es]) => { catalog[en] = { fr, pt, ar, es } })
+
+// ── Welcome back + verification queue strings ──
+;[
+  ['Welcome back — Go to Dashboard', 'Bon retour — Aller au tableau de bord', 'Bem-vindo de volta — Ir ao painel', 'مرحباً بعودتك — اذهب إلى لوحة التحكم', 'Bienvenido de nuevo — Ir al panel'],
+  ['Create Player Profile',          'Créer un profil joueur',               'Criar perfil de jogador',          'إنشاء ملف لاعب',                           'Crear perfil de jugador'],
+  ['Find Players',                   'Trouver des joueurs',                  'Encontrar jogadores',              'ابحث عن لاعبين',                           'Buscar jugadores'],
+  ['Verification Queue',             'File de vérification',                 'Fila de verificação',              'قائمة التحقق',                              'Cola de verificación'],
+  ['Approve & Verify',               'Approuver et vérifier',                'Aprovar e verificar',              'الموافقة والتحقق',                          'Aprobar y verificar'],
+  ['Reject',                         'Rejeter',                              'Rejeitar',                         'رفض',                                       'Rechazar'],
+  ['Pending Review',                 'En attente de révision',               'Pendente de revisão',              'قيد المراجعة',                              'Pendiente de revisión'],
+  ['All clear!',                     'Tout est en ordre !',                  'Tudo limpo!',                      'كل شيء على ما يرام!',                       '¡Todo despejado!'],
+  ['No pending verification requests.', 'Aucune demande de vérification en attente.', 'Nenhum pedido de verificação pendente.', 'لا توجد طلبات تحقق معلّقة.', 'No hay solicitudes de verificación pendientes.'],
+  ['Admin note',                     'Note admin',                           'Nota do admin',                   'ملاحظة المسؤول',                            'Nota del administrador'],
+  ['Reason for approval or rejection…', 'Raison d\'approbation ou de rejet…', 'Motivo de aprovação ou rejeição…', 'سبب الموافقة أو الرفض…', 'Motivo de aprobación o rechazo…'],
+  ['Refresh',                        'Actualiser',                           'Atualizar',                        'تحديث',                                     'Actualizar'],
+  ['pending',                        'en attente',                           'pendente',                         'معلّق',                                     'pendiente'],
+  ['verified',                       'vérifié',                              'verificado',                       'موثّق',                                     'verificado'],
+  ['rejected',                       'rejeté',                               'rejeitado',                        'مرفوض',                                     'rechazado'],
+].forEach(([en, fr, pt, ar, es]) => { catalog[en] = { fr, pt, ar, es } })

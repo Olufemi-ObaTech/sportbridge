@@ -1288,16 +1288,33 @@ function App() {
                       ))}
                     </div>
 
-                    {/* CTAs */}
+                    {/* CTAs — different for logged-in vs guest */}
                     <div className="d-flex flex-wrap gap-2 mt-4 fc-animate-in fc-delay-3">
-                      <button type="button" className="btn btn-secondary btn-lg" onClick={() => openSignup('player')}>
-                        <i className="bi bi-person-plus me-2" aria-hidden="true" />
-                        Create Player Profile
-                      </button>
-                      <a href="#players" className="btn btn-outline-light btn-lg">
-                        <i className="bi bi-search me-2" aria-hidden="true" />
-                        Find Players
-                      </a>
+                      {user ? (
+                        <>
+                          <button type="button" className="btn btn-warning fw-bold btn-lg px-4 d-flex align-items-center gap-2"
+                            style={{ color: '#071a3d' }}
+                            onClick={() => { setView('dashboard'); window.scrollTo(0, 0) }}>
+                            <i className="bi bi-grid-1x2-fill me-1" aria-hidden="true" />
+                            Welcome back — Go to Dashboard
+                          </button>
+                          <a href="#players" className="btn btn-outline-light btn-lg">
+                            <i className="bi bi-search me-2" aria-hidden="true" />
+                            Find Players
+                          </a>
+                        </>
+                      ) : (
+                        <>
+                          <button type="button" className="btn btn-secondary btn-lg" onClick={() => openSignup('player')}>
+                            <i className="bi bi-person-plus me-2" aria-hidden="true" />
+                            Create Player Profile
+                          </button>
+                          <a href="#players" className="btn btn-outline-light btn-lg">
+                            <i className="bi bi-search me-2" aria-hidden="true" />
+                            Find Players
+                          </a>
+                        </>
+                      )}
                     </div>
 
                     {/* Stats */}

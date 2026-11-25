@@ -2249,15 +2249,32 @@ function AdminDashboard({ supabase, user }) {
         .then(({ data }) => setFlagged(data ?? []))
     }
     if (activeTab === 'verification' && verifQueue.length === 0) {
+      // Fetch verification_requests flat (no FK join — avoids PostgREST schema cache errors)
+      // then enrich with profile data in JS
       supabase.from('verification_requests')
-        .select('id, user_id, role, nin_number, status, submitted_at, reviewer_notes, profiles!inner(email, full_name)')
-        .eq('status', 'pending').order('submitted_at', { ascending: true }).limit(100)
-        .then(({ data }) => setVerifQueue(data ?? []))
+        .select('id, user_id, role, nin_number, passport_number, status, submitted_at, reviewer_notes, id_document_path, release_letter_path, cv_path')
+        .eq('status', 'pending')
+        .order('submitted_at', { ascending: true })
+        .limit(100)
+        .then(async ({ data: reqs, error: rErr }) => {
+          if (rErr || !reqs?.length) { setVerifQueue([]); return }
+          // Fetch profiles for all user_ids
+          const uids = [...new Set(reqs.map(r => r.user_id).filter(Boolean))]
+          const { data: profRows } = await supabase.from('profiles')
+            .select('id, email, full_name').in('id', uids)
+          const profMap = Object.fromEntries((profRows ?? []).map(p => [p.id, p]))
+          setVerifQueue(reqs.map(r => ({
+            ...r,
+            profiles: profMap[r.user_id] ?? { email: r.user_id, full_name: 'Unknown' }
+          })))
+        })
     }
     if (activeTab === 'reports' && reportQueue.length === 0) {
       loadReports()
     }
   }, [activeTab, supabase, loadReports, duplicates.length, flagged.length, verifQueue.length, reportQueue.length, profilesLoaded])
+
+  const refreshVerifQueue = () => { setVerifQueue([]); }
 
   const approveOpp = async (id) => {
     await supabase.from('opportunities').update({ status: 'open', is_fee_flagged: false }).eq('id', id)
@@ -2271,43 +2288,104 @@ function AdminDashboard({ supabase, user }) {
   const approveVerif = async (req) => {
     setSaving(true); setError(''); setNotice('')
     const note = verifNote[req.id] ?? ''
-    await supabase.from('verification_requests').update({ status: 'approved', reviewer_id: user.id, reviewer_notes: note, reviewed_at: new Date().toISOString() }).eq('id', req.id)
-    await supabase.from('profiles').update({ verification_status: 'verified' }).eq('id', req.user_id)
+    // 1. Mark request approved
+    await supabase.from('verification_requests').update({
+      status: 'approved', reviewer_id: user.id,
+      reviewer_notes: note, reviewed_at: new Date().toISOString()
+    }).eq('id', req.id)
+    // 2. Set profile as verified
+    await supabase.from('profiles').update({
+      verification_status: 'verified', updated_at: new Date().toISOString()
+    }).eq('id', req.user_id)
+    // 3. For agents — set verified_badge on agent_profiles
     if (req.role === 'agent') {
       const { data: ap } = await supabase.from('agent_profiles').select('id').eq('user_id', req.user_id).maybeSingle()
       if (ap) await supabase.from('agent_profiles').update({ verified_badge: true }).eq('id', ap.id)
     }
+    // 4. For academies — set verified_badge on clubs
     if (req.role === 'academy') {
       const { data: cl } = await supabase.from('clubs').select('id').eq('owner_id', req.user_id).maybeSingle()
       if (cl) await supabase.from('clubs').update({ verified_badge: true }).eq('id', cl.id)
     }
+    // 5. Send inbox notification to user
+    try {
+      let { data: conv } = await supabase.from('conversations')
+        .select('id').or(`and(initiator_id.eq.${user.id},recipient_id.eq.${req.user_id}),and(initiator_id.eq.${req.user_id},recipient_id.eq.${user.id})`)
+        .maybeSingle()
+      if (!conv) {
+        const { data: nc } = await supabase.from('conversations').insert({
+          initiator_id: user.id, recipient_id: req.user_id,
+          subject: 'Your SportBridge verification is approved ✓',
+          last_message_at: new Date().toISOString(),
+        }).select('id').single()
+        conv = nc
+      }
+      if (conv?.id) {
+        await supabase.from('messages').insert({
+          conversation_id: conv.id, sender_id: user.id,
+          content: `🎉 Congratulations! Your SportBridge ${req.role} verification has been approved. Your Verified ✓ badge is now live on your profile. Welcome to the verified community!${note ? `\n\nAdmin note: ${note}` : ''}`
+        })
+        await supabase.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', conv.id)
+      }
+    } catch { /* non-critical */ }
+    // 6. Push notification
+    await supabase.from('notifications').insert({
+      user_id: req.user_id, notification_type: 'verification_approved',
+      data: { message: `Your ${req.role} verification has been approved! Your Verified ✓ badge is now live.` }
+    }).then(() => {})
+    // 7. Email notification
+    sendNotification('verification_approved', { to: req.profiles?.email, name: req.profiles?.full_name })
+    // 8. Update UI
     setVerifQueue((q) => q.filter((r) => r.id !== req.id))
     setUsers((u) => u.map((row) => row.id === req.user_id ? { ...row, verification_status: 'verified' } : row))
-    setSaving(false); setNotice(`Verified: ${req.profiles?.email}`)
-    // Send email notification
-    if (req.profiles?.email) {
-      sendNotification('verification_approved', {
-        to:   req.profiles.email,
-        name: req.profiles.full_name,
-      })
-    }
+    setSaving(false)
+    setNotice(`✅ Verified: ${req.profiles?.full_name || req.profiles?.email} — inbox message sent.`)
   }
 
   const rejectVerif = async (req) => {
     setSaving(true); setError(''); setNotice('')
-    const note = verifNote[req.id] ?? 'Verification rejected by admin.'
-    await supabase.from('verification_requests').update({ status: 'rejected', reviewer_id: user.id, reviewer_notes: note, reviewed_at: new Date().toISOString() }).eq('id', req.id)
-    await supabase.from('profiles').update({ verification_status: 'rejected' }).eq('id', req.user_id)
+    const note = verifNote[req.id] ?? 'Your documents could not be verified at this time.'
+    // 1. Mark request rejected
+    await supabase.from('verification_requests').update({
+      status: 'rejected', reviewer_id: user.id,
+      reviewer_notes: note, reviewed_at: new Date().toISOString()
+    }).eq('id', req.id)
+    // 2. Set profile status
+    await supabase.from('profiles').update({
+      verification_status: 'rejected', updated_at: new Date().toISOString()
+    }).eq('id', req.user_id)
+    // 3. Send inbox message
+    try {
+      let { data: conv } = await supabase.from('conversations')
+        .select('id').or(`and(initiator_id.eq.${user.id},recipient_id.eq.${req.user_id}),and(initiator_id.eq.${req.user_id},recipient_id.eq.${user.id})`)
+        .maybeSingle()
+      if (!conv) {
+        const { data: nc } = await supabase.from('conversations').insert({
+          initiator_id: user.id, recipient_id: req.user_id,
+          subject: 'SportBridge verification — action needed',
+          last_message_at: new Date().toISOString(),
+        }).select('id').single()
+        conv = nc
+      }
+      if (conv?.id) {
+        await supabase.from('messages').insert({
+          conversation_id: conv.id, sender_id: user.id,
+          content: `Your SportBridge ${req.role} verification submission could not be approved at this time.\n\nReason: ${note}\n\nPlease review the notes above and re-submit with the correct documents from your dashboard → Get Verified tab.`
+        })
+        await supabase.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', conv.id)
+      }
+    } catch { /* non-critical */ }
+    // 4. Push notification
+    await supabase.from('notifications').insert({
+      user_id: req.user_id, notification_type: 'verification_rejected',
+      data: { message: `Your verification submission needs attention. Check your inbox for details.` }
+    }).then(() => {})
+    // 5. Email notification
+    sendNotification('verification_rejected', { to: req.profiles?.email, name: req.profiles?.full_name, data: { reason: note } })
+    // 6. Update UI
     setVerifQueue((q) => q.filter((r) => r.id !== req.id))
-    setSaving(false); setNotice(`Rejected: ${req.profiles?.email}`)
-    // Send email notification
-    if (req.profiles?.email) {
-      sendNotification('verification_rejected', {
-        to:   req.profiles.email,
-        name: req.profiles.full_name,
-        data: { reason: note },
-      })
-    }
+    setSaving(false)
+    setNotice(`❌ Rejected: ${req.profiles?.full_name || req.profiles?.email} — inbox message sent.`)
   }
 
   const saveRole = async (uid) => {
@@ -3369,7 +3447,13 @@ function AdminDashboard({ supabase, user }) {
             <h2 className="h5 fw-bold mb-0" style={{ color:'var(--fc-blue-700)' }}>
               <i className="bi bi-patch-check me-2" />Verification Queue
             </h2>
-            {pendingVerif>0 && <span className="badge text-bg-warning px-3 py-2">{pendingVerif} pending</span>}
+            <div className="d-flex gap-2 align-items-center">
+              {pendingVerif>0 && <span className="badge text-bg-warning px-3 py-2">{pendingVerif} pending</span>}
+              <button className="btn btn-outline-secondary btn-sm" type="button"
+                onClick={() => { setVerifQueue([]); }}>
+                <i className="bi bi-arrow-clockwise me-1" />Refresh
+              </button>
+            </div>
           </div>
           {pendingVerif===0 ? (
             <div className="text-center py-5 text-muted">
