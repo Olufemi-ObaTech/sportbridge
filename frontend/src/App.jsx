@@ -126,7 +126,7 @@ const PROFILE_ROLE_META = {
   sports_analyst: { icon: 'bi-graph-up-arrow',   label: 'Sports Analyst', colour: '#fd7e14' },
 }
 
-function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberClick }) {
+function CommunityProfilesSection({ supabase, user, viewerVerified, onSignup, onPlayerClick, onMemberClick }) {
   const [profiles,   setProfiles]   = useState([])
   const [players,    setPlayers]    = useState([])
   const [coaches,    setCoaches]    = useState([])
@@ -365,6 +365,38 @@ function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberC
       </ul>
 
       {/* ── Profile cards ── */}
+      {/* Gate: non-player tabs require verified membership */}
+      {!viewerVerified && activeRole !== 'player' && activeRole !== 'all' && (
+        <div className="card p-5 text-center mb-4"
+          style={{ background: 'rgba(47,125,240,.05)', border: '1.5px solid rgba(47,125,240,.2)', borderRadius: 12 }}>
+          <i className="bi bi-patch-check-fill fs-2 mb-3 d-block" style={{ color: 'var(--fc-blue-500)' }} />
+          <h3 className="h5 fw-bold mb-2">Verified members only</h3>
+          <p className="text-muted small mb-4" style={{ maxWidth: 360, margin: '0 auto 16px' }}>
+            Full profiles of coaches, agents, clubs and analysts are visible to verified SportBridge members only.
+            Create a free account and complete identity verification to unlock the full directory.
+          </p>
+          <div className="d-flex gap-2 justify-content-center flex-wrap">
+            {!user ? (
+              <>
+                <button className="btn btn-primary btn-sm" type="button" onClick={() => onSignup('player')}>
+                  <i className="bi bi-person-plus me-1" />Create free account
+                </button>
+                <button className="btn btn-outline-primary btn-sm" type="button" onClick={() => onSignup('signin')}>
+                  <i className="bi bi-box-arrow-in-right me-1" />Sign in
+                </button>
+              </>
+            ) : (
+              <div className="alert alert-warning py-2 small mb-0" style={{ maxWidth: 360 }}>
+                <i className="bi bi-hourglass-split me-1" />
+                Complete identity verification in your dashboard to unlock all community profiles.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {(viewerVerified || activeRole === 'player' || activeRole === 'all') && (
+      <>
       {loading ? (
         <div className="py-5 text-center text-muted">
           <span className="spinner-border spinner-border-sm me-2" />Loading community profiles…
@@ -466,8 +498,10 @@ function CommunityProfilesSection({ supabase, onSignup, onPlayerClick, onMemberC
           </div>
         </>
       )}
+      </> /* end viewerVerified gate */
+      )}
 
-      {/* ── Full player search (always visible below cards) ── */}
+      {/* ── Full player search — visible to ALL users (guests + unverified + verified) ── */}
       <div className="border-top pt-4">
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
           <div>
@@ -831,6 +865,7 @@ function App() {
   const [inboxRecipient,  setInboxRecipient]  = useState(null) // { id, name, role } — pre-open a conversation
   const [user,            setUser]            = useState(null)
   const [accountStatus,   setAccountStatus]   = useState(null)
+  const [viewerVerified,  setViewerVerified]  = useState(false) // is the logged-in user verified?
   const [statusCheckKey,  setStatusCheckKey]  = useState(0)
   const [authOpen,        setAuthOpen]        = useState(false)
   const [authInitMode,    setAuthInitMode]    = useState('signin')
@@ -928,7 +963,7 @@ function App() {
       setUser(u)
       setAccountStatus(u ? 'checking' : null)
       if (event === 'SIGNED_IN')  { setView('dashboard'); setAuthOpen(false) }
-      if (event === 'SIGNED_OUT') { setView('home') }
+      if (event === 'SIGNED_OUT') { setView('home'); setViewerVerified(false) }
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -940,8 +975,12 @@ function App() {
     }
     let alive = true
     const checkStatus = async () => {
-      const { data, error } = await supabase.from('profiles').select('status').eq('id', user.id).single()
-      if (alive) setAccountStatus(error ? 'unavailable' : data?.status ?? 'unavailable')
+      const { data, error } = await supabase.from('profiles')
+        .select('status, verification_status').eq('id', user.id).single()
+      if (alive) {
+        setAccountStatus(error ? 'unavailable' : data?.status ?? 'unavailable')
+        setViewerVerified(data?.verification_status === 'verified')
+      }
     }
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') checkStatus()
@@ -1546,6 +1585,8 @@ function App() {
             <section className="container py-5" id="players" aria-labelledby="directory-heading">
               <CommunityProfilesSection
                 supabase={supabase}
+                user={user}
+                viewerVerified={viewerVerified}
                 onSignup={openSignup}
                 onPlayerClick={(id) => { setSelectedPlayerId(id); setView('player'); window.scrollTo(0, 0) }}
                 onMemberClick={(type, item) => { setSelectedMember(type && item ? { type, item } : null); setView('members'); window.scrollTo(0, 0) }}

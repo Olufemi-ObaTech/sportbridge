@@ -1014,3 +1014,21 @@ img[loading="lazy"] {
   outline: 2px solid var(--fc-blue-500);
   outline-offset: 2px;
 }
+
+/* ── Hide Netlify "Powered by" badge on free plan ──────────────────────────── */
+[data-netlify-badge],
+.netlify-badge,
+#netlify-badge,
+a[href*="netlify.com/badge"],
+a[href*="app.netlify.com"][style*="position"],
+img[src*="netlify-color-bg"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
+}

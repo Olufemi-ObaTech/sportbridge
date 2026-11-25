@@ -19,16 +19,44 @@
   <body class="d-flex flex-column min-vh-100">
     <div id="root"></div>
     <script>
-      /* Remove Netlify's "Powered by Netlify" badge injected on free plans */
+      /* Remove Netlify's "Powered by Netlify" badge — multiple selector strategies */
       (function() {
+        const selectors = [
+          '[data-netlify-badge]',
+          '.netlify-badge',
+          '#netlify-badge',
+          'a[href*="netlify.com"][style*="position:fixed"]',
+          'a[href*="netlify.com"][style*="position: fixed"]',
+          'a[href*="app.netlify.com"]',
+          'img[src*="netlify"]',
+          'div[style*="z-index: 99999"]',
+          'div[style*="z-index:99999"]',
+        ]
         const remove = () => {
-          const badge = document.querySelector('[data-netlify-badge], .netlify-badge, #netlify-badge, [href*="netlify.com"][style*="position:fixed"], [href*="netlify.com"][style*="position: fixed"]')
-          if (badge) badge.remove()
+          selectors.forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => {
+              /* walk up to remove the containing anchor/div if small */
+              const parent = el.closest('a[href*="netlify"], div[data-netlify]') || el
+              parent.remove()
+            })
+          })
+          /* Catch badge by text content — "Powered by Netlify" */
+          document.querySelectorAll('a, div, span').forEach(el => {
+            if (el.textContent.trim() === 'Powered by Netlify' || el.getAttribute('href')?.includes('netlify.com/badge')) {
+              const parent = el.closest('a') || el
+              parent.remove()
+            }
+          })
         }
         remove()
         const obs = new MutationObserver(remove)
-        obs.observe(document.body, { childList: true, subtree: true })
+        document.addEventListener('DOMContentLoaded', () => {
+          remove()
+          obs.observe(document.body, { childList: true, subtree: true })
+        })
         window.addEventListener('load', remove)
+        setTimeout(remove, 1000)
+        setTimeout(remove, 3000)
       })()
     </script>
     <script type="module" src="/src/main.jsx"></script>

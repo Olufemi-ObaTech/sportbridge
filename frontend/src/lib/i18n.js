@@ -1273,3 +1273,11 @@ export function observeLocalization(root, language) {
   ['verified',                       'vérifié',                              'verificado',                       'موثّق',                                     'verificado'],
   ['rejected',                       'rejeté',                               'rejeitado',                        'مرفوض',                                     'rechazado'],
 ].forEach(([en, fr, pt, ar, es]) => { catalog[en] = { fr, pt, ar, es } })
+
+// ── Visibility gate strings ──
+;[
+  ['Verified members only',         'Membres vérifiés uniquement',       'Apenas membros verificados',      'الأعضاء الموثّقون فقط',             'Solo miembros verificados'],
+  ['Full profiles of coaches, agents, clubs and analysts are visible to verified SportBridge members only.', 'Les profils complets des entraîneurs, agents, clubs et analystes sont visibles uniquement aux membres vérifiés.', 'Os perfis completos de treinadores, agentes, clubes e analistas são visíveis apenas para membros verificados.', 'الملفات الكاملة للمدربين والوكلاء والأندية والمحللين مرئية للأعضاء الموثّقين فقط.', 'Los perfiles completos de entrenadores, agentes, clubes y analistas son visibles solo para miembros verificados.'],
+  ['Create free account',           'Créer un compte gratuit',           'Criar conta gratuita',            'إنشاء حساب مجاني',                  'Crear cuenta gratuita'],
+  ['Complete identity verification in your dashboard to unlock all community profiles.', 'Complétez la vérification d\'identité pour accéder à tous les profils.', 'Complete a verificação de identidade para aceder a todos os perfis.', 'أكمل التحقق من الهوية للوصول إلى جميع الملفات.', 'Completa la verificación de identidad para acceder a todos los perfiles.'],
+].forEach(([en, fr, pt, ar, es]) => { catalog[en] = { fr, pt, ar, es } })
