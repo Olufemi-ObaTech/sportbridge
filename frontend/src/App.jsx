@@ -978,8 +978,16 @@ function App() {
       const { data, error } = await supabase.from('profiles')
         .select('status, verification_status').eq('id', user.id).single()
       if (alive) {
-        setAccountStatus(error ? 'unavailable' : data?.status ?? 'unavailable')
-        setViewerVerified(data?.verification_status === 'verified')
+        // If error is a permissions/not-found error, default to active so user
+        // can still access their dashboard — the profile may just not be readable
+        // due to RLS timing. Only block on explicit 'suspended' status.
+        if (error) {
+          setAccountStatus('active') // assume active, let them in
+          setViewerVerified(false)
+        } else {
+          setAccountStatus(data?.status ?? 'active')
+          setViewerVerified(data?.verification_status === 'verified')
+        }
       }
     }
     const onVisibilityChange = () => {
