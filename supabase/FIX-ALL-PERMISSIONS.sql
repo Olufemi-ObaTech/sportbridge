@@ -348,30 +348,37 @@ GRANT SELECT ON public.media_assets TO anon;
 GRANT ALL ON public.media_assets TO authenticated;
 
 -- ── 20. access_requests ──────────────────────────────────────────────────────
-ALTER TABLE public.access_requests ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "access_requests_own" ON public.access_requests;
-
-CREATE POLICY "access_requests_own" ON public.access_requests
-  FOR ALL USING (
-    auth.uid() = requester_id OR
-    EXISTS (
-      SELECT 1 FROM public.players p
-      WHERE p.id = player_id AND p.profile_id = auth.uid()
-    )
-  );
-
-GRANT ALL ON public.access_requests TO authenticated;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'access_requests') THEN
+    -- RLS already enabled in schema.sql — just ensure policies exist
+    EXECUTE 'DROP POLICY IF EXISTS "access_requests_own" ON public.access_requests';
+    -- Use agent_user_id (the actual column name)
+    EXECUTE 'CREATE POLICY "access_requests_own" ON public.access_requests
+      FOR ALL USING (
+        auth.uid() = agent_user_id OR
+        EXISTS (
+          SELECT 1 FROM public.players p
+          WHERE p.id = player_id AND p.profile_id = auth.uid()
+        )
+      )';
+    EXECUTE 'GRANT ALL ON public.access_requests TO authenticated';
+  END IF;
+END $$;
 
 -- ── 21. contact_unlocks ──────────────────────────────────────────────────────
-ALTER TABLE public.contact_unlocks ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "contact_unlocks_own" ON public.contact_unlocks;
-
-CREATE POLICY "contact_unlocks_own" ON public.contact_unlocks
-  FOR ALL USING (auth.uid() = unlocker_id);
-
-GRANT ALL ON public.contact_unlocks TO authenticated;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'contact_unlocks') THEN
+    EXECUTE 'ALTER TABLE public.contact_unlocks ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'DROP POLICY IF EXISTS "contact_unlocks_own" ON public.contact_unlocks';
+    EXECUTE 'CREATE POLICY "contact_unlocks_own" ON public.contact_unlocks
+      FOR ALL USING (auth.uid() = unlocker_id)';
+    EXECUTE 'GRANT ALL ON public.contact_unlocks TO authenticated';
+  END IF;
+END $$;
 
 -- ── 22. public_profile_badges view ───────────────────────────────────────────
 DROP VIEW IF EXISTS public.public_profile_badges CASCADE;
@@ -401,10 +408,11 @@ BEGIN
 END $$;
 
 -- ── 24. Supabase Auth — disable email confirmation ───────────────────────────
--- This ensures new registrations work without email confirmation
-UPDATE auth.config
-SET confirm_email_identity = false
-WHERE confirm_email_identity = true;
+-- Note: To disable email confirmation go to:
+-- Supabase → Authentication → Settings → Email → Confirm email → OFF
+-- The auth.config table is not directly editable via SQL in hosted Supabase.
+-- This is a no-op placeholder so the rest of the script runs without error.
+SELECT 'Email confirmation setting must be disabled in Supabase Auth dashboard' AS note;
 
 -- ── 25. Verify everything works ───────────────────────────────────────────────
 SELECT
