@@ -1281,3 +1281,33 @@ export function observeLocalization(root, language) {
   ['Create free account',           'Créer un compte gratuit',           'Criar conta gratuita',            'إنشاء حساب مجاني',                  'Crear cuenta gratuita'],
   ['Complete identity verification in your dashboard to unlock all community profiles.', 'Complétez la vérification d\'identité pour accéder à tous les profils.', 'Complete a verificação de identidade para aceder a todos os perfis.', 'أكمل التحقق من الهوية للوصول إلى جميع الملفات.', 'Completa la verificación de identidad para acceder a todos los perfiles.'],
 ].forEach(([en, fr, pt, ar, es]) => { catalog[en] = { fr, pt, ar, es } })
+
+// ── Hero + landing page strings ──
+;[
+  ['The World\'s #1 Verified Football Network', 'Le réseau de football vérifié n°1 au monde', 'A rede de futebol verificada nº 1 do mundo', 'شبكة كرة القدم الموثّقة الأولى عالميًا', 'La red de fútbol verificada nº 1 del mundo'],
+  ['Stop Chasing Fake Agents.', 'Arrêtez de courir après les faux agents.', 'Pare de correr atrás de agentes falsos.', 'توقف عن مطاردة الوكلاء المزيفين.', 'Deja de perseguir agentes falsos.'],
+  ['Get Verified.', 'Faites-vous vérifier.', 'Seja verificado.', 'احصل على التوثيق.', 'Verifica tu identidad.'],
+  ['Verified Players', 'Joueurs vérifiés', 'Jogadores verificados', 'لاعبون موثّقون', 'Jugadores verificados'],
+  ['Verified Clubs, Academies, Agents & Managers', 'Clubs, académies, agents et managers vérifiés', 'Clubes, academias, agentes e treinadores verificados', 'أندية وأكاديميات ووكلاء ومدربون موثّقون', 'Clubes, academias, agentes y entrenadores verificados'],
+  ['Player profiles', 'Profils de joueurs', 'Perfis de jogadores', 'ملفات اللاعبين', 'Perfiles de jugadores'],
+  ['Verified clubs', 'Clubs vérifiés', 'Clubes verificados', 'أندية موثّقة', 'Clubes verificados'],
+  ['Countries reached', 'Pays atteints', 'Países alcançados', 'الدول المشمولة', 'Países alcanzados'],
+  ['Ready to make your next move?', 'Prêt à faire votre prochain mouvement ?', 'Pronto para o seu próximo passo?', 'هل أنت مستعد لخطوتك القادمة؟', '¿Listo para tu próximo movimiento?'],
+  ['Join SportBridge free. Build your profile, get discovered by verified clubs and agents — takes one minute.', 'Rejoignez SportBridge gratuitement. Construisez votre profil et faites-vous découvrir par des clubs et agents vérifiés.', 'Junte-se ao SportBridge gratuitamente. Construa o seu perfil e seja descoberto por clubes e agentes verificados.', 'انضم إلى SportBridge مجانًا. ابنِ ملفك الشخصي وكن مكتشَفًا من الأندية والوكلاء الموثّقين.', 'Únete a SportBridge gratis. Construye tu perfil y sé descubierto por clubes y agentes verificados.'],
+  ['Browse verified players, coaches, agents and clubs. Post jobs, tryouts and updates — all from your dashboard.', 'Parcourez des joueurs, entraîneurs, agents et clubs vérifiés. Publiez des offres, essais et mises à jour depuis votre tableau de bord.', 'Navegue por jogadores, treinadores, agentes e clubes verificados. Publique vagas, testes e atualizações no seu painel.', 'تصفح اللاعبين والمدربين والوكلاء والأندية الموثّقين. انشر وظائف وتجارب أداء وتحديثات من لوحتك.', 'Explora jugadores, entrenadores, agentes y clubes verificados. Publica empleos, pruebas y actualizaciones desde tu panel.'],
+  ['Free for players · Verified clubs · Trusted network', 'Gratuit pour les joueurs · Clubs vérifiés · Réseau de confiance', 'Gratuito para jogadores · Clubes verificados · Rede de confiança', 'مجاني للاعبين · أندية موثّقة · شبكة موثوقة', 'Gratis para jugadores · Clubes verificados · Red de confianza'],
+  ['Create free account', 'Créer un compte gratuit', 'Criar conta gratuita', 'إنشاء حساب مجاني', 'Crear cuenta gratuita'],
+  ['Sign in', 'Se connecter', 'Iniciar sessão', 'تسجيل الدخول', 'Iniciar sesión'],
+  ['One platform, every side of the game', 'Une plateforme, tous les aspects du jeu', 'Uma plataforma, todos os lados do jogo', 'منصة واحدة، كل جوانب اللعبة', 'Una plataforma, todos los lados del juego'],
+  ['A connected sporting world', 'Un monde sportif connecté', 'Um mundo desportivo conectado', 'عالم رياضي متصل', 'Un mundo deportivo conectado'],
+  ['For Players', 'Pour les joueurs', 'Para jogadores', 'للاعبين', 'Para jugadores'],
+  ['For Clubs & Academies', 'Pour les clubs et académies', 'Para clubes e academias', 'للأندية والأكاديميات', 'Para clubes y academias'],
+  ['For Agents & Scouts', 'Pour les agents et scouts', 'Para agentes e scouts', 'للوكلاء والمكتشفين', 'Para agentes y scouts'],
+  ['For Coaches & Sporting Directors', 'Pour les entraîneurs et directeurs sportifs', 'Para treinadores e diretores desportivos', 'للمدربين والمديرين الرياضيين', 'Para entrenadores y directores deportivos'],
+  ['For Sports Analysts', 'Pour les analystes sportifs', 'Para analistas desportivos', 'للمحللين الرياضيين', 'Para analistas deportivos'],
+  ['Create your player profile', 'Créez votre profil de joueur', 'Crie o seu perfil de jogador', 'أنشئ ملفك كلاعب', 'Crea tu perfil de jugador'],
+  ['Register your club / academy', 'Inscrivez votre club / académie', 'Registe o seu clube / academia', 'سجّل ناديك / أكاديميتك', 'Registra tu club / academia'],
+  ['Register as an agent / scout', 'Inscrivez-vous comme agent / scout', 'Registe-se como agente / scout', 'سجّل كوكيل / مكتشف', 'Regístrate como agente / scout'],
+  ['Register as a coach / manager', 'Inscrivez-vous comme entraîneur', 'Registe-se como treinador', 'سجّل كمدرب', 'Regístrate como entrenador'],
+  ['Register as a sports analyst', 'Inscrivez-vous comme analyste sportif', 'Registe-se como analista desportivo', 'سجّل كمحلل رياضي', 'Regístrate como analista deportivo'],
+].forEach(([en, fr, pt, ar, es]) => { catalog[en] = { fr, pt, ar, es } })
