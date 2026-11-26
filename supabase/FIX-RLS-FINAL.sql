@@ -18,6 +18,11 @@ DROP POLICY IF EXISTS "profiles_select_own"      ON public.profiles;
 DROP POLICY IF EXISTS "profiles_insert_own"      ON public.profiles;
 DROP POLICY IF EXISTS "profiles_update_own"      ON public.profiles;
 DROP POLICY IF EXISTS "profiles_admin_all"       ON public.profiles;
+-- Drop new-name policies too (safe re-run)
+DROP POLICY IF EXISTS "profiles_select"          ON public.profiles;
+DROP POLICY IF EXISTS "profiles_insert"          ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update"          ON public.profiles;
+DROP POLICY IF EXISTS "profiles_delete"          ON public.profiles;
 -- Drop any old policies from schema.sql
 DROP POLICY IF EXISTS "profiles are viewable by everyone"           ON public.profiles;
 DROP POLICY IF EXISTS "profiles are viewable by owner"              ON public.profiles;
@@ -111,6 +116,9 @@ DROP POLICY IF EXISTS "players_select_own"    ON public.players;
 DROP POLICY IF EXISTS "players_insert_own"    ON public.players;
 DROP POLICY IF EXISTS "players_update_own"    ON public.players;
 DROP POLICY IF EXISTS "players_admin_all"     ON public.players;
+DROP POLICY IF EXISTS "players_select"        ON public.players;
+DROP POLICY IF EXISTS "players_insert"        ON public.players;
+DROP POLICY IF EXISTS "players_update"        ON public.players;
 
 CREATE POLICY "players_select" ON public.players
   FOR SELECT USING (is_public = true OR auth.uid() = profile_id);
@@ -271,8 +279,9 @@ GRANT ALL ON public.notifications TO authenticated;
 -- STEP 15: verification_requests
 -- ═══════════════════════════════════════════════════════════════════════════════
 ALTER TABLE public.verification_requests ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "verif_req_own"   ON public.verification_requests;
-DROP POLICY IF EXISTS "verif_req_admin" ON public.verification_requests;
+DROP POLICY IF EXISTS "verif_req_own"                    ON public.verification_requests;
+DROP POLICY IF EXISTS "verif_req_admin"                  ON public.verification_requests;
+DROP POLICY IF EXISTS "verif_req_authenticated_read"     ON public.verification_requests;
 -- Users can submit and view own requests
 CREATE POLICY "verif_req_own" ON public.verification_requests
   FOR ALL USING (auth.uid() = user_id);
@@ -286,8 +295,9 @@ GRANT ALL ON public.verification_requests TO authenticated;
 -- STEP 16: reports
 -- ═══════════════════════════════════════════════════════════════════════════════
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "reports_own"   ON public.reports;
-DROP POLICY IF EXISTS "reports_admin" ON public.reports;
+DROP POLICY IF EXISTS "reports_own"                  ON public.reports;
+DROP POLICY IF EXISTS "reports_admin"                ON public.reports;
+DROP POLICY IF EXISTS "reports_read_authenticated"   ON public.reports;
 CREATE POLICY "reports_own" ON public.reports
   FOR ALL USING (auth.uid() = reporter_id);
 CREATE POLICY "reports_read_authenticated" ON public.reports
