@@ -1015,20 +1015,37 @@ img[loading="lazy"] {
   outline-offset: 2px;
 }
 
-/* ── Hide Netlify "Powered by" badge on free plan ──────────────────────────── */
+/* ── Hide Netlify "Powered by" badge — nuclear option ────────────────────── */
+/* Netlify injects a fixed-position div with their branding on free plans.   */
+/* Multiple selectors catch it regardless of how it's injected.              */
 [data-netlify-badge],
 .netlify-badge,
 #netlify-badge,
 a[href*="netlify.com/badge"],
-a[href*="app.netlify.com"][style*="position"],
-img[src*="netlify-color-bg"] {
+a[href*="netlify.com"][style*="position: fixed"],
+a[href*="netlify.com"][style*="position:fixed"],
+div[style*="position: fixed"][style*="bottom"][style*="right"] > a[href*="netlify"],
+div[style*="position:fixed"][style*="bottom"][style*="right"] > a[href*="netlify"],
+img[src*="netlify-color-bg"],
+img[src*="netlify-brand"],
+img[alt*="Netlify"],
+img[alt*="netlify"],
+/* Catch the outer wrapper div too */
+div[style*="z-index: 99999"],
+div[style*="z-index:99999"],
+div[style*="z-index: 9999"][style*="fixed"],
+div[style*="z-index:9999"][style*="fixed"] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
   width: 0 !important;
   height: 0 !important;
+  max-width: 0 !important;
+  max-height: 0 !important;
   overflow: hidden !important;
   position: absolute !important;
-  left: -9999px !important;
+  left: -99999px !important;
+  top: -99999px !important;
+  clip: rect(0,0,0,0) !important;
 }

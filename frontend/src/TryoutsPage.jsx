@@ -50,7 +50,7 @@ export default function TryoutsPage({ supabase, user, onSignup }) {
     const run = async () => {
       let q = supabase
         .from('opportunities')
-        .select('id, title, position, age_group, region, venue, tryout_date, gender, description, fee_amount, fee_breakdown, status, is_fee_flagged, created_at, posted_by, poster_badge:public_profile_badges(role, verification_status, verification_badge)', { count: 'exact' })
+        .select('id, title, position, age_group, region, venue, tryout_date, gender, description, fee_amount, fee_breakdown, status, is_fee_flagged, created_at, posted_by', { count: 'exact' })
         .eq('status', 'open')
         .eq('is_fee_flagged', false)
 
@@ -212,7 +212,7 @@ export default function TryoutsPage({ supabase, user, onSignup }) {
           {tryouts.map((t) => {
             const isFree     = (t.fee_amount ?? 0) === 0
             const daysAway   = t.tryout_date ? Math.ceil((new Date(t.tryout_date) - new Date()) / 86400000) : null
-            const verified = t.poster_badge?.verification_status === 'verified'
+            const verified   = false // badge removed — no ambiguous FK
 
             return (
               <div className="col" key={t.id}>
@@ -264,8 +264,7 @@ export default function TryoutsPage({ supabase, user, onSignup }) {
                     {verified && (
                       <VerifiedBadge
                         status="verified"
-                        role={t.poster_badge?.role}
-                        label={t.poster_badge?.verification_badge}
+                        role={null}
                         className="ms-auto"
                       />
                     )}

@@ -1311,3 +1311,25 @@ export function observeLocalization(root, language) {
   ['Register as a coach / manager', 'Inscrivez-vous comme entraîneur', 'Registe-se como treinador', 'سجّل كمدرب', 'Regístrate como entrenador'],
   ['Register as a sports analyst', 'Inscrivez-vous comme analyste sportif', 'Registe-se como analista desportivo', 'سجّل كمحلل رياضي', 'Regístrate como analista deportivo'],
 ].forEach(([en, fr, pt, ar, es]) => { catalog[en] = { fr, pt, ar, es } })
+
+// ── Recommendation form + Inbox ──
+;[
+  ['Search for player',             'Rechercher un joueur',              'Pesquisar jogador',                'ابحث عن لاعب',                      'Buscar jugador'],
+  ['Recommend to',                  'Recommander à',                     'Recomendar a',                    'التوصية إلى',                       'Recomendar a'],
+  ['Recommendation note',           'Note de recommandation',            'Nota de recomendação',            'ملاحظة التوصية',                     'Nota de recomendación'],
+  ['Send Recommendation',           'Envoyer la recommandation',         'Enviar recomendação',             'إرسال التوصية',                      'Enviar recomendación'],
+  ['Recommendation sent!',          'Recommandation envoyée !',          'Recomendação enviada!',           'تم إرسال التوصية!',                  '¡Recomendación enviada!'],
+  ['Recommend another player',      'Recommander un autre joueur',       'Recomendar outro jogador',        'التوصية بلاعب آخر',                 'Recomendar otro jugador'],
+  ['Highlight video',               'Vidéo de faits saillants',          'Vídeo de destaque',               'فيديو المقاطع المميزة',              'Vídeo de destacados'],
+  ['Player CV (PDF)',                'CV du joueur (PDF)',                 'CV do jogador (PDF)',             'سيرة اللاعب الذاتية (PDF)',          'CV del jugador (PDF)'],
+  ['No attachment',                 'Aucune pièce jointe',               'Sem anexo',                       'بدون مرفق',                          'Sin adjunto'],
+  ['Never include personal contact details', 'Ne jamais inclure de coordonnées personnelles', 'Nunca inclua dados de contacto pessoais', 'لا تضمّن بيانات الاتصال الشخصية', 'Nunca incluyas datos de contacto personales'],
+  ['New conversation',              'Nouvelle conversation',             'Nova conversa',                   'محادثة جديدة',                       'Nueva conversación'],
+  ['Recipient email address',       'Adresse e-mail du destinataire',    'E-mail do destinatário',          'عنوان بريد المستلم',                 'Correo del destinatario'],
+  ['No SportBridge member found with that email.', 'Aucun membre SportBridge avec cet e-mail.', 'Nenhum membro SportBridge com esse e-mail.', 'لم يُعثر على عضو SportBridge بهذا البريد.', 'No se encontró ningún miembro con ese correo.'],
+  ['Messages',                      'Messages',                          'Mensagens',                       'الرسائل',                            'Mensajes'],
+  ['Write a message… (Enter to send, Shift+Enter for new line)', 'Écrire un message…', 'Escrever uma mensagem…', 'اكتب رسالة…', 'Escribe un mensaje…'],
+  ['Mark all as read',              'Tout marquer comme lu',             'Marcar tudo como lido',           'تعيين الكل كمقروء',                  'Marcar todo como leído'],
+  ['Verified members only',         'Membres vérifiés uniquement',       'Apenas membros verificados',      'الأعضاء الموثّقون فقط',              'Solo miembros verificados'],
+  ['Get verified in My Dashboard',  'Se vérifier dans Mon tableau de bord', 'Verificar-se no meu painel', 'التحقق في لوحتي',                     'Verificarse en Mi panel'],
+].forEach(([en, fr, pt, ar, es]) => { catalog[en] = { fr, pt, ar, es } })

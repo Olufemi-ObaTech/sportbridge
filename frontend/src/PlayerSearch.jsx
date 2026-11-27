@@ -130,10 +130,9 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
     setError('')
 
     const run = async () => {
-      const playerBadgeJoin = `profile_badge:public_profile_badges${filters.verifiedOnly ? '!inner' : ''}(role, verification_status, verification_badge)`
       let q = supabase
         .from('players')
-        .select(`id, display_name, position, age, country, nationality, region, availability, preferred_foot, foot, height_cm, current_club, age_group, stats, primary_photo_path, ${playerBadgeJoin}`, { count: 'exact' })
+        .select(`id, display_name, position, age, country, nationality, region, availability, preferred_foot, foot, height_cm, current_club, age_group, stats, primary_photo_path, profile_id`, { count: 'exact' })
         .eq('is_public', true)
         .eq('status', 'active')
 
@@ -143,26 +142,42 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
       if (filters.foot)         q = q.eq('preferred_foot', filters.foot)
       if (filters.region)       q = q.ilike('region', `%${filters.region}%`)
       if (filters.availability) q = q.eq('availability', filters.availability)
-      if (filters.verifiedOnly) q = q.eq('profile_badge.verification_status', 'verified')
       if (filters.q)            q = q.or(`display_name.ilike.%${filters.q}%,current_club.ilike.%${filters.q}%`)
 
       // Sort
-      if (sort === 'newest')      q = q.order('created_at', { ascending: false })
+      if (sort === 'newest')           q = q.order('created_at', { ascending: false })
       else if (sort === 'most_viewed') q = q.order('views_count', { ascending: false })
-      else if (sort === 'verified')    q = q.order('profile_badge(verification_status)', { ascending: true })
       else                             q = q.order('created_at', { ascending: false })
 
       q = q.limit(60)
-      const { data, count, error: loadError } = await q
+      const { data: rawPlayers, count, error: loadError } = await q
       if (!alive) return
       if (loadError) {
         setPlayers([])
         setTotalCount(null)
         setError(loadError.message)
-      } else {
-        setPlayers(data ?? [])
-        setTotalCount(count ?? data?.length ?? 0)
+        setLoading(false)
+        return
       }
+
+      let players = rawPlayers ?? []
+
+      // For verifiedOnly filter — fetch profile verification status separately
+      // (avoids ambiguous FK join with public_profile_badges)
+      if (filters.verifiedOnly && players.length > 0) {
+        const profileIds = [...new Set(players.map(p => p.profile_id).filter(Boolean))]
+        if (profileIds.length > 0) {
+          const { data: profRows } = await supabase
+            .from('profiles')
+            .select('id, verification_status')
+            .in('id', profileIds)
+          const verifiedIds = new Set((profRows ?? []).filter(p => p.verification_status === 'verified').map(p => p.id))
+          players = players.filter(p => verifiedIds.has(p.profile_id))
+        }
+      }
+
+      setPlayers(players)
+      setTotalCount(count ?? players.length ?? 0)
       setLoading(false)
     }
     run().catch((loadError) => {

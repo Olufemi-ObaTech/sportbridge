@@ -19,44 +19,65 @@
   <body class="d-flex flex-column min-vh-100">
     <div id="root"></div>
     <script>
-      /* Remove Netlify's "Powered by Netlify" badge — multiple selector strategies */
+      /* SportBridge — Remove Netlify "Powered by" badge aggressively */
       (function() {
-        const selectors = [
-          '[data-netlify-badge]',
-          '.netlify-badge',
-          '#netlify-badge',
-          'a[href*="netlify.com"][style*="position:fixed"]',
-          'a[href*="netlify.com"][style*="position: fixed"]',
-          'a[href*="app.netlify.com"]',
-          'img[src*="netlify"]',
-          'div[style*="z-index: 99999"]',
-          'div[style*="z-index:99999"]',
-        ]
-        const remove = () => {
-          selectors.forEach(sel => {
-            document.querySelectorAll(sel).forEach(el => {
-              /* walk up to remove the containing anchor/div if small */
-              const parent = el.closest('a[href*="netlify"], div[data-netlify]') || el
-              parent.remove()
-            })
+        function removeNetlifyBadge() {
+          /* 1. By data attribute */
+          document.querySelectorAll('[data-netlify-badge], .netlify-badge, #netlify-badge').forEach(el => el.remove())
+          /* 2. By href containing netlify badge URL */
+          document.querySelectorAll('a[href*="netlify.com"]').forEach(el => {
+            if (el.textContent.includes('Netlify') || el.querySelector('img[src*="netlify"]')) {
+              const wrapper = el.parentElement
+              if (wrapper && (wrapper.style.position === 'fixed' || getComputedStyle(wrapper).position === 'fixed')) {
+                wrapper.remove()
+              } else {
+                el.remove()
+              }
+            }
           })
-          /* Catch badge by text content — "Powered by Netlify" */
-          document.querySelectorAll('a, div, span').forEach(el => {
-            if (el.textContent.trim() === 'Powered by Netlify' || el.getAttribute('href')?.includes('netlify.com/badge')) {
-              const parent = el.closest('a') || el
-              parent.remove()
+          /* 3. By fixed-position wrappers containing netlify content */
+          document.querySelectorAll('div[style*="position"]').forEach(el => {
+            const style = el.getAttribute('style') || ''
+            if ((style.includes('fixed') || style.includes('z-index')) && el.innerHTML.toLowerCase().includes('netlify')) {
+              el.remove()
+            }
+          })
+          /* 4. By image src */
+          document.querySelectorAll('img[src*="netlify"], img[alt*="Netlify"]').forEach(el => {
+            const wrapper = el.closest('a, div[style*="fixed"]')
+            if (wrapper) wrapper.remove()
+            else el.remove()
+          })
+          /* 5. Nuclear: any fixed element in bottom-right that isn't ours */
+          document.querySelectorAll('body > div[style], body > a[style]').forEach(el => {
+            const s = getComputedStyle(el)
+            if (s.position === 'fixed' && (parseInt(s.bottom) >= 0) && (parseInt(s.right) >= 0)) {
+              if (el.innerHTML.toLowerCase().includes('netlify') || !el.id) {
+                el.style.display = 'none'
+              }
             }
           })
         }
-        remove()
-        const obs = new MutationObserver(remove)
+
+        /* Run immediately */
+        removeNetlifyBadge()
+
+        /* Run after DOM ready */
+        document.addEventListener('DOMContentLoaded', removeNetlifyBadge)
+
+        /* Run after full load */
+        window.addEventListener('load', removeNetlifyBadge)
+
+        /* Keep watching for injected elements */
+        const obs = new MutationObserver(removeNetlifyBadge)
         document.addEventListener('DOMContentLoaded', () => {
-          remove()
           obs.observe(document.body, { childList: true, subtree: true })
         })
-        window.addEventListener('load', remove)
-        setTimeout(remove, 1000)
-        setTimeout(remove, 3000)
+
+        /* Delayed checks (badge is sometimes injected late) */
+        setTimeout(removeNetlifyBadge, 500)
+        setTimeout(removeNetlifyBadge, 1500)
+        setTimeout(removeNetlifyBadge, 3000)
       })()
     </script>
     <script type="module" src="/src/main.jsx"></script>

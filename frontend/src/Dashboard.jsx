@@ -2102,11 +2102,13 @@ function AdminDashboard({ supabase, user }) {
   const [reportNote,   setReportNote]  = useState({})
   const [reportFilter, setReportFilter]= useState('all')
   const [reportLoading,setReportLoading]= useState(false)
+  // Pending count loaded on mount — drives banner + tab badge
+  const [pendingVerifCount, setPendingVerifCount] = useState(0)
   // ── Admin profile viewer state ──
   const [profileSearch,  setProfileSearch]  = useState('')
-  const [profileRole,    setProfileRole]    = useState('all') // 'all'|'player'|'coach'|'agent'|'academy'|'sports_analyst'
-  const [profileVerif,   setProfileVerif]   = useState('all') // 'all'|'verified'|'pending'|'unverified'
-  const [viewingProfile, setViewingProfile] = useState(null) // { type, userId, item }
+  const [profileRole,    setProfileRole]    = useState('all')
+  const [profileVerif,   setProfileVerif]   = useState('all')
+  const [viewingProfile, setViewingProfile] = useState(null)
   const [allPlayers,     setAllPlayers]     = useState([])
   const [allCoaches,     setAllCoaches]     = useState([])
   const [allAgents,      setAllAgents]      = useState([])
@@ -2219,6 +2221,11 @@ function AdminDashboard({ supabase, user }) {
       })
       setSubRoles(sub)
       setLoading(false)
+      // Load pending verification count on mount (drives banner + tab badge)
+      supabase.from('verification_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending')
+        .then(({ count: c }) => { if (alive) setPendingVerifCount(c ?? 0) })
     })
     return () => { alive = false }
   }, [supabase])
@@ -2337,6 +2344,7 @@ function AdminDashboard({ supabase, user }) {
     sendNotification('verification_approved', { to: req.profiles?.email, name: req.profiles?.full_name })
     // 8. Update UI
     setVerifQueue((q) => q.filter((r) => r.id !== req.id))
+    setPendingVerifCount((c) => Math.max(0, c - 1))
     setUsers((u) => u.map((row) => row.id === req.user_id ? { ...row, verification_status: 'verified' } : row))
     setSaving(false)
     setNotice(`✅ Verified: ${req.profiles?.full_name || req.profiles?.email} — inbox message sent.`)
@@ -2384,6 +2392,7 @@ function AdminDashboard({ supabase, user }) {
     sendNotification('verification_rejected', { to: req.profiles?.email, name: req.profiles?.full_name, data: { reason: note } })
     // 6. Update UI
     setVerifQueue((q) => q.filter((r) => r.id !== req.id))
+    setPendingVerifCount((c) => Math.max(0, c - 1))
     setSaving(false)
     setNotice(`❌ Rejected: ${req.profiles?.full_name || req.profiles?.email} — inbox message sent.`)
   }
@@ -2551,7 +2560,7 @@ function AdminDashboard({ supabase, user }) {
     } catch (e) { setError(`Could not send message: ${e.message}`) }
   }
 
-    const roleCounts = ALL_ROLES.reduce((acc, r) => ({ ...acc, [r]: users.filter((u) => u.role === r).length }), {})
+  const roleCounts = ALL_ROLES.reduce((acc, r) => ({ ...acc, [r]: users.filter((u) => u.role === r).length }), {})
   const filtered = users.filter((u) => {
     if (!search) return true
     const q = search.toLowerCase()
@@ -2559,7 +2568,8 @@ function AdminDashboard({ supabase, user }) {
     return [u.full_name, u.email, u.role, ROLE_LABELS[u.role], sub?.subRole, sub?.orgName]
       .some((f) => f?.toLowerCase().includes(q))
   })
-  const pendingVerif = verifQueue.length
+  // Use loaded queue length if available, otherwise use count from initial fetch
+  const pendingVerif = verifQueue.length > 0 ? verifQueue.length : pendingVerifCount
 
   const ROLE_COLOURS = {
     player: '#2F7DF0', coach: '#F5B301', agent: '#198754',
@@ -2575,7 +2585,6 @@ function AdminDashboard({ supabase, user }) {
     ['duplicates',   'bi-files',               'Duplicates'],
     ['flagged',      'bi-exclamation-triangle-fill', 'Fee-Flagged'],
   ]
-
   return (
     <>
       {/* ══ SPORTBRIDGE ADMIN CONTROL PANEL ══════════════════════════════ */}
@@ -3404,7 +3413,9 @@ function AdminDashboard({ supabase, user }) {
                                 setViewingProfile({ type, userId:u.id, item:rItem, profile:u })
                                 setActiveTab('profiles')
                               } else {
-                                setNotice(`No role profile found for ${u.full_name||u.email}. They may not have set one up yet.`)
+                                // Profiles not loaded yet — switch to Profiles tab and load them
+                                setActiveTab('profiles')
+                                setProfileSearch(u.full_name || u.email || '')
                               }
                             }}>
                             <i className="bi bi-eye" />
@@ -4232,25 +4243,40 @@ function Dashboard({ supabase, user, onBack }) {
     return () => { alive = false }
   }, [supabase, user.id])
 
-  // Load notifications when that tab opens
+  // Load notifications — eagerly on mount AND when tab opens
+  // This ensures the unread badge (bell count) is always accurate
   useEffect(() => {
-    if (dashTab !== 'notifications' || !supabase) return
+    if (!supabase) return
     setNotifLoad(true)
-    supabase.from('notifications').select('id, notification_type, data, read_at, created_at')
-      .eq('user_id', user.id).order('created_at', { ascending: false }).limit(50)
+    supabase.from('notifications')
+      .select('id, notification_type, data, read_at, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(50)
       .then(({ data }) => { setNotifs(data ?? []); setNotifLoad(false) })
-  }, [dashTab, supabase, user.id])
+  }, [supabase, user.id])
 
   // Load conversations when inbox tab opens
   useEffect(() => {
     if (dashTab !== 'inbox' || !supabase) return
+    // Flat fetch — no FK join (avoids PostgREST relationship errors)
     supabase.from('conversations')
-      .select(`id, subject, last_message_at, created_at,
-               initiator:profiles!initiator_id (id, full_name, role, verification_status),
-               recipient:profiles!recipient_id (id, full_name, role, verification_status)`)
+      .select('id, subject, last_message_at, created_at, initiator_id, recipient_id')
       .or(`initiator_id.eq.${user.id},recipient_id.eq.${user.id}`)
       .order('last_message_at', { ascending: false, nullsFirst: false }).limit(50)
-      .then(({ data }) => setConvs(data ?? []))
+      .then(async ({ data: convs }) => {
+        if (!convs?.length) { setConvs([]); return }
+        // Fetch profiles separately
+        const ids = [...new Set([...convs.map(c => c.initiator_id), ...convs.map(c => c.recipient_id)].filter(Boolean))]
+        const { data: profs } = await supabase.from('profiles').select('id, full_name, role, verification_status, avatar_path').in('id', ids)
+        const pmap = Object.fromEntries((profs ?? []).map(p => [p.id, p]))
+        // Attach initiator/recipient objects manually
+        setConvs(convs.map(c => ({
+          ...c,
+          initiator: pmap[c.initiator_id] ?? { id: c.initiator_id, full_name: 'Member' },
+          recipient: pmap[c.recipient_id] ?? { id: c.recipient_id, full_name: 'Member' },
+        })))
+      })
   }, [dashTab, supabase, user.id])
 
   // Load messages for active conversation

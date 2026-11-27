@@ -85,10 +85,9 @@ export default function JobsPage({ supabase, user, onSignup }) {
     setError('')
 
     const run = async () => {
-      const posterBadgeJoin = `poster_profile:public_profile_badges${filters.verifiedOnly ? '!inner' : ''}(role, verification_status, verification_badge)`
       let q = supabase
         .from('jobs')
-        .select(`id, title, description, job_type, player_position, staff_role, age_group, region, country, nationality, work_type, budget, salary, free_agent_only, is_verified, status, created_at, club_id, posted_by_user_id, clubs(id, name, verified_badge, country, state, logo_path), ${posterBadgeJoin}`, { count: 'exact' })
+        .select(`id, title, description, job_type, player_position, staff_role, age_group, region, country, nationality, work_type, budget, salary, free_agent_only, is_verified, status, created_at, club_id, posted_by_user_id, clubs(id, name, verified_badge, country, state, logo_path)`, { count: 'exact' })
         .eq('status', 'open')
 
       if (filters.jobType)   q = q.eq('job_type', filters.jobType)
@@ -97,12 +96,11 @@ export default function JobsPage({ supabase, user, onSignup }) {
       if (filters.ageGroup)  q = q.eq('age_group', filters.ageGroup)
       if (filters.region)    q = q.ilike('region', `%${filters.region}%`)
       if (filters.workType)  q = q.eq('work_type', filters.workType)
-      if (filters.verifiedOnly) q = q.eq('poster_profile.verification_status', 'verified')
       if (filters.q)         q = q.or(`title.ilike.%${filters.q}%,description.ilike.%${filters.q}%`)
 
       if (sort === 'newest')   q = q.order('created_at', { ascending: false })
       else if (sort === 'salary')   q = q.order('salary', { ascending: false, nullsFirst: false })
-      else if (sort === 'verified') q = q.order('poster_profile(verification_status)', { ascending: false }).order('created_at', { ascending: false })
+      else q = q.order('created_at', { ascending: false })
 
       q = q.limit(60)
       const { data, count, error } = await q
