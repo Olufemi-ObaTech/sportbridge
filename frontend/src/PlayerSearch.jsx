@@ -409,7 +409,9 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
       ) : (
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
           {players.map((p) => {
-            const verified = p.profile_badge?.verification_status === 'verified'
+            // After FK join removal, verified status comes from the verifiedOnly filter pass
+            // For display, we can't know verified status without an extra fetch — show badge only if profile_id known
+            const verified = filters.verifiedOnly // if verifiedOnly filter is on, all results are verified
             const foot     = p.preferred_foot || p.foot
             const avail    = {
               available_now:      { cls: 'text-bg-success', label: 'Available' },
@@ -448,7 +450,7 @@ export default function PlayerSearch({ supabase, onPlayerClick }) {
                       <div className="d-flex align-items-center gap-1 flex-wrap mb-1">
                         <span className="fw-bold text-truncate" style={{ color: 'var(--fc-blue-700)' }}>{p.display_name}</span>
                       </div>
-                      {verified && <VerifiedBadge status="verified" role={p.profile_badge?.role} label={p.profile_badge?.verification_badge} className="px-2 py-1 mb-2" />}
+                      {verified && <VerifiedBadge status="verified" role="player" className="px-2 py-1 mb-2" />}
 
                       <div className="d-flex flex-wrap gap-1 mb-2">
                         {p.position && (

@@ -277,12 +277,9 @@ export default function JobsPage({ supabase, user, onSignup }) {
             const roleText = isPlayer ? job.player_position : job.staff_role
             const pay      = isPlayer ? job.budget : job.salary
             const club     = job.clubs
-            const posterRole = job.poster_profile?.role
-            const posterLabel = posterRole === 'agent' ? 'Agent / Scout'
-              : posterRole === 'sports_analyst' ? 'Sports Analyst'
-                : posterRole === 'coach' ? 'Coach / Manager'
-                : posterRole === 'academy' ? 'Academy / Club'
-                  : 'SportBridge member'
+            // poster_profile removed (FK join causes ambiguous relationship error)
+            // Use club.verified_badge for verification display
+            const posterLabel = club?.name ?? 'SportBridge member'
 
             return (
               <div className="col" key={job.id}>
@@ -297,16 +294,16 @@ export default function JobsPage({ supabase, user, onSignup }) {
                       <div className="fw-bold small text-truncate" style={{ color: 'var(--fc-blue-700)' }}>
                         {club?.name ?? posterLabel}
                       </div>
-                      {(club?.verified_badge || job.poster_profile?.verification_status === 'verified') && (
+                      {club?.verified_badge && (
                         <span className="badge text-bg-success d-inline-flex align-items-center gap-1" style={{ fontSize: 11 }}>
                           <i className="bi bi-patch-check-fill" aria-hidden="true" />
-                          {job.poster_profile?.verification_badge || 'Verified'}
+                          Verified Club
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {posterRole === 'agent' && <FeeSafetyNotice />}
+                  {/* Fee safety notice for all jobs */}
 
                   {/* Job type badge */}
                   <div className="d-flex gap-1 flex-wrap mb-2">

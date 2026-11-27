@@ -1332,4 +1332,18 @@ export function observeLocalization(root, language) {
   ['Mark all as read',              'Tout marquer comme lu',             'Marcar tudo como lido',           'تعيين الكل كمقروء',                  'Marcar todo como leído'],
   ['Verified members only',         'Membres vérifiés uniquement',       'Apenas membros verificados',      'الأعضاء الموثّقون فقط',              'Solo miembros verificados'],
   ['Get verified in My Dashboard',  'Se vérifier dans Mon tableau de bord', 'Verificar-se no meu painel', 'التحقق في لوحتي',                     'Verificarse en Mi panel'],
+
+  // ── Jobs + Tryouts ──
+  ['Could not load jobs',           'Impossible de charger les offres',  'Não foi possível carregar as vagas', 'تعذّر تحميل الوظائف',               'No se pudieron cargar los empleos'],
+  ['Could not load tryout listings','Impossible de charger les essais',  'Não foi possível carregar os testes','تعذّر تحميل تجارب الأداء',          'No se pudieron cargar las pruebas'],
+  ['Player Needed',                 'Joueur recherché',                  'Jogador necessário',              'مطلوب لاعب',                        'Se busca jugador'],
+  ['Staff Needed',                  'Personnel recherché',               'Pessoal necessário',              'مطلوب موظف',                        'Se busca personal'],
+  ['Professional Seeking Role',     'Professionnel cherchant un poste',  'Profissional à procura de função', 'محترف يبحث عن دور',                 'Profesional busca puesto'],
+  ['Verified Club',                 'Club vérifié',                      'Clube verificado',                'نادٍ موثّق',                         'Club verificado'],
+  ['Free agents only',              'Agents libres uniquement',          'Apenas agentes livres',           'الوكلاء الأحرار فقط',               'Solo agentes libres'],
+  ['Never pay an agent to be selected or for a guaranteed opportunity. Report suspicious fee requests.', 'Ne payez jamais un agent pour être sélectionné. Signalez toute demande de frais suspecte.', 'Nunca pague um agente para ser selecionado. Denuncie pedidos de honorários suspeitos.', 'لا تدفع لأي وكيل مقابل الاختيار. أبلغ عن أي طلبات رسوم مشبوهة.', 'Nunca pagues a un agente por ser seleccionado. Denuncia solicitudes de honorarios sospechosas.'],
+  ['Search players',                'Rechercher des joueurs',            'Pesquisar jogadores',             'البحث عن لاعبين',                   'Buscar jugadores'],
+  ['Clear all filters',             'Effacer tous les filtres',          'Limpar todos os filtros',         'مسح جميع الفلاتر',                  'Borrar todos los filtros'],
+  ['No players match your filters', 'Aucun joueur ne correspond',        'Nenhum jogador corresponde',      'لا يوجد لاعبون يتطابقون مع الفلاتر','Ningún jugador coincide con los filtros'],
+  ['Try adjusting the position, region, or turning off "Verified Only".', 'Essayez d\'ajuster le poste, la région ou désactivez "Vérifiés uniquement".', 'Tente ajustar a posição, região ou desativar "Apenas verificados".', 'جرّب تعديل المركز أو المنطقة أو إلغاء فلتر "الموثّقون فقط".', 'Intenta ajustar la posición, región o desactivar "Solo verificados".'],
 ].forEach(([en, fr, pt, ar, es]) => { catalog[en] = { fr, pt, ar, es } })
